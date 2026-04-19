@@ -8,7 +8,9 @@ export type EndgameKind = "dead" | "won";
 
 /** Items unlocked by this run (computed by diffUnlocks). */
 export interface EndgameUnlocks {
+  /** Card display names that became available. */
   newCards: string[];
+  /** Skill display names that became available. */
   newSkills: string[];
 }
 

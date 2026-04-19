@@ -595,12 +595,15 @@ async function boot(): Promise<void> {
       saveAchievements(achievements),
     ]);
 
-    // Compute unlock diff for endgame banner.
+    // Compute unlock diff for endgame banner (map IDs to display names).
     if (statsBeforeRun) {
       const allSkillDefs = Object.values(PRIMAL_SKILLS);
       const diff = diffUnlocks(statsBeforeRun, profile.stats, POOL, allSkillDefs);
       if (diff.newCards.length > 0 || diff.newSkills.length > 0) {
-        pendingUnlocks = diff;
+        pendingUnlocks = {
+          newCards: diff.newCards.map((id) => POOL_BY_ID.get(id)?.name ?? id),
+          newSkills: diff.newSkills.map((id) => PRIMAL_SKILLS[id as keyof typeof PRIMAL_SKILLS]?.name ?? id),
+        };
       }
     }
   }

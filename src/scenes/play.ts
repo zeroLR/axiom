@@ -40,6 +40,9 @@ export type GameMode = "normal" | "survival";
 // Stage 1 / Stage 2 / Stage 3 normal-mode enemy strength multipliers.
 const NORMAL_STAGE_STRENGTH_MUL: readonly number[] = [1, 1.5, 2.5];
 
+/** Overload skill fire-rate multiplier (0.33 = triple fire rate). */
+const OVERLOAD_PERIOD_MUL = 0.33;
+
 export interface PlayCallbacks {
   onWaveCleared: (clearedIdx: number) => void; // 1-based
   onPlayerDied: () => void;
@@ -315,20 +318,12 @@ export class PlayScene implements Scene {
       this.lifestealTick = 0;
     }
 
-    // Axis Freeze: stun all enemies while active
+    // Axis Freeze: stun all enemies while active (snap is done once on activation)
     const axisFreezeActive = this.activeSkills.some((s) => s.id === "axisFreeze" && s.active > 0);
     if (axisFreezeActive) {
-      for (const [, c] of this.world.with("pos", "enemy")) {
-        // Stun: zero out velocity while active
-        if (c.vel) { c.vel.x = 0; c.vel.y = 0; }
-        // Snap position to the nearest cardinal axis relative to arena center
-        if (c.pos) {
-          const cx = PLAY_W / 2, cy = PLAY_H / 2;
-          const dx = Math.abs(c.pos.x - cx);
-          const dy = Math.abs(c.pos.y - cy);
-          if (dx < dy) c.pos.x = cx; // snap to vertical axis
-          else c.pos.y = cy;          // snap to horizontal axis
-        }
+      for (const [, c] of this.world.with("vel", "enemy")) {
+        c.vel!.x = 0;
+        c.vel!.y = 0;
       }
     }
 
@@ -338,7 +333,7 @@ export class PlayScene implements Scene {
       const avatar = this.world.get(this.avatarId);
       if (avatar?.weapon) {
         this.savedWeaponPeriod = avatar.weapon.period;
-        avatar.weapon.period *= 0.33; // triple fire rate
+        avatar.weapon.period *= OVERLOAD_PERIOD_MUL; // triple fire rate
         this.overloadApplied = true;
       }
     } else if (!overloadSkill && this.overloadApplied) {
@@ -552,7 +547,17 @@ export class PlayScene implements Scene {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private triggerAxisFreeze(_sk: ActiveSkillState): void {
-    // Axis freeze is handled in the main update loop; activation is enough.
+    // Snap all enemies to the nearest cardinal axis and stun them.
+    const cx = PLAY_W / 2, cy = PLAY_H / 2;
+    for (const [, c] of this.world.with("pos", "enemy")) {
+      if (c.pos) {
+        const dx = Math.abs(c.pos.x - cx);
+        const dy = Math.abs(c.pos.y - cy);
+        if (dx < dy) c.pos.x = cx;
+        else c.pos.y = cy;
+      }
+      if (c.vel) { c.vel.x = 0; c.vel.y = 0; }
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
