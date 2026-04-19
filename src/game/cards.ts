@@ -1,3 +1,4 @@
+import type { BossId } from "./bosses/types";
 import { isLevelableEffect, levelBonusFraction } from "./cardLevels";
 import { createWeaponForMode } from "./entities";
 import { type Rng, shuffle } from "./rng";
@@ -37,6 +38,8 @@ export interface Card {
   rarity: Rarity;
   text: string;
   effect: CardEffect;
+  /** If set, this card only appears in the draft pool after the given boss is defeated. */
+  unlockAfterBoss?: BossId;
 }
 
 export const POOL: readonly Card[] = [
@@ -69,10 +72,20 @@ export const POOL: readonly Card[] = [
   { id: "wpnBurst",      name: "Burst",       glyph: "✺", rarity: "rare",     text: "+Weapon: bursts into fragments",  effect: { kind: "addWeapon", mode: "burst" } },
   { id: "wpnFan",        name: "Sweep",       glyph: "≋", rarity: "uncommon", text: "+Weapon: 5-shot fan",             effect: { kind: "addWeapon", mode: "fan" } },
   { id: "wpnCharge",     name: "Cannon",      glyph: "⏶", rarity: "rare",     text: "+Weapon: piercing cannon",        effect: { kind: "addWeapon", mode: "charge" } },
+  // --- Boss-gated cards (unlocked by defeating specific bosses) ---
+  { id: "axisLock",      name: "Axis Lock",    glyph: "╋", rarity: "uncommon", text: "+2 damage, axis-only fire",       effect: { kind: "damageAdd", value: 2 },       unlockAfterBoss: "orthogon" },
+  { id: "gridSnap",      name: "Grid Snap",    glyph: "⊞", rarity: "uncommon", text: "+25% crit chance",                effect: { kind: "critAdd", value: 0.25 },      unlockAfterBoss: "orthogon" },
+  { id: "contrail",      name: "Contrail",     glyph: "⁓", rarity: "uncommon", text: "Burn 1.5 dps for 2.5s",           effect: { kind: "burnAdd", dps: 1.5, duration: 2.5 }, unlockAfterBoss: "jets" },
+  { id: "reboundPlus",   name: "Rebound+",     glyph: "⤨", rarity: "uncommon", text: "+2 ricochet",                     effect: { kind: "ricochetAdd", value: 2 },     unlockAfterBoss: "jets" },
+  { id: "recursion",     name: "Recursion",    glyph: "∞", rarity: "rare",     text: "+3 damage, -30% fire interval",   effect: { kind: "damageAdd", value: 3 },       unlockAfterBoss: "mirror" },
 ];
 
-export function drawOffer(rng: Rng, count: number, pool: readonly Card[] = POOL): Card[] {
-  return shuffle(rng, pool).slice(0, Math.min(count, pool.length));
+import type { PlayerStats } from "./data/types";
+import { filterUnlockedCards } from "./unlocks";
+
+export function drawOffer(rng: Rng, count: number, pool: readonly Card[] = POOL, stats?: PlayerStats): Card[] {
+  const available = stats ? filterUnlockedCards(pool, stats) : [...pool];
+  return shuffle(rng, available).slice(0, Math.min(count, available.length));
 }
 
 export function applyCard(world: World, avatarId: EntityId, card: Card): void {

@@ -78,7 +78,7 @@ export function defaultEquipmentLoadout(): EquipmentLoadout {
 
 // ── Skill Tree ──────────────────────────────────────────────────────────────
 
-export type PrimalSkillId = "timeStop" | "shadowClone" | "reflectShield" | "barrage" | "lifestealPulse";
+export type PrimalSkillId = "timeStop" | "shadowClone" | "reflectShield" | "barrage" | "lifestealPulse" | "axisFreeze" | "overload";
 
 export interface SkillLevel {
   unlocked: boolean;
@@ -107,6 +107,8 @@ export function defaultSkillTreeState(): SkillTreeState {
       reflectShield: { unlocked: false, level: 0 },
       barrage: { unlocked: false, level: 0 },
       lifestealPulse: { unlocked: false, level: 0 },
+      axisFreeze: { unlocked: false, level: 0 },
+      overload: { unlocked: false, level: 0 },
     },
   };
 }
