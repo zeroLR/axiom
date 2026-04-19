@@ -56,7 +56,7 @@ export class StageSelectScene implements Scene {
 
     STAGE_THEMES.forEach((theme, i) => {
       // Linear unlock: Stage N+1 requires Stage N cleared.
-      const locked = i > 0 && !stats.normalCleared[i - 1];
+      const locked = i > 0 && !(stats.normalCleared?.[i - 1] === true);
       const bossDef = bossForStage(i);
 
       const btn = document.createElement("button");

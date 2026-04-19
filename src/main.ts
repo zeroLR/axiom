@@ -210,8 +210,9 @@ async function boot(): Promise<void> {
     }
     document.getElementById("game")?.appendChild(container);
 
-    // Fade in
-    requestAnimationFrame(() => { container.style.opacity = "1"; });
+    // Fade in (force reflow first to ensure transition triggers)
+    container.offsetWidth; // eslint-disable-line @typescript-eslint/no-unused-expressions
+    container.style.opacity = "1";
 
     // Fade out then remove
     setTimeout(() => {
