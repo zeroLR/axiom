@@ -125,7 +125,7 @@ Axiom uses **zero emoji characters** as visible UI icons. All icons are
 
 | Context | Icon Shape | Label |
 |---|---|---|
-| Normal Mode | Filled right-pointing triangle | "Normal Mode" |
+| Normal Mode | Filled right-pointing triangle | "Main Story" |
 | Survival Mode | Figure-eight / infinity loop | "Survival Mode" |
 | Shop | Diamond (gem) | "Shop" |
 | Equipment | Hexagon nut | "Equipment" |

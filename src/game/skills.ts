@@ -2,6 +2,7 @@
 // Two special abilities that fundamentally alter gameplay. They are unlocked
 // from Primal Cores (boss drops) and upgraded with skill points.
 
+import type { BossId } from "./bosses/types";
 import type { PrimalSkillId, SkillTreeState } from "./data/types";
 import { MAX_SKILL_LEVEL } from "./data/types";
 import type { Rng } from "./rng";
@@ -21,6 +22,8 @@ export interface PrimalSkillDef {
   durationPerLevel: number;
   /** Cooldown reduction per upgrade level. */
   cooldownPerLevel: number;
+  /** If set, this skill only appears after the given boss is defeated. */
+  unlockAfterBoss?: BossId;
 }
 
 export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
@@ -33,6 +36,7 @@ export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
     baseCooldown: 30,
     durationPerLevel: 0.8,
     cooldownPerLevel: 2,
+    unlockAfterBoss: "mirror",
   },
   shadowClone: {
     id: "shadowClone",
@@ -43,6 +47,7 @@ export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
     baseCooldown: 30,
     durationPerLevel: 0.5,
     cooldownPerLevel: 2,
+    unlockAfterBoss: "jets",
   },
   reflectShield: {
     id: "reflectShield",
@@ -74,6 +79,28 @@ export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
     durationPerLevel: 0.5,
     cooldownPerLevel: 2.5,
   },
+  axisFreeze: {
+    id: "axisFreeze",
+    name: "Axis Freeze",
+    glyph: "❅",
+    description: "Aligns all enemies to the nearest axis and stuns for 2s.",
+    baseDuration: 2,
+    baseCooldown: 30,
+    durationPerLevel: 0.3,
+    cooldownPerLevel: 2,
+    unlockAfterBoss: "orthogon",
+  },
+  overload: {
+    id: "overload",
+    name: "Overload",
+    glyph: "⚡",
+    description: "Triple fire rate for a short burst. Self-damage 1.",
+    baseDuration: 3,
+    baseCooldown: 35,
+    durationPerLevel: 0.4,
+    cooldownPerLevel: 2,
+    unlockAfterBoss: "mirror",
+  },
 };
 
 /** Upgrade cost in skill points for the next level. Returns Infinity if already at max. */
@@ -98,14 +125,23 @@ export type DrawResult =
   | { type: "new"; skillId: PrimalSkillId }
   | { type: "duplicate"; skillId: PrimalSkillId; pointsAwarded: number };
 
-const SKILL_IDS: PrimalSkillId[] = ["timeStop", "shadowClone", "reflectShield", "barrage", "lifestealPulse"];
+const SKILL_IDS: PrimalSkillId[] = ["timeStop", "shadowClone", "reflectShield", "barrage", "lifestealPulse", "axisFreeze", "overload"];
 
-/** Spend one core to draw a random primal skill. Returns null if 0 cores. */
-export function drawPrimalSkill(state: SkillTreeState, rng: Rng): DrawResult | null {
+import type { PlayerStats } from "./data/types";
+import { isSkillUnlocked } from "./unlocks";
+
+/** Spend one core to draw a random primal skill. Returns null if 0 cores.
+ *  When `stats` is provided, only boss-unlocked skills are in the draw pool. */
+export function drawPrimalSkill(state: SkillTreeState, rng: Rng, stats?: PlayerStats): DrawResult | null {
   if (state.cores <= 0) return null;
-  state.cores -= 1;
 
-  const id = SKILL_IDS[Math.floor(rng() * SKILL_IDS.length)]!;
+  const available = stats
+    ? SKILL_IDS.filter((id) => isSkillUnlocked(PRIMAL_SKILLS[id], stats))
+    : SKILL_IDS;
+  if (available.length === 0) return null;
+
+  state.cores -= 1;
+  const id = available[Math.floor(rng() * available.length)]!;
   if (!state.skills[id].unlocked) {
     state.skills[id].unlocked = true;
     return { type: "new", skillId: id };

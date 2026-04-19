@@ -52,7 +52,7 @@ export class MainMenuScene implements Scene {
     inner.appendChild(sub);
 
     // Mode buttons
-    this.addBtn(inner, iconPlay, "Normal Mode", "normalMode", "big-btn");
+    this.addBtn(inner, iconPlay, "Main Story", "normalMode", "big-btn");
     this.addBtn(inner, iconInfinity, "Survival Mode", "survivalMode", "big-btn");
 
     // Spacer

@@ -43,19 +43,35 @@ export function drawWorld(g: Graphics, world: World, theme?: StageTheme): void {
   const RAY_LEN = Math.hypot(PLAY_W, PLAY_H);
   for (const [, c] of world.with("enemy", "weapon", "pos")) {
     if (c.enemy!.kind !== "boss") continue;
+
+    // Standard fan telegraph (Mirror / Jets dash / generic aimed shots)
     const ang = c.enemy!.telegraphAngle;
-    if (ang === undefined) continue;
-    const remaining = c.weapon!.cooldown;
-    const t = 1 - Math.max(0, Math.min(1, remaining / BOSS_TELEGRAPH_LEAD));
-    const alpha = 0.2 + 0.55 * t;
-    const n = Math.max(1, c.weapon!.projectiles);
-    const startAngle = ang - (BOSS_FAN_SPREAD * (n - 1)) / 2;
-    for (let i = 0; i < n; i++) {
-      const a = startAngle + BOSS_FAN_SPREAD * i;
-      g.moveTo(c.pos!.x, c.pos!.y);
-      g.lineTo(c.pos!.x + Math.cos(a) * RAY_LEN, c.pos!.y + Math.sin(a) * RAY_LEN);
+    if (ang !== undefined) {
+      const remaining = c.weapon!.cooldown;
+      const t = 1 - Math.max(0, Math.min(1, remaining / BOSS_TELEGRAPH_LEAD));
+      const alpha = 0.2 + 0.55 * t;
+      const n = Math.max(1, c.weapon!.projectiles);
+      const startAngle = ang - (BOSS_FAN_SPREAD * (n - 1)) / 2;
+      for (let i = 0; i < n; i++) {
+        const a = startAngle + BOSS_FAN_SPREAD * i;
+        g.moveTo(c.pos!.x, c.pos!.y);
+        g.lineTo(c.pos!.x + Math.cos(a) * RAY_LEN, c.pos!.y + Math.sin(a) * RAY_LEN);
+      }
+      g.stroke({ color: 0xff2020, alpha, width: 2 });
     }
-    g.stroke({ color: 0xff2020, alpha, width: 2 });
+
+    // Orthogon axis telegraph lines
+    const axisLines = c.enemy!.bossTelegraphLines;
+    if (axisLines && axisLines.length > 0) {
+      const bossTimer = c.enemy!.bossTimer ?? 0;
+      const t = 1 - Math.max(0, Math.min(1, bossTimer / 0.8));
+      const alpha = 0.15 + 0.6 * t;
+      for (const a of axisLines) {
+        g.moveTo(c.pos!.x, c.pos!.y);
+        g.lineTo(c.pos!.x + Math.cos(a) * RAY_LEN, c.pos!.y + Math.sin(a) * RAY_LEN);
+      }
+      g.stroke({ color: 0xff4040, alpha, width: 2.5 });
+    }
   }
 
   for (const [, c] of world.with("enemy", "pos", "radius")) {
@@ -63,9 +79,18 @@ export function drawWorld(g: Graphics, world: World, theme?: StageTheme): void {
     const r = c.radius!;
     const kind = c.enemy!.kind;
     const flash = (c.flash ?? 0) > 0;
-    const fillColor = flash ? 0xffffff : enemyColor(kind, dark);
-    drawEnemyShape(g, kind, x, y, r);
-    g.fill({ color: fillColor }).stroke({ color: strokeColor, width: 2 });
+    const bossPattern = c.enemy!.bossPattern;
+    const fillColor = flash ? 0xffffff
+      : kind === "boss" ? bossColor(bossPattern, dark)
+      : enemyColor(kind, dark);
+    if (kind === "boss" && bossPattern) {
+      drawBossShape(g, bossPattern, x, y, r);
+    } else {
+      drawEnemyShape(g, kind, x, y, r);
+    }
+    const bossStroke = kind === "boss" && bossPattern === "jets" && c.enemy!.bossEnraged
+      ? 0xff3030 : strokeColor;
+    g.fill({ color: fillColor }).stroke({ color: bossStroke, width: 2 });
 
     // Shield indicator (hexagon)
     if (c.enemy!.shield && c.enemy!.shield > 0) {
@@ -191,6 +216,54 @@ function drawEnemyShape(g: Graphics, kind: EnemyKind, x: number, y: number, r: n
     case "cross":    drawCross(g, x, y, r); break;
     case "crescent": drawCrescent(g, x, y, r); break;
   }
+}
+
+/** Per-boss body fill colour. */
+function bossColor(pattern: string | undefined, dark: boolean): number {
+  switch (pattern) {
+    case "orthogon": return dark ? 0xb0bec5 : 0xeceff1; // steel grey
+    case "jets":     return dark ? 0x81d4fa : 0xb3e5fc; // sky blue
+    default:         return dark ? 0xff80ab : 0xffd1e1; // pink (mirror)
+  }
+}
+
+/** Draw boss body shape per boss type. */
+function drawBossShape(g: Graphics, pattern: string, x: number, y: number, r: number): void {
+  switch (pattern) {
+    case "orthogon": drawBossCross(g, x, y, r); break;
+    case "jets":     drawBossJets(g, x, y, r); break;
+    default:         drawPolygon(g, x, y, r, 6); break; // mirror → hexagon
+  }
+}
+
+/** Orthogon: thick plus/cross shape (bigger than enemy cross). */
+function drawBossCross(g: Graphics, cx: number, cy: number, r: number): void {
+  const w = r * 0.4;
+  g.moveTo(cx - w, cy - r);
+  g.lineTo(cx + w, cy - r);
+  g.lineTo(cx + w, cy - w);
+  g.lineTo(cx + r, cy - w);
+  g.lineTo(cx + r, cy + w);
+  g.lineTo(cx + w, cy + w);
+  g.lineTo(cx + w, cy + r);
+  g.lineTo(cx - w, cy + r);
+  g.lineTo(cx - w, cy + w);
+  g.lineTo(cx - r, cy + w);
+  g.lineTo(cx - r, cy - w);
+  g.lineTo(cx - w, cy - w);
+  g.closePath();
+}
+
+/** Jets: paper-plane / arrowhead shape facing downward (toward player). */
+function drawBossJets(g: Graphics, cx: number, cy: number, r: number): void {
+  // Downward-pointing dart / paper-plane silhouette
+  g.moveTo(cx, cy + r);                // nose (bottom-center)
+  g.lineTo(cx - r * 0.8, cy - r * 0.7); // left wing
+  g.lineTo(cx - r * 0.2, cy - r * 0.2); // left notch
+  g.lineTo(cx, cy - r * 0.5);           // tail center
+  g.lineTo(cx + r * 0.2, cy - r * 0.2); // right notch
+  g.lineTo(cx + r * 0.8, cy - r * 0.7); // right wing
+  g.closePath();
 }
 
 function drawPolygon(g: Graphics, cx: number, cy: number, r: number, sides: number): void {

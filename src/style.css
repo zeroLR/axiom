@@ -560,3 +560,23 @@ body {
 .card-btn--maxed {
   opacity: 0.55;
 }
+
+/* ── Title-card overlay (stage entry / boss spawn) ─────────────────────── */
+.title-card {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 50;
+  line-height: 1.6;
+}

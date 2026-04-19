@@ -2,9 +2,10 @@ import { Container, Graphics } from "pixi.js";
 
 import { playSfx } from "../game/audio";
 import type { Card } from "../game/cards";
-import { STARTING_DRAFT_TOKENS } from "../game/config";
+import { PLAY_H, PLAY_W, STARTING_DRAFT_TOKENS } from "../game/config";
 import { spawnAvatar } from "../game/entities";
-import { applyMirrorSpec, mirrorBossSpec } from "../game/mirrorBoss";
+import { bossForStage } from "../game/bosses/registry";
+import type { BossSpec } from "../game/bosses/types";
 import type { Rng } from "../game/rng";
 import { updateEnemyAi } from "../game/systems/ai";
 import { updateBossWeapon } from "../game/systems/bossWeapon";
@@ -39,12 +40,17 @@ export type GameMode = "normal" | "survival";
 // Stage 1 / Stage 2 / Stage 3 normal-mode enemy strength multipliers.
 const NORMAL_STAGE_STRENGTH_MUL: readonly number[] = [1, 1.5, 2.5];
 
+/** Overload skill fire-rate multiplier (0.33 = triple fire rate). */
+const OVERLOAD_PERIOD_MUL = 0.33;
+
 export interface PlayCallbacks {
   onWaveCleared: (clearedIdx: number) => void; // 1-based
   onPlayerDied: () => void;
   onRunWon: () => void;
   onRunComplete: (result: RunResult) => void;
   updateHud: (hp: number, maxHp: number, waveIdx: number, totalWaves: number, points: number, tokens: number) => void;
+  /** Called once when the boss wave begins (wave index is 1-based). */
+  onBossWaveStart?: (wave1: number) => void;
 }
 
 // The canvas CSS size varies per viewport; map pointer events back to the
@@ -73,7 +79,7 @@ export class PlayScene implements Scene {
   private readonly boundOnMove: (ev: PointerEvent) => void;
   private readonly boundOnUp: (ev: PointerEvent) => void;
   private ended = false;
-  private mirrorApplied = false;
+  private bossApplied = false;
   private readonly gridColor: number;
   private readonly theme: StageTheme | undefined;
 
@@ -91,6 +97,10 @@ export class PlayScene implements Scene {
   private cloneId: EntityId | null = null;
   /** Accumulator for lifesteal pulse ticks (~1 per second while active). */
   private lifestealTick = 0;
+  /** Whether overload fire-rate boost is currently applied. */
+  private overloadApplied = false;
+  /** Saved weapon period before overload. */
+  private savedWeaponPeriod = 0;
 
   constructor(
     rng: Rng,
@@ -163,7 +173,7 @@ export class PlayScene implements Scene {
       this.wave = newWaveState(this.waves[this.waveIdx]!);
     }
     this.ended = false;
-    this.mirrorApplied = false;
+    this.bossApplied = false;
     this.updateHud();
   }
 
@@ -189,6 +199,10 @@ export class PlayScene implements Scene {
       this.spawnClone(sk);
     } else if (sk.id === "barrage") {
       this.fireBarrage(sk);
+    } else if (sk.id === "axisFreeze") {
+      this.triggerAxisFreeze(sk);
+    } else if (sk.id === "overload") {
+      this.triggerOverload(sk);
     }
   }
 
@@ -218,14 +232,14 @@ export class PlayScene implements Scene {
 
     updateWave(this.wave, this.world, this.rng, dt);
 
-    // Mirror boss application (normal mode last wave, or survival mirror waves).
+    // Boss application (normal mode last wave, or survival mirror waves).
     const wave1 = this.waveIdx + 1;
-    const shouldMirror =
+    const shouldApplyBoss =
       this.mode === "normal"
         ? wave1 === this.waves.length
         : isMirrorBossWave(wave1);
-    if (shouldMirror && !this.mirrorApplied) {
-      this.applyMirrorBuildOnce();
+    if (shouldApplyBoss && !this.bossApplied) {
+      this.applyBossOnce();
     }
 
     // Apply mode-specific scaling to newly spawned enemies after mirror stats.
@@ -302,6 +316,37 @@ export class PlayScene implements Scene {
       }
     } else {
       this.lifestealTick = 0;
+    }
+
+    // Axis Freeze: stun all enemies while active (snap is done once on activation)
+    const axisFreezeActive = this.activeSkills.some((s) => s.id === "axisFreeze" && s.active > 0);
+    if (axisFreezeActive) {
+      for (const [, c] of this.world.with("vel", "enemy")) {
+        c.vel!.x = 0;
+        c.vel!.y = 0;
+      }
+    }
+
+    // Overload: triple fire rate while active (applied as weapon period modifier)
+    const overloadSkill = this.activeSkills.find((s) => s.id === "overload" && s.active > 0);
+    if (overloadSkill && !this.overloadApplied) {
+      const avatar = this.world.get(this.avatarId);
+      if (avatar?.weapon) {
+        this.savedWeaponPeriod = avatar.weapon.period;
+        avatar.weapon.period *= OVERLOAD_PERIOD_MUL; // triple fire rate
+        this.overloadApplied = true;
+      }
+    } else if (!overloadSkill && this.overloadApplied) {
+      // Overload ended — restore fire rate and apply self-damage
+      const avatar = this.world.get(this.avatarId);
+      if (avatar?.weapon && this.savedWeaponPeriod > 0) {
+        avatar.weapon.period = this.savedWeaponPeriod;
+      }
+      if (avatar?.avatar) {
+        avatar.avatar.hp = Math.max(1, avatar.avatar.hp - 1);
+      }
+      this.overloadApplied = false;
+      this.savedWeaponPeriod = 0;
     }
 
     let died = false;
@@ -390,11 +435,16 @@ export class PlayScene implements Scene {
     }
   }
 
-  private applyMirrorBuildOnce(): void {
+  private applyBossOnce(): void {
+    const bossDef = this.mode === "survival"
+      ? bossForStage(2)   // survival always uses Mirror
+      : bossForStage(this.stageIndex);
+    const spec: BossSpec = bossDef.buildSpec(this.picks);
     for (const [, c] of this.world.with("enemy", "hp")) {
       if (c.enemy!.kind !== "boss") continue;
-      applyMirrorSpec(c, mirrorBossSpec(this.picks));
-      this.mirrorApplied = true;
+      bossDef.install(c, spec);
+      this.bossApplied = true;
+      this.cb.onBossWaveStart?.(this.waveIdx + 1);
       return;
     }
   }
@@ -419,6 +469,8 @@ export class PlayScene implements Scene {
       : 1;
     for (const [, c] of this.world.with("enemy", "hp")) {
       if (c.enemy!.scaled) continue;
+      // Boss stats are set by BossDef.install — skip stage scaling for bosses.
+      if (c.enemy!.kind === "boss") { c.enemy!.scaled = true; continue; }
       c.hp!.value = Math.max(1, Math.ceil(c.hp!.value * stageMul));
       c.enemy!.maxSpeed *= stageMul;
       c.enemy!.contactDamage = Math.max(1, Math.ceil(c.enemy!.contactDamage * stageMul));
@@ -491,6 +543,26 @@ export class PlayScene implements Scene {
         },
       });
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private triggerAxisFreeze(_sk: ActiveSkillState): void {
+    // Snap all enemies to the nearest cardinal axis and stun them.
+    const cx = PLAY_W / 2, cy = PLAY_H / 2;
+    for (const [, c] of this.world.with("pos", "enemy")) {
+      if (c.pos) {
+        const dx = Math.abs(c.pos.x - cx);
+        const dy = Math.abs(c.pos.y - cy);
+        if (dx < dy) c.pos.x = cx;
+        else c.pos.y = cy;
+      }
+      if (c.vel) { c.vel.x = 0; c.vel.y = 0; }
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private triggerOverload(_sk: ActiveSkillState): void {
+    // Overload fire-rate boost is applied in the main update loop on activation.
   }
 
   private updateHud(): void {

@@ -1,6 +1,6 @@
 import { Container } from "pixi.js";
 import type { Scene } from "./scene";
-import type { SkillTreeState } from "../game/data/types";
+import type { PlayerStats, SkillTreeState } from "../game/data/types";
 import { MAX_SKILL_LEVEL } from "../game/data/types";
 import {
   PRIMAL_SKILLS,
@@ -10,6 +10,7 @@ import {
   skillCooldown,
   type PrimalSkillDef,
 } from "../game/skills";
+import { isSkillUnlocked } from "../game/unlocks";
 import type { Rng } from "../game/rng";
 import { iconBack, iconSpan, glyphStar4, SKILL_GLYPHS, setIconHtml } from "../icons";
 
@@ -17,6 +18,7 @@ import { iconBack, iconSpan, glyphStar4, SKILL_GLYPHS, setIconHtml } from "../ic
 
 export interface SkillTreeCallbacks {
   getState: () => SkillTreeState;
+  getStats: () => PlayerStats;
   getRng: () => Rng;
   onStateChanged: (state: SkillTreeState) => void;
   onBack: () => void;
@@ -41,6 +43,7 @@ export class SkillTreeScene implements Scene {
     inner.appendChild(content);
 
     const state = this.cb.getState();
+    const stats = this.cb.getStats();
 
     const title = document.createElement("div");
     title.className = "overlay-title";
@@ -62,7 +65,7 @@ export class SkillTreeScene implements Scene {
       drawBtn.append(" Draw skill (1 core)");
       drawBtn.addEventListener("click", () => {
         const rng = this.cb.getRng();
-        const result = drawPrimalSkill(state, rng);
+        const result = drawPrimalSkill(state, rng, stats);
         if (result) {
           this.cb.onStateChanged(state);
           this.enter(); // re-render
@@ -86,10 +89,12 @@ export class SkillTreeScene implements Scene {
 
     for (const def of Object.values(PRIMAL_SKILLS) as PrimalSkillDef[]) {
       const entry = state.skills[def.id];
+      const bossGated = !isSkillUnlocked(def, stats);
       const btn = document.createElement("div");
       btn.className = "card-btn";
       btn.style.flexDirection = "column";
       btn.style.alignItems = "flex-start";
+      if (bossGated) btn.style.opacity = "0.4";
 
       const header = document.createElement("div");
       header.style.display = "flex";
@@ -99,14 +104,20 @@ export class SkillTreeScene implements Scene {
 
       const glyph = document.createElement("span");
       glyph.className = "card-glyph";
-      const skillSvg = SKILL_GLYPHS[def.id];
-      if (skillSvg) setIconHtml(glyph, skillSvg);
-      else glyph.textContent = def.glyph;
+      if (bossGated) {
+        glyph.textContent = "🔒";
+      } else {
+        const skillSvg = SKILL_GLYPHS[def.id];
+        if (skillSvg) setIconHtml(glyph, skillSvg);
+        else glyph.textContent = def.glyph;
+      }
       header.appendChild(glyph);
 
       const nameSpan = document.createElement("span");
       nameSpan.className = "card-name";
-      if (entry.unlocked) {
+      if (bossGated) {
+        nameSpan.textContent = "??? — locked";
+      } else if (entry.unlocked) {
         const isMaxed = entry.level >= MAX_SKILL_LEVEL;
         nameSpan.textContent = isMaxed ? `${def.name} (MAX)` : `${def.name} (Lv.${entry.level})`;
       } else {
@@ -118,7 +129,12 @@ export class SkillTreeScene implements Scene {
       const desc = document.createElement("span");
       desc.className = "card-text";
       desc.style.marginTop = "4px";
-      if (entry.unlocked) {
+      if (bossGated) {
+        const bossName = def.unlockAfterBoss
+          ? def.unlockAfterBoss.toUpperCase()
+          : "???";
+        desc.textContent = `UNLOCKS: DEFEAT ${bossName}`;
+      } else if (entry.unlocked) {
         const dur = skillDuration(def, entry.level).toFixed(1);
         const cd = skillCooldown(def, entry.level).toFixed(1);
         desc.textContent = `${def.description}\nDuration: ${dur}s · Cooldown: ${cd}s`;
@@ -128,8 +144,8 @@ export class SkillTreeScene implements Scene {
       }
       btn.appendChild(desc);
 
-      // Upgrade button
-      if (entry.unlocked && entry.level < MAX_SKILL_LEVEL) {
+      // Upgrade button (only for boss-available, unlocked skills)
+      if (!bossGated && entry.unlocked && entry.level < MAX_SKILL_LEVEL) {
         const cost = upgradeCost(entry.level);
         const canUpgrade = state.skillPoints >= cost;
         const upBtn = document.createElement("button");
