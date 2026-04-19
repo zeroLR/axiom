@@ -3,6 +3,8 @@
 // injected into the Pixi `Application.background` and the grid renderer so the
 // visual vibe changes per stage while the gameplay code stays untouched.
 
+import type { BossId } from "./bosses/types";
+
 export interface StageTheme {
   /** Human-readable label shown in stage select. */
   name: string;
@@ -22,6 +24,12 @@ export interface StageTheme {
   fogColor?: number;
   /** Optional matte fog intensity (0..1). */
   fogAlpha?: number;
+  /** Boss assigned to this stage's final wave. */
+  bossId: BossId;
+  /** Domain name for the main-story framing. */
+  domainName: string;
+  /** Theorem flavour text displayed on stage entry / boss spawn. */
+  theoremLine: string;
 }
 
 export const STAGE_THEMES: readonly StageTheme[] = [
@@ -30,6 +38,9 @@ export const STAGE_THEMES: readonly StageTheme[] = [
     background: 0xffffff,
     gridColor: 0xf0f0f0,
     overlayBg: "rgba(255,255,255,0.82)",
+    bossId: "orthogon",
+    domainName: "AXIS",
+    theoremLine: '"lines converge"',
   },
   {
     name: "Deep Blue",
@@ -41,6 +52,9 @@ export const STAGE_THEMES: readonly StageTheme[] = [
     enemyStroke: 0xaaccff,
     fogColor: 0xc9d6ff,
     fogAlpha: 0.18,
+    bossId: "jets",
+    domainName: "WING",
+    theoremLine: '"edges strike first"',
   },
   {
     name: "Dark Core",
@@ -52,6 +66,9 @@ export const STAGE_THEMES: readonly StageTheme[] = [
     enemyStroke: 0xffccaa,
     fogColor: 0xf2d8dc,
     fogAlpha: 0.24,
+    bossId: "mirror",
+    domainName: "MIRROR",
+    theoremLine: '"every inference reflects"',
   },
 ];
 

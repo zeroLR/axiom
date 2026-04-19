@@ -4,7 +4,8 @@ import { playSfx } from "../game/audio";
 import type { Card } from "../game/cards";
 import { STARTING_DRAFT_TOKENS } from "../game/config";
 import { spawnAvatar } from "../game/entities";
-import { applyMirrorSpec, mirrorBossSpec } from "../game/mirrorBoss";
+import { bossForStage } from "../game/bosses/registry";
+import type { BossSpec } from "../game/bosses/types";
 import type { Rng } from "../game/rng";
 import { updateEnemyAi } from "../game/systems/ai";
 import { updateBossWeapon } from "../game/systems/bossWeapon";
@@ -45,6 +46,8 @@ export interface PlayCallbacks {
   onRunWon: () => void;
   onRunComplete: (result: RunResult) => void;
   updateHud: (hp: number, maxHp: number, waveIdx: number, totalWaves: number, points: number, tokens: number) => void;
+  /** Called once when the boss wave begins (wave index is 1-based). */
+  onBossWaveStart?: (wave1: number) => void;
 }
 
 // The canvas CSS size varies per viewport; map pointer events back to the
@@ -73,7 +76,7 @@ export class PlayScene implements Scene {
   private readonly boundOnMove: (ev: PointerEvent) => void;
   private readonly boundOnUp: (ev: PointerEvent) => void;
   private ended = false;
-  private mirrorApplied = false;
+  private bossApplied = false;
   private readonly gridColor: number;
   private readonly theme: StageTheme | undefined;
 
@@ -163,7 +166,7 @@ export class PlayScene implements Scene {
       this.wave = newWaveState(this.waves[this.waveIdx]!);
     }
     this.ended = false;
-    this.mirrorApplied = false;
+    this.bossApplied = false;
     this.updateHud();
   }
 
@@ -218,14 +221,14 @@ export class PlayScene implements Scene {
 
     updateWave(this.wave, this.world, this.rng, dt);
 
-    // Mirror boss application (normal mode last wave, or survival mirror waves).
+    // Boss application (normal mode last wave, or survival mirror waves).
     const wave1 = this.waveIdx + 1;
-    const shouldMirror =
+    const shouldApplyBoss =
       this.mode === "normal"
         ? wave1 === this.waves.length
         : isMirrorBossWave(wave1);
-    if (shouldMirror && !this.mirrorApplied) {
-      this.applyMirrorBuildOnce();
+    if (shouldApplyBoss && !this.bossApplied) {
+      this.applyBossOnce();
     }
 
     // Apply mode-specific scaling to newly spawned enemies after mirror stats.
@@ -390,11 +393,16 @@ export class PlayScene implements Scene {
     }
   }
 
-  private applyMirrorBuildOnce(): void {
+  private applyBossOnce(): void {
+    const bossDef = this.mode === "survival"
+      ? bossForStage(2)   // survival always uses Mirror
+      : bossForStage(this.stageIndex);
+    const spec: BossSpec = bossDef.buildSpec(this.picks);
     for (const [, c] of this.world.with("enemy", "hp")) {
       if (c.enemy!.kind !== "boss") continue;
-      applyMirrorSpec(c, mirrorBossSpec(this.picks));
-      this.mirrorApplied = true;
+      bossDef.install(c, spec);
+      this.bossApplied = true;
+      this.cb.onBossWaveStart?.(this.waveIdx + 1);
       return;
     }
   }

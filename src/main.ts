@@ -7,6 +7,7 @@ import { startLoop } from "./game/loop";
 import { createRng, pickSeed } from "./game/rng";
 import { applyCard, applyCardLevelUp, drawOffer, POOL, type Card } from "./game/cards";
 import { CardInventory, isLevelableEffect } from "./game/cardLevels";
+import { bossForStage } from "./game/bosses/registry";
 import { DraftScene } from "./scenes/draft";
 import { EndgameScene } from "./scenes/endgame";
 import { PlayScene, type PointerMapper, type GameMode } from "./scenes/play";
@@ -194,6 +195,29 @@ async function boot(): Promise<void> {
     app.renderer.background.color = theme.background;
     const overlay = document.getElementById("overlay");
     if (overlay) overlay.style.background = theme.overlayBg;
+  }
+
+  // ── Title-card (stage entry / boss spawn) ────────────────────────────────
+
+  /** Show a brief monospace title-card that fades in/out without blocking input. */
+  function showTitleCard(lines: string[], durationMs = 1500): void {
+    const container = document.createElement("div");
+    container.className = "title-card";
+    for (const line of lines) {
+      const el = document.createElement("div");
+      el.textContent = line;
+      container.appendChild(el);
+    }
+    document.getElementById("game")?.appendChild(container);
+
+    // Fade in
+    requestAnimationFrame(() => { container.style.opacity = "1"; });
+
+    // Fade out then remove
+    setTimeout(() => {
+      container.style.opacity = "0";
+      setTimeout(() => container.remove(), 300);
+    }, durationMs);
   }
 
   // ── HUD ─────────────────────────────────────────────────────────────────
@@ -407,6 +431,18 @@ async function boot(): Promise<void> {
           stack.push(new EndgameScene("won", total, total, () => showMainMenu()));
         },
         onRunComplete: (result) => settleRun(result),
+        onBossWaveStart: () => {
+          if (mode === "normal") {
+            const bossDef = bossForStage(stageIndex);
+            const stageTheme = STAGE_THEMES[stageIndex];
+            if (stageTheme) {
+              showTitleCard([
+                `BOSS: ${bossDef.displayName}`,
+                `THEOREM: ${stageTheme.theoremLine}`,
+              ]);
+            }
+          }
+        },
       },
       mapper,
       { mode, waves, gridColor: theme.gridColor, stageIndex, activeSkills, theme, activeSkin: runSkin },
@@ -429,6 +465,17 @@ async function boot(): Promise<void> {
     stack.push(play);
     showSkillButtons();
     renderCardHud();
+
+    // Stage-entry title-card (normal mode only).
+    if (mode === "normal") {
+      const stageTheme = STAGE_THEMES[stageIndex];
+      if (stageTheme) {
+        showTitleCard([
+          `STAGE ${stageIndex + 1} — DOMAIN: ${stageTheme.domainName}`,
+          `THEOREM: ${stageTheme.theoremLine}`,
+        ]);
+      }
+    }
   }
 
   function onPickCard(card: Card): void {
@@ -550,6 +597,7 @@ async function boot(): Promise<void> {
           stack.push(new StageSelectScene(
             (idx) => { stack.pop(); startRun("normal", idx); },
             () => { stack.pop(); showMainMenu(); },
+            () => profile.stats,
           ));
           break;
 
