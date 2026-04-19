@@ -427,6 +427,8 @@ export class PlayScene implements Scene {
       : 1;
     for (const [, c] of this.world.with("enemy", "hp")) {
       if (c.enemy!.scaled) continue;
+      // Boss stats are set by BossDef.install — skip stage scaling for bosses.
+      if (c.enemy!.kind === "boss") { c.enemy!.scaled = true; continue; }
       c.hp!.value = Math.max(1, Math.ceil(c.hp!.value * stageMul));
       c.enemy!.maxSpeed *= stageMul;
       c.enemy!.contactDamage = Math.max(1, Math.ceil(c.enemy!.contactDamage * stageMul));

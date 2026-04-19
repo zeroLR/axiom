@@ -1,25 +1,25 @@
 // ── Orthogon Boss definition (Stage 1) ──────────────────────────────────────
-// Phase 1: fallback to standard fan pattern (same as Mirror baseline).
-// Phase 2 will add axis-sweep + cross-laser AI.
+// Cross-shaped boss. Pattern: 4-axis fan sweep with telegraph cross-laser.
+// At ≤50% HP adds diagonal axes (8-way).
 
 import type { Card } from "../cards";
 import type { Components } from "../world";
 import type { BossDef, BossSpec } from "./types";
 
-/** Orthogon baseline stats — tuned slightly lower than Mirror since it's Stage 1. */
+/** Orthogon baseline stats — Stage 1 difficulty. */
 function buildSpec(_picks: readonly Card[]): BossSpec {
   return {
     hp: 45,
     contactDamage: 1,
     maxSpeed: 45,
     weapon: {
-      period: 1.2,
+      period: 1.4,
       damage: 1,
-      projectileSpeed: 180,
+      projectileSpeed: 170,
       projectiles: 2,
       pierce: 0,
       crit: 0,
-      cooldown: 1.0,
+      cooldown: 1.2,
       ricochet: 0,
       chain: 0,
       burnDps: 0,
@@ -27,7 +27,7 @@ function buildSpec(_picks: readonly Card[]): BossSpec {
       slowPct: 0,
       slowDuration: 0,
     },
-    patternKind: "standard",  // Phase 1 fallback; Phase 2 → "orthogon"
+    patternKind: "orthogon",
   };
 }
 
@@ -37,6 +37,11 @@ function install(entity: Components, spec: BossSpec): void {
   entity.enemy.maxSpeed = spec.maxSpeed;
   entity.hp.value = spec.hp;
   entity.weapon = { ...spec.weapon };
+  // Initialize boss AI state
+  entity.enemy.bossPattern = "orthogon";
+  entity.enemy.bossPhase = 0;
+  entity.enemy.bossTimer = 0;
+  entity.enemy.bossEnraged = false;
 }
 
 export const orthogonBossDef: BossDef = {

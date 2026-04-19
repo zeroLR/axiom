@@ -458,6 +458,23 @@ export function setIconHtml(el: HTMLElement, svgHtml: string): void {
   el.innerHTML = svgHtml;
 }
 
+// ── Boss glyph icons ────────────────────────────────────────────────────────
+
+/** ✛  Cross / plus (Orthogon boss glyph). */
+export const iconOrthogon = wrap(
+  `<line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/>`,
+);
+
+/** ▷  Paper-plane / dart (Jets boss glyph). */
+export const iconJets = wrapFill(
+  `<polygon points="12,21 4,7 12,11 20,7"/>`,
+);
+
+/** ⬡  Hexagon outline (Mirror boss glyph). */
+export const iconMirror = wrap(
+  `<polygon points="12,2 20,7 20,17 12,22 4,17 4,7"/>`,
+);
+
 /**
  * Create a `<span>` element containing an inline SVG icon.
  * Useful when building buttons: `btn.prepend(iconSpan(iconPlay))`.

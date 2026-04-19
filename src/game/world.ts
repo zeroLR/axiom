@@ -84,6 +84,20 @@ export interface Enemy {
    * where the boss is currently tracking. Cleared when the shot fires.
    */
   telegraphAngle?: number;
+
+  // ── Boss AI state (set by BossDef.install) ──────────────────────────────
+  /** Weapon pattern kind for dispatch in `bossWeapon.ts`. */
+  bossPattern?: "standard" | "orthogon" | "jets";
+  /** Current boss AI phase/move index, cycling through the pattern sequence. */
+  bossPhase?: number;
+  /** General-purpose boss AI timer (seconds remaining for current action). */
+  bossTimer?: number;
+  /** Whether the boss has entered enrage (≤50% HP). */
+  bossEnraged?: boolean;
+  /** Target position for dash / sweep movements. */
+  bossDashTarget?: { x: number; y: number };
+  /** Boss telegraph lines for rendering (array of angles, cleared after shot). */
+  bossTelegraphLines?: number[];
 }
 
 export type SynergyId = "combustion" | "desperate" | "kinetic" | "stillness";

@@ -1,21 +1,22 @@
 // ── Jets Boss definition (Stage 2) ──────────────────────────────────────────
-// Phase 1: fallback to standard fan pattern (same as Mirror baseline).
-// Phase 2 will add side-dash + Z-sweep + 50% enrage AI per boss-jets.md.
+// Paper-plane boss. Pattern cycle: side-wall dash → Z-sweep → aimed fan.
+// At ≤50% HP: enrage (speed +50%, scatter burst after each action).
 
+import { PLAY_W, PLAY_H } from "../config";
 import type { Card } from "../cards";
 import type { Components } from "../world";
 import type { BossDef, BossSpec } from "./types";
 
-/** Jets baseline stats — tuned for Stage 2 difficulty. */
+/** Jets baseline stats — Stage 2 difficulty. */
 function buildSpec(_picks: readonly Card[]): BossSpec {
   return {
     hp: 55,
     contactDamage: 1,
     maxSpeed: 60,
     weapon: {
-      period: 1.0,
+      period: 1.2,
       damage: 1,
-      projectileSpeed: 210,
+      projectileSpeed: 200,
       projectiles: 2,
       pierce: 0,
       crit: 0,
@@ -27,7 +28,7 @@ function buildSpec(_picks: readonly Card[]): BossSpec {
       slowPct: 0,
       slowDuration: 0,
     },
-    patternKind: "standard",  // Phase 1 fallback; Phase 2 → "jets"
+    patternKind: "jets",
   };
 }
 
@@ -37,6 +38,13 @@ function install(entity: Components, spec: BossSpec): void {
   entity.enemy.maxSpeed = spec.maxSpeed;
   entity.hp.value = spec.hp;
   entity.weapon = { ...spec.weapon };
+  // Initialize boss AI state
+  entity.enemy.bossPattern = "jets";
+  entity.enemy.bossPhase = 0;  // 0=side-dash, 1=z-sweep, 2=fan
+  entity.enemy.bossTimer = 1.5; // initial pause before first action
+  entity.enemy.bossEnraged = false;
+  // Start near top-center
+  entity.enemy.bossDashTarget = { x: PLAY_W / 2, y: PLAY_H * 0.15 };
 }
 
 export const jetsBossDef: BossDef = {
