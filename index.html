@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>Axiom</title>
+  </head>
+  <body>
+    <main id="app">
+      <header id="topbar">
+        <span id="hud-hp" class="hud-chip">HP: -</span>
+        <span id="hud-wave" class="hud-chip">W: -/-</span>
+        <span id="hud-pts" class="hud-chip">0pts</span>
+        <span id="hud-tokens" class="hud-chip" aria-label="draft tokens"
+          >⟐ 0</span
+        >
+        <span id="hud-seed" class="hud-chip" aria-label="run seed"
+          >seed: -</span
+        >
+        <button
+          type="button"
+          id="btn-pause"
+          class="ctrl-btn"
+          aria-label="Pause run"
+          aria-pressed="false"
+        >
+          pause
+        </button>
+        <button
+          type="button"
+          id="btn-restart"
+          class="ctrl-btn"
+          aria-label="Restart run"
+        >
+          restart
+        </button>
+        <button
+          type="button"
+          id="btn-comments"
+          class="ctrl-btn"
+          aria-label="Open discussions"
+        >
+          comments
+        </button>
+        <button
+          type="button"
+          id="btn-mute"
+          class="ctrl-btn ctrl-btn--mute"
+          aria-label="Toggle sound"
+        >
+          sfx on
+        </button>
+        <button
+          type="button"
+          id="btn-menu"
+          class="ctrl-btn"
+          aria-label="Main menu"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="1em"
+            height="1em"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="vertical-align: -0.125em"
+          >
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="18" x2="20" y2="18" />
+          </svg>
+        </button>
+      </header>
+      <div id="game">
+        <div id="overlay" hidden>
+          <div id="overlay-inner"></div>
+        </div>
+      </div>
+      <div id="hud-skills"></div>
+      <footer id="footer-hint">
+        drag anywhere to move · shots are automatic
+      </footer>
+      <div id="version-tag" aria-label="Axiom version">v0.0.1-beta-</div>
+    </main>
+    <dialog id="comments-dialog" aria-label="Axiom discussions">
+      <form method="dialog" id="comments-head">
+        <strong>Axiom Discussions</strong>
+        <button type="submit" class="menu-btn">close</button>
+      </form>
+      <div id="comments-body">
+        <script
+          src="https://giscus.app/client.js"
+          data-repo="zeroLR/axiom"
+          data-repo-id="R_kgDOSGuT5Q"
+          data-category="General"
+          data-category-id="DIC_kwDOSGuT5c4C7MwP"
+          data-mapping="specific"
+          data-term="axiom-discussions"
+          data-strict="0"
+          data-reactions-enabled="1"
+          data-emit-metadata="0"
+          data-input-position="top"
+          data-theme="light"
+          data-lang="en"
+          crossorigin="anonymous"
+          async
+        ></script>
+        <p class="comments-fallback">
+          Can’t post here?
+          <a
+            href="https://github.com/zeroLR/axiom/discussions/categories/general"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Open Discussions on GitHub</a
+          >.
+        </p>
+      </div>
+    </dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
