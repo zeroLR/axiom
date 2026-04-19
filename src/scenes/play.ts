@@ -2,7 +2,7 @@ import { Container, Graphics } from "pixi.js";
 
 import { playSfx } from "../game/audio";
 import type { Card } from "../game/cards";
-import { STARTING_DRAFT_TOKENS } from "../game/config";
+import { PLAY_H, PLAY_W, STARTING_DRAFT_TOKENS } from "../game/config";
 import { spawnAvatar } from "../game/entities";
 import { bossForStage } from "../game/bosses/registry";
 import type { BossSpec } from "../game/bosses/types";
@@ -94,6 +94,10 @@ export class PlayScene implements Scene {
   private cloneId: EntityId | null = null;
   /** Accumulator for lifesteal pulse ticks (~1 per second while active). */
   private lifestealTick = 0;
+  /** Whether overload fire-rate boost is currently applied. */
+  private overloadApplied = false;
+  /** Saved weapon period before overload. */
+  private savedWeaponPeriod = 0;
 
   constructor(
     rng: Rng,
@@ -192,6 +196,10 @@ export class PlayScene implements Scene {
       this.spawnClone(sk);
     } else if (sk.id === "barrage") {
       this.fireBarrage(sk);
+    } else if (sk.id === "axisFreeze") {
+      this.triggerAxisFreeze(sk);
+    } else if (sk.id === "overload") {
+      this.triggerOverload(sk);
     }
   }
 
@@ -305,6 +313,45 @@ export class PlayScene implements Scene {
       }
     } else {
       this.lifestealTick = 0;
+    }
+
+    // Axis Freeze: stun all enemies while active
+    const axisFreezeActive = this.activeSkills.some((s) => s.id === "axisFreeze" && s.active > 0);
+    if (axisFreezeActive) {
+      for (const [, c] of this.world.with("pos", "enemy")) {
+        // Stun: zero out velocity while active
+        if (c.vel) { c.vel.x = 0; c.vel.y = 0; }
+        // Snap position to the nearest cardinal axis relative to arena center
+        if (c.pos) {
+          const cx = PLAY_W / 2, cy = PLAY_H / 2;
+          const dx = Math.abs(c.pos.x - cx);
+          const dy = Math.abs(c.pos.y - cy);
+          if (dx < dy) c.pos.x = cx; // snap to vertical axis
+          else c.pos.y = cy;          // snap to horizontal axis
+        }
+      }
+    }
+
+    // Overload: triple fire rate while active (applied as weapon period modifier)
+    const overloadSkill = this.activeSkills.find((s) => s.id === "overload" && s.active > 0);
+    if (overloadSkill && !this.overloadApplied) {
+      const avatar = this.world.get(this.avatarId);
+      if (avatar?.weapon) {
+        this.savedWeaponPeriod = avatar.weapon.period;
+        avatar.weapon.period *= 0.33; // triple fire rate
+        this.overloadApplied = true;
+      }
+    } else if (!overloadSkill && this.overloadApplied) {
+      // Overload ended — restore fire rate and apply self-damage
+      const avatar = this.world.get(this.avatarId);
+      if (avatar?.weapon && this.savedWeaponPeriod > 0) {
+        avatar.weapon.period = this.savedWeaponPeriod;
+      }
+      if (avatar?.avatar) {
+        avatar.avatar.hp = Math.max(1, avatar.avatar.hp - 1);
+      }
+      this.overloadApplied = false;
+      this.savedWeaponPeriod = 0;
     }
 
     let died = false;
@@ -501,6 +548,16 @@ export class PlayScene implements Scene {
         },
       });
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private triggerAxisFreeze(_sk: ActiveSkillState): void {
+    // Axis freeze is handled in the main update loop; activation is enough.
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private triggerOverload(_sk: ActiveSkillState): void {
+    // Overload fire-rate boost is applied in the main update loop on activation.
   }
 
   private updateHud(): void {

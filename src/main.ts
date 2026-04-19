@@ -9,7 +9,7 @@ import { applyCard, applyCardLevelUp, drawOffer, POOL, type Card } from "./game/
 import { CardInventory, isLevelableEffect } from "./game/cardLevels";
 import { bossForStage } from "./game/bosses/registry";
 import { DraftScene } from "./scenes/draft";
-import { EndgameScene } from "./scenes/endgame";
+import { EndgameScene, type EndgameUnlocks } from "./scenes/endgame";
 import { PlayScene, type PointerMapper, type GameMode } from "./scenes/play";
 import { SceneStack } from "./scenes/scene";
 import { MainMenuScene, type MenuAction } from "./scenes/mainMenu";
@@ -26,7 +26,8 @@ import { survivalWaveSpec } from "./game/survivalWaves";
 import { applyEquipment } from "./game/equipment";
 import { equipCard, unequipCard } from "./game/equipment";
 import { mapEquipmentToRunCardId, listUnmappedEquipmentCards } from "./game/equipment";
-import { createActiveSkillStates } from "./game/skills";
+import { createActiveSkillStates, PRIMAL_SKILLS } from "./game/skills";
+import { diffUnlocks } from "./game/unlocks";
 import { MAX_SKILL_LEVEL } from "./game/data/types";
 import { unlockAchievement } from "./game/achievements";
 import type { RunResult } from "./game/rewards";
@@ -35,7 +36,7 @@ import {
   resolveSelectedStartingShape,
   runSkinForStartingShape,
 } from "./game/startingShapes";
-import { iconTimeStop, iconClone, iconReflect, iconBarrage, iconLifesteal, setIconHtml, CARD_GLYPHS, SHOP_GLYPHS } from "./icons";
+import { iconTimeStop, iconClone, iconReflect, iconBarrage, iconLifesteal, iconAxisFreeze, iconOverload, setIconHtml, CARD_GLYPHS, SHOP_GLYPHS } from "./icons";
 import {
   loadProfile, saveProfile,
   loadEquipment, saveEquipment,
@@ -128,6 +129,10 @@ async function boot(): Promise<void> {
   let seed = 0;
   let menuRng = createRng(42);
   let runInventory = new CardInventory();
+  /** Snapshot of stats at run start, used to compute unlock diff at end. */
+  let statsBeforeRun: import("./game/data/types").PlayerStats | null = null;
+  /** Pending unlock diff from the latest settled run (set by settleRun, read by endgame). */
+  let pendingUnlocks: EndgameUnlocks | null = null;
 
   function syncRunControlButtons(): void {
     const runActive = currentRun !== null;
@@ -255,6 +260,8 @@ async function boot(): Promise<void> {
         reflectShield: iconReflect,
         barrage: iconBarrage,
         lifestealPulse: iconLifesteal,
+        axisFreeze: iconAxisFreeze,
+        overload: iconOverload,
       };
       const SKILL_LABELS: Record<string, string> = {
         timeStop: "Time Stop",
@@ -262,6 +269,8 @@ async function boot(): Promise<void> {
         reflectShield: "Shield",
         barrage: "Barrage",
         lifestealPulse: "Lifesteal",
+        axisFreeze: "Freeze",
+        overload: "Overload",
       };
 
       const updateLabel = (): void => {
@@ -363,6 +372,13 @@ async function boot(): Promise<void> {
     app.stage.removeChildren();
     currentRun = { mode, stageIndex };
     setPaused(false);
+    pendingUnlocks = null;
+
+    // Snapshot stats before run so we can compute unlock diff at settle.
+    statsBeforeRun = {
+      ...profile.stats,
+      normalCleared: [...profile.stats.normalCleared],
+    };
 
     const theme = mode === "normal" ? (STAGE_THEMES[stageIndex] ?? DEFAULT_THEME) : DEFAULT_THEME;
     setTheme(theme);
@@ -395,7 +411,7 @@ async function boot(): Promise<void> {
           const label = mode === "survival"
             ? `${cleared}`
             : `${cleared} of ${play.totalWaves()}`;
-          const offer = drawOffer(rng, 3);
+          const offer = drawOffer(rng, 3, POOL, profile.stats);
           let rerollUses = 0;
           let draft: DraftScene;
           draft = new DraftScene(offer, label, {
@@ -405,7 +421,7 @@ async function boot(): Promise<void> {
               if (play.draftTokens < cost) return false;
               play.draftTokens -= cost;
               rerollUses += 1;
-              draft.setOffer(drawOffer(rng, 3));
+              draft.setOffer(drawOffer(rng, 3, POOL, profile.stats));
               return true;
             },
             onSkip: () => {
@@ -423,13 +439,13 @@ async function boot(): Promise<void> {
           currentRun = null;
           setPaused(false);
           const total = mode === "survival" ? play.currentWave1() : play.totalWaves();
-          stack.push(new EndgameScene("dead", play.currentWave1(), total, () => showMainMenu()));
+          stack.push(new EndgameScene("dead", play.currentWave1(), total, () => showMainMenu(), pendingUnlocks ?? undefined));
         },
         onRunWon: () => {
           currentRun = null;
           setPaused(false);
           const total = play.totalWaves();
-          stack.push(new EndgameScene("won", total, total, () => showMainMenu()));
+          stack.push(new EndgameScene("won", total, total, () => showMainMenu(), pendingUnlocks ?? undefined));
         },
         onRunComplete: (result) => settleRun(result),
         onBossWaveStart: () => {
@@ -578,6 +594,15 @@ async function boot(): Promise<void> {
       saveSkillTree(skillTree),
       saveAchievements(achievements),
     ]);
+
+    // Compute unlock diff for endgame banner.
+    if (statsBeforeRun) {
+      const allSkillDefs = Object.values(PRIMAL_SKILLS);
+      const diff = diffUnlocks(statsBeforeRun, profile.stats, POOL, allSkillDefs);
+      if (diff.newCards.length > 0 || diff.newSkills.length > 0) {
+        pendingUnlocks = diff;
+      }
+    }
   }
 
   // ── Main menu ─────────────────────────────────────────────────────────
@@ -667,6 +692,7 @@ async function boot(): Promise<void> {
           stack.pop();
           stack.push(new SkillTreeScene({
             getState: () => skillTree,
+            getStats: () => profile.stats,
             getRng: () => menuRng,
             onStateChanged: async (state) => {
               skillTree = state;

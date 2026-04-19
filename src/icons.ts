@@ -102,6 +102,16 @@ export const iconLifesteal = wrap(
   `<path d="M12,21 L4,13 C2,10 2,6 5,4 C8,2 10,4 12,7 C14,4 16,2 19,4 C22,6 22,10 20,13Z"/><circle cx="12" cy="12" r="9" stroke-dasharray="3,3"/>`,
 );
 
+/** Axis Freeze: snowflake / cross with ticks. */
+export const iconAxisFreeze = wrap(
+  `<line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="9" y1="4" x2="12" y2="7"/><line x1="15" y1="4" x2="12" y2="7"/><line x1="9" y1="20" x2="12" y2="17"/><line x1="15" y1="20" x2="12" y2="17"/>`,
+);
+
+/** Overload: lightning bolt. */
+export const iconOverload = wrap(
+  `<polyline points="13,2 5,14 12,14 11,22 19,10 12,10"/>`,
+);
+
 // ── Card / item glyph icons ──────────────────────────────────────────────────
 // These map to the `glyph` field in data structures. Rendered in `.card-glyph`.
 
@@ -376,6 +386,33 @@ export const glyphCore = glyphWrap(
   `<polygon points="12,2 14,10 22,12 14,14 12,22 10,14 2,12 10,10"/>`,
 );
 
+// ── Boss-gated card glyphs ───────────────────────────────────────────────────
+
+/** ╋  Axis Lock: thick cross / plus. */
+export const glyphAxisLock = glyphWrap(
+  `<line x1="12" y1="3" x2="12" y2="21" stroke-width="3"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="3"/>`,
+);
+
+/** ⊞  Grid Snap: grid with center dot. */
+export const glyphGridSnap = glyphWrap(
+  `<rect x="4" y="4" width="16" height="16"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/>`,
+);
+
+/** ⁓  Contrail: wavy trail line. */
+export const glyphContrail = glyphWrap(
+  `<path d="M3,12 C5,8 9,8 12,12 C15,16 19,16 21,12"/>`,
+);
+
+/** ⤨  Rebound+: angled bounce arrows. */
+export const glyphReboundPlus = glyphWrap(
+  `<polyline points="4,18 12,6 20,18"/><polyline points="7,14 12,10 17,14"/>`,
+);
+
+/** ∞  Recursion: infinity symbol. */
+export const glyphRecursion = glyphWrap(
+  `<path d="M8,12 C8,8 2,8 2,12 C2,16 8,16 12,12 C16,8 22,8 22,12 C22,16 16,16 12,12"/>`,
+);
+
 // ── Glyph lookup maps ───────────────────────────────────────────────────────
 // Maps card / shop-item / achievement IDs to their SVG glyph string.
 
@@ -394,6 +431,11 @@ export const CARD_GLYPHS: Record<string, string> = {
   ignite: glyphIgnite,
   freeze: glyphFreeze,
   arc: glyphArc,
+  axisLock: glyphAxisLock,
+  gridSnap: glyphGridSnap,
+  contrail: glyphContrail,
+  reboundPlus: glyphReboundPlus,
+  recursion: glyphRecursion,
 };
 
 export const SHOP_GLYPHS: Record<string, string> = {
@@ -446,6 +488,8 @@ export const SKILL_GLYPHS: Record<string, string> = {
   reflectShield: iconReflect,
   barrage: iconBarrage,
   lifestealPulse: iconLifesteal,
+  axisFreeze: iconAxisFreeze,
+  overload: iconOverload,
 };
 
 // ── Helper to create a DOM element from SVG string ──────────────────────────
