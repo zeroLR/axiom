@@ -108,7 +108,7 @@ import type {
 } from './game/data/types';
 import type { EnemyKind } from './game/world';
 import { setScreenShakeEnabled } from './game/screenShake';
-import { playMusic, stopMusic, setMusicVolume } from './game/music';
+import { playMusic, setMusicVolume } from './game/music';
 
 /** O(1) lookup for pool cards by ID. */
 const POOL_BY_ID = new Map(POOL.map((c) => [c.id, c]));
@@ -2888,8 +2888,7 @@ async function boot(): Promise<void> {
     currentRun = null;
     setPaused(false);
     setTheme(DEFAULT_THEME);
-    stopMusic();
-    // Start menu music
+    // Only start menu music if not already playing (avoids restart when returning from sub-menus)
     playMusic('menu');
     if (hudSkills) {
       hudSkills.innerHTML = '';
