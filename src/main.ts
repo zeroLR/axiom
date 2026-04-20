@@ -1,7 +1,7 @@
 import "./style.css";
 import { Application } from "pixi.js";
 
-import { isMuted, playSfx, primeSfx, setMuted } from "./game/audio";
+import { isMuted, playSfx, primeSfx, setMuted, setVolumes } from "./game/audio";
 import { PLAY_H, PLAY_W, rerollTokenCostForUse } from "./game/config";
 import { startLoop } from "./game/loop";
 import { createRng, pickSeed } from "./game/rng";
@@ -54,8 +54,11 @@ import type {
   AchievementState,
   ShopUnlocks,
   PrimalSkillId,
+  GameSettings,
 } from "./game/data/types";
 import type { EnemyKind } from "./game/world";
+import { setScreenShakeEnabled } from "./game/screenShake";
+import { playMusic, stopMusic, setMusicVolume } from "./game/music";
 
 /** O(1) lookup for pool cards by ID. */
 const POOL_BY_ID = new Map(POOL.map((c) => [c.id, c]));
@@ -314,6 +317,8 @@ async function boot(): Promise<void> {
 
   // ── HUD ─────────────────────────────────────────────────────────────────
 
+  const hudSynergy = document.getElementById("hud-synergy");
+
   function updateHud(
     hp: number,
     maxHp: number,
@@ -326,6 +331,82 @@ async function boot(): Promise<void> {
     if (hudWave) hudWave.textContent = `W: ${waveIdx}/${totalWaves}`;
     if (hudPts) hudPts.textContent = `${points}pts`;
     if (hudTokens) hudTokens.textContent = `⟐ ${tokens}`;
+  }
+
+  /** Refresh synergy HUD chips based on current avatar state. */
+  function updateSynergyHud(): void {
+    if (!hudSynergy || !currentRun) return;
+    const avatar = play?.world.get(play.avatarId);
+    if (!avatar?.avatar) {
+      hudSynergy.innerHTML = "";
+      return;
+    }
+    const synergies = avatar.avatar.synergies;
+    if (!synergies || synergies.length === 0) {
+      hudSynergy.innerHTML = "";
+      return;
+    }
+
+    // Ensure chip DOM matches synergy count
+    while (hudSynergy.children.length > synergies.length) {
+      hudSynergy.lastElementChild?.remove();
+    }
+    while (hudSynergy.children.length < synergies.length) {
+      const chip = document.createElement("div");
+      chip.className = "synergy-chip";
+      const icon = document.createElement("span");
+      icon.className = "synergy-icon";
+      const label = document.createElement("span");
+      label.className = "synergy-label";
+      chip.appendChild(icon);
+      chip.appendChild(label);
+      hudSynergy.appendChild(chip);
+    }
+
+    // Compute velocity for kinetic/stillness check
+    const vel = avatar.vel;
+    const velMag = vel ? Math.hypot(vel.x, vel.y) : 0;
+
+    for (let i = 0; i < synergies.length; i++) {
+      const s = synergies[i]!;
+      const chip = hudSynergy.children[i] as HTMLElement;
+      const iconEl = chip.querySelector(".synergy-icon") as HTMLElement;
+      const labelEl = chip.querySelector(".synergy-label") as HTMLElement;
+
+      // Set glyph
+      const glyph = CARD_GLYPHS[s.id];
+      if (glyph && iconEl.dataset["sid"] !== s.id) {
+        setIconHtml(iconEl, glyph);
+        iconEl.dataset["sid"] = s.id;
+      }
+
+      // Determine active state and label
+      let active = false;
+      let text = "";
+      switch (s.id) {
+        case "combustion": {
+          const count = s.killCounter ?? 0;
+          text = `${count}/10`;
+          active = count >= 8; // glow when close to triggering
+          break;
+        }
+        case "desperate":
+          active = avatar.avatar!.hp <= 2;
+          text = active ? "×2" : "—";
+          break;
+        case "kinetic":
+          active = velMag > 1 && avatar.avatar!.speedMul > 0;
+          text = active ? "+crit" : "—";
+          break;
+        case "stillness":
+          active = !(velMag > 1 && avatar.avatar!.speedMul > 0);
+          text = active ? "+rate" : "—";
+          break;
+      }
+
+      labelEl.textContent = text;
+      chip.classList.toggle("active", active);
+    }
   }
 
   const skillButtonUpdaters = new WeakMap<HTMLButtonElement, () => void>();
@@ -1760,6 +1841,9 @@ async function boot(): Promise<void> {
     const theme = mode === "normal" ? (STAGE_THEMES[stageIndex] ?? DEFAULT_THEME) : DEFAULT_THEME;
     setTheme(theme);
 
+    // Start ambient music for this stage
+    playMusic(stageIndex);
+
     seed = pickSeed();
     const rng = createRng(seed);
     // eslint-disable-next-line no-console
@@ -2007,11 +2091,13 @@ async function boot(): Promise<void> {
     currentRun = null;
     setPaused(false);
     setTheme(DEFAULT_THEME);
+    stopMusic();
     if (hudSkills) {
       hudSkills.innerHTML = "";
       hudSkills.classList.remove("developer-hud");
     }
     clearCardHud();
+    if (hudSynergy) hudSynergy.innerHTML = "";
 
     const menu = new MainMenuScene(
       async (action: MenuAction) => {
@@ -2174,7 +2260,7 @@ async function boot(): Promise<void> {
         onDeveloperUnlock: async () => {
           if (developerModeUnlocked) return;
           developerModeUnlocked = true;
-          await saveSettings({ muted: isMuted(), developerMode: true });
+          await saveSettings({ muted: isMuted(), developerMode: true, masterVolume: settings.masterVolume ?? 1, sfxVolume: settings.sfxVolume ?? 1, musicVolume: settings.musicVolume ?? 0.5, screenShake: settings.screenShake ?? true });
           alert("Developer mode enabled.");
           showMainMenu();
         },
@@ -2215,10 +2301,26 @@ async function boot(): Promise<void> {
   btnMute?.addEventListener("click", () => {
     setMuted(!isMuted());
     syncMuteLabel();
-    saveSettings({ muted: isMuted(), developerMode: developerModeUnlocked });
+    saveSettings(buildSettings());
   });
   if (settings.muted) setMuted(true);
+  // Apply persisted volume/shake settings
+  setVolumes(settings.masterVolume ?? 1, settings.sfxVolume ?? 1);
+  setMusicVolume(settings.musicVolume ?? 0.5, settings.masterVolume ?? 1);
+  setScreenShakeEnabled(settings.screenShake ?? true);
   syncMuteLabel();
+
+  /** Build current GameSettings snapshot for persistence. */
+  function buildSettings(): GameSettings {
+    return {
+      muted: isMuted(),
+      developerMode: developerModeUnlocked,
+      masterVolume: settings.masterVolume ?? 1,
+      sfxVolume: settings.sfxVolume ?? 1,
+      musicVolume: settings.musicVolume ?? 0.5,
+      screenShake: settings.screenShake ?? true,
+    };
+  }
 
   // ── Start ─────────────────────────────────────────────────────────────
 
@@ -2230,6 +2332,7 @@ async function boot(): Promise<void> {
       if (paused) return;
       stack.update(dt);
       refreshSkillButtons();
+      updateSynergyHud();
     },
     (alpha) => stack.render(alpha),
   );

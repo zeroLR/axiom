@@ -880,3 +880,48 @@ select.developer-form-input {
   z-index: 50;
   line-height: 1.6;
 }
+
+/* ── Synergy HUD chips ─────────────────────────────────────────────────────── */
+
+#hud-synergy {
+  position: fixed;
+  left: 8px;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.synergy-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  background: var(--chrome);
+  color: var(--muted);
+  border: 1.5px solid transparent;
+  opacity: 0.5;
+  transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.synergy-chip.active {
+  opacity: 1;
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+.synergy-chip .synergy-icon {
+  display: inline-flex;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.synergy-chip .synergy-label {
+  white-space: nowrap;
+}

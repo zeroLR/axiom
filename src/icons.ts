@@ -196,6 +196,82 @@ export const glyphArc = glyphWrap(
   `<path d="M4 18 Q12 2 20 18"/>`,
 );
 
+// ── Synergy card glyphs ─────────────────────────────────────────────────────
+
+/** ❂  Combustion: radial burst (6 lines from center). */
+export const glyphCombustion = glyphWrap(
+  `<circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="5.1" y1="5.1" x2="8" y2="8"/><line x1="16" y1="16" x2="18.9" y2="18.9"/>`,
+);
+
+/** ✖  Desperate: X cross with downward arrow (danger). */
+export const glyphDesperate = glyphWrap(
+  `<line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/><polyline points="9,18 12,22 15,18"/>`,
+);
+
+/** ↯  Kinetic: angled arrow with motion lines. */
+export const glyphKinetic = glyphWrap(
+  `<polyline points="6,18 12,6 18,18"/><line x1="4" y1="10" x2="8" y2="10"/><line x1="4" y1="14" x2="7" y2="14"/><line x1="4" y1="18" x2="6" y2="18"/>`,
+);
+
+/** ◦  Stillness: concentric circles with horizontal line. */
+export const glyphStillness = glyphWrap(
+  `<circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/>`,
+);
+
+// ── Evolution card glyphs ───────────────────────────────────────────────────
+
+/** ❖  Aegis: shield shape with inner cross. */
+export const glyphAegis = glyphWrap(
+  `<path d="M12,2 L20,6 L20,13 C20,18 12,22 12,22 C12,22 4,18 4,13 L4,6 Z"/><line x1="12" y1="9" x2="12" y2="17"/><line x1="8" y1="13" x2="16" y2="13"/>`,
+);
+
+/** ↻  Revenant: circular arrow (revival cycle). */
+export const glyphRevenant = glyphWrap(
+  `<path d="M12,4 A8,8 0 1,1 4,12"/><polyline points="12,2 12,6 16,4"/>`,
+);
+
+/** ▽  Compact: inward-pointing triangle (shrink). */
+export const glyphCompact = glyphWrap(
+  `<polygon points="12,18 4,6 20,6"/><polyline points="8,10 12,14 16,10"/>`,
+);
+
+/** ⇶  Phase Shift: dashed circle with offset copy. */
+export const glyphPhaseShift = glyphWrap(
+  `<circle cx="10" cy="12" r="7" stroke-dasharray="3,3"/><circle cx="14" cy="12" r="7" stroke-dasharray="3,3" opacity="0.5"/>`,
+);
+
+// ── Weapon card glyphs ──────────────────────────────────────────────────────
+
+/** ✚  Face Beam: cross with extended rays to all four sides. */
+export const glyphWpnFaceBeam = glyphWrap(
+  `<line x1="12" y1="2" x2="12" y2="22" stroke-width="3"/><line x1="2" y1="12" x2="22" y2="12" stroke-width="3"/>`,
+);
+
+/** ◌  Orbit Shard: three small squares orbiting a center dot. */
+export const glyphWpnOrbitShard = glyphWrap(
+  `<circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="8"/><rect x="10" y="2" width="4" height="4" fill="currentColor"/><rect x="18" y="14" width="4" height="4" fill="currentColor"/><rect x="2" y="14" width="4" height="4" fill="currentColor"/>`,
+);
+
+/** ⊙  Homing: arrow with curved tracking path. */
+export const glyphWpnHoming = glyphWrap(
+  `<path d="M4,18 Q4,4 12,8 Q20,12 20,4"/><polyline points="17,4 20,4 20,7"/>`,
+);
+
+/** ✺  Burst: center dot with radiating fragment lines. */
+export const glyphWpnBurst = glyphWrap(
+  `<circle cx="12" cy="12" r="2" fill="currentColor"/><line x1="12" y1="2" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="2" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="22" y2="12"/><line x1="5" y1="5" x2="8.5" y2="8.5"/><line x1="15.5" y1="15.5" x2="19" y2="19"/><line x1="19" y1="5" x2="15.5" y2="8.5"/><line x1="8.5" y1="15.5" x2="5" y2="19"/>`,
+);
+
+/** ≋  Fan / Sweep: five lines fanning out from base. */
+export const glyphWpnFan = glyphWrap(
+  `<line x1="12" y1="20" x2="4" y2="4"/><line x1="12" y1="20" x2="8" y2="4"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="12" y1="20" x2="16" y2="4"/><line x1="12" y1="20" x2="20" y2="4"/>`,
+);
+
+/** ⏶  Charge / Cannon: thick arrow with charge arc. */
+export const glyphWpnCharge = glyphWrap(
+  `<polygon points="12,3 6,14 10,14 10,21 14,21 14,14 18,14" fill="none"/><path d="M6,18 Q12,22 18,18" stroke-dasharray="2,2"/>`,
+);
+
 // ── Skin glyphs ─────────────────────────────────────────────────────────────
 
 /** □  Square form. */
@@ -436,6 +512,23 @@ export const CARD_GLYPHS: Record<string, string> = {
   contrail: glyphContrail,
   reboundPlus: glyphReboundPlus,
   recursion: glyphRecursion,
+  // Synergy
+  combustion: glyphCombustion,
+  desperate: glyphDesperate,
+  kinetic: glyphKinetic,
+  stillness: glyphStillness,
+  // Evolution
+  aegis: glyphAegis,
+  revenant: glyphRevenant,
+  compact: glyphCompact,
+  phaseShift: glyphPhaseShift,
+  // Weapon
+  wpnFaceBeam: glyphWpnFaceBeam,
+  wpnOrbitShard: glyphWpnOrbitShard,
+  wpnHoming: glyphWpnHoming,
+  wpnBurst: glyphWpnBurst,
+  wpnFan: glyphWpnFan,
+  wpnCharge: glyphWpnCharge,
 };
 
 export const SHOP_GLYPHS: Record<string, string> = {
