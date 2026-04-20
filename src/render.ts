@@ -18,7 +18,12 @@ export function drawGrid(g: Graphics, gridColor: number = 0xf0f0f0): void {
   g.stroke({ color: gridColor, width: 1 });
 }
 
-export function drawWorld(g: Graphics, world: World, theme?: StageTheme): void {
+export function drawWorld(
+  g: Graphics,
+  world: World,
+  theme?: StageTheme,
+  opts?: { showEnemyHp?: boolean },
+): void {
   g.clear();
   const dark = theme?.dark ?? false;
   const strokeColor = theme?.enemyStroke ?? 0x111111;
@@ -102,6 +107,18 @@ export function drawWorld(g: Graphics, world: World, theme?: StageTheme): void {
     if (c.enemy!.isElite) {
       g.circle(x, y, r + 5);
       g.stroke({ color: 0xd81b60, width: 1.5 });
+    }
+
+    if (opts?.showEnemyHp && c.hp) {
+      const maxHp = Math.max(1, c.enemy?.maxHp ?? c.hp.value);
+      const ratio = Math.max(0, Math.min(1, c.hp.value / maxHp));
+      const barW = Math.max(14, r * 2);
+      const barX = x - barW / 2;
+      const barY = y - r - 8;
+      g.rect(barX, barY, barW, 3);
+      g.fill({ color: 0x000000, alpha: 0.3 });
+      g.rect(barX, barY, barW * ratio, 3);
+      g.fill({ color: 0x00c853 });
     }
   }
 

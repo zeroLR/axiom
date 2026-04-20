@@ -12,6 +12,7 @@ import {
 export type MenuAction =
   | { kind: "normalMode" }
   | { kind: "survivalMode" }
+  | { kind: "developMode" }
   | { kind: "shop" }
   | { kind: "equipment" }
   | { kind: "startShape" }
@@ -24,10 +25,22 @@ export type MenuAction =
 export class MainMenuScene implements Scene {
   readonly root: Container;
   private readonly onAction: (action: MenuAction) => void;
+  private readonly showDevelopMode: boolean;
+  private readonly onDeveloperUnlock?: () => void;
+  private readonly titleTapTimes: number[] = [];
+  private developerNotified = false;
 
-  constructor(onAction: (action: MenuAction) => void) {
+  constructor(
+    onAction: (action: MenuAction) => void,
+    opts?: {
+      showDevelopMode?: boolean;
+      onDeveloperUnlock?: () => void;
+    },
+  ) {
     this.root = new Container();
     this.onAction = onAction;
+    this.showDevelopMode = opts?.showDevelopMode ?? false;
+    this.onDeveloperUnlock = opts?.onDeveloperUnlock;
   }
 
   enter(): void {
@@ -42,6 +55,8 @@ export class MainMenuScene implements Scene {
     title.textContent = "Axiom";
     title.style.fontSize = "22px";
     title.style.marginBottom = "8px";
+    title.style.cursor = "pointer";
+    title.addEventListener("click", () => this.onTitleTap(title));
     inner.appendChild(title);
 
     // Subtitle
@@ -54,6 +69,9 @@ export class MainMenuScene implements Scene {
     // Mode buttons
     this.addBtn(inner, iconPlay, "Main Story", "normalMode", "big-btn");
     this.addBtn(inner, iconInfinity, "Survival Mode", "survivalMode", "big-btn");
+    if (this.showDevelopMode) {
+      this.addBtn(inner, iconInfinity, "Develop Mode", "developMode", "menu-btn");
+    }
 
     // Spacer
     const spacer = document.createElement("div");
@@ -111,5 +129,18 @@ export class MainMenuScene implements Scene {
     if (extraStyle) btn.style.cssText += extraStyle;
     btn.addEventListener("click", () => this.onAction({ kind: action }));
     parent.appendChild(btn);
+  }
+
+  private onTitleTap(titleEl: HTMLElement): void {
+    const now = performance.now();
+    this.titleTapTimes.push(now);
+    while (this.titleTapTimes.length > 0 && now - this.titleTapTimes[0]! > 3000) {
+      this.titleTapTimes.shift();
+    }
+    if (this.titleTapTimes.length >= 7 && !this.developerNotified) {
+      this.developerNotified = true;
+      titleEl.textContent = "Axiom · developer enabled";
+      this.onDeveloperUnlock?.();
+    }
   }
 }

@@ -184,10 +184,11 @@ export function defaultShopUnlocks(): ShopUnlocks {
 
 export interface GameSettings {
   muted: boolean;
+  developerMode: boolean;
 }
 
 export function defaultGameSettings(): GameSettings {
-  return { muted: false };
+  return { muted: false, developerMode: false };
 }
 
 // ── Aggregate save blob (for export / import) ───────────────────────────────

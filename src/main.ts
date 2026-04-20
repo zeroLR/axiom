@@ -53,7 +53,9 @@ import type {
   SkillTreeState,
   AchievementState,
   ShopUnlocks,
+  PrimalSkillId,
 } from "./game/data/types";
+import type { EnemyKind } from "./game/world";
 
 /** O(1) lookup for pool cards by ID. */
 const POOL_BY_ID = new Map(POOL.map((c) => [c.id, c]));
@@ -124,7 +126,7 @@ async function boot(): Promise<void> {
   window.addEventListener("resize", fitCanvas);
 
   let play: PlayScene;
-  let currentRun: { mode: GameMode; stageIndex: number } | null = null;
+  let currentRun: { mode: GameMode; stageIndex: number; developMode: boolean } | null = null;
   let paused = false;
   let seed = 0;
   let menuRng = createRng(42);
@@ -133,6 +135,7 @@ async function boot(): Promise<void> {
   let statsBeforeRun: import("./game/data/types").PlayerStats | null = null;
   /** Pending unlock diff from the latest settled run (set by settleRun, read by endgame). */
   let pendingUnlocks: EndgameUnlocks | null = null;
+  let developerModeUnlocked = settings.developerMode ?? false;
 
   function syncRunControlButtons(): void {
     const runActive = currentRun !== null;
@@ -248,7 +251,7 @@ async function boot(): Promise<void> {
     restartBtn.textContent = "restart";
     restartBtn.addEventListener("click", () => {
       if (!currentRun) return;
-      startRun(currentRun.mode, currentRun.stageIndex);
+      startRun(currentRun.mode, currentRun.stageIndex, currentRun.developMode);
     });
     inner.appendChild(restartBtn);
 
@@ -381,6 +384,169 @@ async function boot(): Promise<void> {
     }
   }
 
+  function showDeveloperControls(): void {
+    if (!hudSkills) return;
+    hudSkills.innerHTML = "";
+    const items: Array<{ label: string; onClick: () => void }> = [
+      { label: "player", onClick: openDeveloperPlayerMenu },
+      { label: "enemy", onClick: openDeveloperEnemyMenu },
+      { label: "enhance", onClick: openDeveloperEnhanceMenu },
+      { label: "skills", onClick: openDeveloperSkillsMenu },
+      { label: "start", onClick: () => setPaused(false) },
+      { label: "resume", onClick: () => setPaused(false) },
+      { label: "restart", onClick: () => startRun("survival", 0, true) },
+    ];
+    for (const item of items) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "menu-btn";
+      btn.textContent = item.label;
+      btn.style.flex = "1 1 0";
+      btn.addEventListener("click", item.onClick);
+      hudSkills.appendChild(btn);
+    }
+  }
+
+  function openDeveloperPlayerMenu(): void {
+    if (!play?.isDeveloperMode()) return;
+    const avatar = play.world.get(play.avatarId);
+    if (!avatar?.avatar || !avatar.weapon) return;
+    const current = [
+      avatar.avatar.hp,
+      avatar.avatar.maxHp,
+      avatar.avatar.speedMul.toFixed(2),
+      avatar.weapon.damage,
+      avatar.weapon.period.toFixed(2),
+      Math.round(avatar.weapon.projectileSpeed),
+      avatar.weapon.projectiles,
+      avatar.weapon.pierce,
+      Math.round(avatar.weapon.crit * 100),
+    ].join(",");
+    const raw = prompt(
+      "player stats: hp,maxHp,speedMul,damage,fireInterval,projectileSpeed,projectiles,pierce,crit%",
+      current,
+    );
+    if (!raw) return;
+    const parts = raw.split(",").map((v) => Number(v.trim()));
+    if (parts.length < 9 || parts.some((v) => Number.isNaN(v))) return;
+    play.setDeveloperPlayerStats({
+      hp: parts[0]!,
+      maxHp: parts[1]!,
+      speedMul: parts[2]!,
+      damage: parts[3]!,
+      fireInterval: parts[4]!,
+      projectileSpeed: parts[5]!,
+      projectiles: parts[6]!,
+      pierce: parts[7]!,
+      crit: parts[8]! / 100,
+    });
+    const snapshot = play.getDeveloperSnapshot();
+    const invincible = confirm(`Invincible: ${snapshot.invincible ? "on" : "off"}\nOK=on / Cancel=off`);
+    play.setDeveloperInvincible(invincible);
+    const showHp = confirm(`Show enemy HP: ${snapshot.showEnemyHp ? "on" : "off"}\nOK=on / Cancel=off`);
+    play.setDeveloperShowEnemyHp(showHp);
+  }
+
+  function openDeveloperEnemyMenu(): void {
+    if (!play?.isDeveloperMode()) return;
+    const snapshot = play.getDeveloperSnapshot();
+    const intervalRaw = prompt("enemy interval seconds", snapshot.enemy.interval.toFixed(2));
+    if (!intervalRaw) return;
+    const interval = Number(intervalRaw);
+    if (!Number.isNaN(interval)) play.setDeveloperEnemyInterval(interval);
+
+    const kinds: EnemyKind[] = ["circle", "square", "star", "pentagon", "hexagon", "diamond", "cross", "crescent", "boss"];
+    const spawnDefault = kinds
+      .filter((k) => snapshot.enemy.spawn[k].enabled)
+      .map((k) => `${k}:${snapshot.enemy.spawn[k].count}`)
+      .join(",");
+    const spawnRaw = prompt("spawn setup kind:count,... (empty disables all)", spawnDefault);
+    if (spawnRaw !== null) {
+      for (const kind of kinds) play.setDeveloperEnemySpawn(kind, false, 0);
+      for (const token of spawnRaw.split(",").map((s) => s.trim()).filter(Boolean)) {
+        const [kindRaw, countRaw] = token.split(":");
+        const kind = kindRaw as EnemyKind;
+        if (!kinds.includes(kind)) continue;
+        const count = Number(countRaw ?? "1");
+        play.setDeveloperEnemySpawn(kind, true, Number.isNaN(count) ? 1 : count);
+      }
+      play.spawnDeveloperEnemiesNow();
+    }
+
+    const kindRaw = prompt("set base stats for kind (circle/square/star/pentagon/hexagon/diamond/cross/crescent/boss)", "circle");
+    if (!kindRaw) return;
+    const kind = kindRaw.trim() as EnemyKind;
+    if (!kinds.includes(kind)) return;
+    const stats = play.getDeveloperSnapshot().enemy.stats[kind];
+    const statsRaw = prompt(
+      "enemy stats: hp,attack,speed,attackFrequency",
+      `${stats.hp},${stats.attack},${stats.speed},${stats.attackFrequency}`,
+    );
+    if (!statsRaw) return;
+    const vals = statsRaw.split(",").map((v) => Number(v.trim()));
+    if (vals.length < 4 || vals.some((v) => Number.isNaN(v))) return;
+    play.setDeveloperEnemyStats(kind, {
+      hp: vals[0]!,
+      attack: vals[1]!,
+      speed: vals[2]!,
+      attackFrequency: vals[3]!,
+    });
+  }
+
+  function applyDeveloperEnhance(card: Card, targetLevel: number): void {
+    const safeLevel = Math.max(1, Math.floor(targetLevel));
+    if (!runInventory.hasForCard(card)) {
+      applyCard(play.world, play.avatarId, card);
+      runInventory.add(card);
+      play.recordPick(card);
+    }
+    if (!isLevelableEffect(card.effect)) {
+      renderCardHud();
+      return;
+    }
+    while ((runInventory.getForCard(card)?.level ?? 1) < safeLevel) {
+      const newLevel = runInventory.levelUpForCard(card);
+      if (newLevel <= 0) break;
+      applyCardLevelUp(play.world, play.avatarId, card, newLevel);
+      play.recordPick(card);
+    }
+    renderCardHud();
+  }
+
+  function openDeveloperEnhanceMenu(): void {
+    if (!play?.isDeveloperMode()) return;
+    const list = POOL.map((c) => c.id).join(", ");
+    const raw = prompt(`enhance: cardId,level\n${list}`, "damagePlus,1");
+    if (!raw) return;
+    const [cardIdRaw, levelRaw] = raw.split(",");
+    const cardId = cardIdRaw?.trim();
+    const card = cardId ? POOL_BY_ID.get(cardId) : undefined;
+    if (!card) return;
+    const level = Number(levelRaw ?? "1");
+    applyDeveloperEnhance(card, Number.isNaN(level) ? 1 : level);
+  }
+
+  function openDeveloperSkillsMenu(): void {
+    if (!play?.isDeveloperMode()) return;
+    const snapshot = play.getDeveloperSnapshot();
+    const skillIds = Object.keys(PRIMAL_SKILLS) as PrimalSkillId[];
+    const raw = prompt(
+      `skills: id,enabled(1/0),level,duration,cooldown\n${skillIds.join(", ")}`,
+      "barrage,1,0,2,8",
+    );
+    if (!raw) return;
+    const [idRaw, enabledRaw, levelRaw, durationRaw, cooldownRaw] = raw.split(",");
+    const id = (idRaw ?? "").trim() as PrimalSkillId;
+    if (!skillIds.includes(id)) return;
+    const prev = snapshot.skills[id];
+    play.setDeveloperSkillConfig(id, {
+      enabled: (enabledRaw ?? "").trim() === "1",
+      level: Number(levelRaw ?? prev.level),
+      duration: Number(durationRaw ?? prev.duration),
+      cooldown: Number(cooldownRaw ?? prev.cooldown),
+    });
+  }
+
   // ── Card HUD (top-left overlay) ─────────────────────────────────────────
 
   function renderCardHud(): void {
@@ -446,10 +612,10 @@ async function boot(): Promise<void> {
 
   // ── Run lifecycle ───────────────────────────────────────────────────────
 
-  function startRun(mode: GameMode, stageIndex: number): void {
+  function startRun(mode: GameMode, stageIndex: number, developMode = false): void {
     while (stack.top()) stack.pop();
     app.stage.removeChildren();
-    currentRun = { mode, stageIndex };
+    currentRun = { mode, stageIndex, developMode };
     setPaused(false);
     pendingUnlocks = null;
 
@@ -541,7 +707,7 @@ async function boot(): Promise<void> {
         },
       },
       mapper,
-      { mode, waves, gridColor: theme.gridColor, stageIndex, activeSkills, theme, activeSkin: runSkin },
+      { mode, waves, gridColor: theme.gridColor, stageIndex, activeSkills, theme, activeSkin: runSkin, developerMode: developMode },
     );
 
     applyStartingShapeLoadout(play.world, play.avatarId, startingShape);
@@ -559,7 +725,11 @@ async function boot(): Promise<void> {
 
     app.stage.addChild(play.root);
     stack.push(play);
-    showSkillButtons();
+    if (developMode) {
+      showDeveloperControls();
+    } else {
+      showSkillButtons();
+    }
     renderCardHud();
 
     // Stage-entry title-card (normal mode only).
@@ -698,8 +868,9 @@ async function boot(): Promise<void> {
     if (hudSkills) hudSkills.innerHTML = "";
     clearCardHud();
 
-    const menu = new MainMenuScene(async (action: MenuAction) => {
-      switch (action.kind) {
+    const menu = new MainMenuScene(
+      async (action: MenuAction) => {
+        switch (action.kind) {
         case "normalMode":
           stack.pop(); // remove menu
           stack.push(new StageSelectScene(
@@ -712,6 +883,11 @@ async function boot(): Promise<void> {
         case "survivalMode":
           stack.pop();
           startRun("survival", 0);
+          break;
+
+        case "developMode":
+          stack.pop();
+          startRun("survival", 0, true);
           break;
 
         case "shop":
@@ -839,14 +1015,26 @@ async function boot(): Promise<void> {
             skillTree = await loadSkillTree();
             achievements = await loadAchievements();
             shopUnlocks = await loadShopUnlocks();
+            developerModeUnlocked = (await loadSettings()).developerMode ?? false;
             alert("Data imported successfully!");
             showMainMenu();
           });
           input.click();
           break;
         }
-      }
-    });
+        }
+      },
+      {
+        showDevelopMode: developerModeUnlocked,
+        onDeveloperUnlock: async () => {
+          if (developerModeUnlocked) return;
+          developerModeUnlocked = true;
+          await saveSettings({ muted: isMuted(), developerMode: true });
+          alert("Developer mode enabled.");
+          showMainMenu();
+        },
+      },
+    );
     app.stage.addChild(menu.root);
     stack.push(menu);
   }
@@ -855,7 +1043,7 @@ async function boot(): Promise<void> {
 
   btnRestart?.addEventListener("click", () => {
     if (!currentRun) return;
-    startRun(currentRun.mode, currentRun.stageIndex);
+    startRun(currentRun.mode, currentRun.stageIndex, currentRun.developMode);
   });
   btnPause?.addEventListener("click", () => {
     if (!currentRun) return;
@@ -882,7 +1070,7 @@ async function boot(): Promise<void> {
   btnMute?.addEventListener("click", () => {
     setMuted(!isMuted());
     syncMuteLabel();
-    saveSettings({ muted: isMuted() });
+    saveSettings({ muted: isMuted(), developerMode: developerModeUnlocked });
   });
   if (settings.muted) setMuted(true);
   syncMuteLabel();
