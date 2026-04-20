@@ -470,24 +470,55 @@ async function boot(): Promise<void> {
         label.className = "developer-form-label";
         label.textContent = field.label;
 
-        const input = document.createElement("input");
-        input.name = field.name;
-        input.className = "developer-form-input";
-        input.type = field.type;
-        if (field.type === "checkbox") {
-          input.checked = field.value === "1" || field.value.toLowerCase() === "true";
-          input.classList.add("developer-form-checkbox");
-        } else {
+        if (field.type === "number" && field.min !== undefined && field.max !== undefined) {
+          // Numeric field with known range — show range slider + number input
+          const wrapper = document.createElement("div");
+          wrapper.className = "developer-form-slider-group";
+
+          const range = document.createElement("input");
+          range.type = "range";
+          range.className = "developer-form-range";
+          range.min = `${field.min}`;
+          range.max = `${field.max}`;
+          if (field.step !== undefined) range.step = `${field.step}`;
+          range.value = field.value;
+
+          const input = document.createElement("input");
+          input.name = field.name;
+          input.type = "number";
+          input.className = "developer-form-input developer-form-input--slim";
+          input.min = `${field.min}`;
+          input.max = `${field.max}`;
+          if (field.step !== undefined) input.step = `${field.step}`;
           input.value = field.value;
-          if (field.type === "number") {
-            if (field.min !== undefined) input.min = `${field.min}`;
-            if (field.max !== undefined) input.max = `${field.max}`;
-            if (field.step !== undefined) input.step = `${field.step}`;
+
+          range.addEventListener("input", () => { input.value = range.value; });
+          input.addEventListener("input", () => { range.value = input.value; });
+
+          wrapper.appendChild(range);
+          wrapper.appendChild(input);
+          row.appendChild(label);
+          row.appendChild(wrapper);
+        } else {
+          const input = document.createElement("input");
+          input.name = field.name;
+          input.className = "developer-form-input";
+          input.type = field.type;
+          if (field.type === "checkbox") {
+            input.checked = field.value === "1" || field.value.toLowerCase() === "true";
+            input.classList.add("developer-form-checkbox");
+          } else {
+            input.value = field.value;
+            if (field.type === "number") {
+              if (field.min !== undefined) input.min = `${field.min}`;
+              if (field.max !== undefined) input.max = `${field.max}`;
+              if (field.step !== undefined) input.step = `${field.step}`;
+            }
           }
+          row.appendChild(label);
+          row.appendChild(input);
         }
 
-        row.appendChild(label);
-        row.appendChild(input);
         body.appendChild(row);
       }
 
@@ -539,14 +570,14 @@ async function boot(): Promise<void> {
     if (!avatar?.avatar || !avatar.weapon) return;
     const snapshot = play.getDeveloperSnapshot();
     const values = await openDeveloperForm("developer · player", [
-      { name: "hp", label: "hp", type: "number", value: `${avatar.avatar.hp}`, min: 1, step: 1 },
-      { name: "maxHp", label: "max hp", type: "number", value: `${avatar.avatar.maxHp}`, min: 1, step: 1 },
-      { name: "speedMul", label: "move speed", type: "number", value: avatar.avatar.speedMul.toFixed(2), min: 0.1, step: 0.01 },
-      { name: "damage", label: "damage", type: "number", value: `${avatar.weapon.damage}`, min: 1, step: 1 },
-      { name: "fireInterval", label: "fire interval", type: "number", value: avatar.weapon.period.toFixed(2), min: 0, step: 0.01 },
-      { name: "projectileSpeed", label: "projectile speed", type: "number", value: `${Math.round(avatar.weapon.projectileSpeed)}`, min: 1, step: 1 },
-      { name: "projectiles", label: "projectiles", type: "number", value: `${avatar.weapon.projectiles}`, min: 1, step: 1 },
-      { name: "pierce", label: "pierce", type: "number", value: `${avatar.weapon.pierce}`, min: 0, step: 1 },
+      { name: "hp", label: "hp", type: "number", value: `${avatar.avatar.hp}`, min: 1, max: 999, step: 1 },
+      { name: "maxHp", label: "max hp", type: "number", value: `${avatar.avatar.maxHp}`, min: 1, max: 999, step: 1 },
+      { name: "speedMul", label: "move speed", type: "number", value: avatar.avatar.speedMul.toFixed(2), min: 0.1, max: 5, step: 0.01 },
+      { name: "damage", label: "damage", type: "number", value: `${avatar.weapon.damage}`, min: 1, max: 999, step: 1 },
+      { name: "fireInterval", label: "fire interval", type: "number", value: avatar.weapon.period.toFixed(2), min: 0, max: 5, step: 0.01 },
+      { name: "projectileSpeed", label: "proj speed", type: "number", value: `${Math.round(avatar.weapon.projectileSpeed)}`, min: 1, max: 2000, step: 1 },
+      { name: "projectiles", label: "projectiles", type: "number", value: `${avatar.weapon.projectiles}`, min: 1, max: 20, step: 1 },
+      { name: "pierce", label: "pierce", type: "number", value: `${avatar.weapon.pierce}`, min: 0, max: 50, step: 1 },
       { name: "crit", label: "crit %", type: "number", value: `${Math.round(avatar.weapon.crit * 100)}`, min: 0, max: 100, step: 1 },
       { name: "invincible", label: "invincible", type: "checkbox", value: snapshot.invincible ? "1" : "0" },
       { name: "showEnemyHp", label: "show enemy hp", type: "checkbox", value: snapshot.showEnemyHp ? "1" : "0" },
@@ -568,52 +599,357 @@ async function boot(): Promise<void> {
     play.setDeveloperShowEnemyHp(values.showEnemyHp === "1");
   }
 
+  // ── Developer enemy list (add/edit/delete card-based UI) ──────────────────
+
+  interface DeveloperEnemyEntry {
+    kind: EnemyKind;
+    count: number;
+    hp: number;
+    attack: number;
+    speed: number;
+    attackFrequency: number;
+  }
+
+  /** Persistent enemy list for develop mode (reset on run restart). */
+  let developerEnemyEntries: DeveloperEnemyEntry[] = [];
+
+  /** Apply current enemy entries to the PlayScene. */
+  function applyDeveloperEnemyEntries(): void {
+    if (!play?.isDeveloperMode()) return;
+    const kinds: EnemyKind[] = ["circle", "square", "star", "pentagon", "hexagon", "diamond", "cross", "crescent", "boss"];
+    for (const k of kinds) play.setDeveloperEnemySpawn(k, false, 0);
+    for (const entry of developerEnemyEntries) {
+      play.setDeveloperEnemySpawn(entry.kind, true, entry.count);
+      play.setDeveloperEnemyStats(entry.kind, {
+        hp: entry.hp,
+        attack: entry.attack,
+        speed: entry.speed,
+        attackFrequency: entry.attackFrequency,
+      });
+    }
+  }
+
   async function openDeveloperEnemyMenu(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
-    const snapshot = play.getDeveloperSnapshot();
 
-    const kinds: EnemyKind[] = ["circle", "square", "star", "pentagon", "hexagon", "diamond", "cross", "crescent", "boss"];
-    const spawnDefault = kinds
-      .filter((k) => snapshot.enemy.spawn[k].enabled)
-      .map((k) => `${k}:${snapshot.enemy.spawn[k].count}`)
-      .join(",");
-    const defaultKind: EnemyKind = "circle";
-    const baseStats = snapshot.enemy.stats[defaultKind];
+    return new Promise<void>((resolve) => {
+      const wasPaused = paused;
+      if (!wasPaused) setPaused(true);
 
-    const values = await openDeveloperForm("developer · enemy", [
-      { name: "interval", label: "spawn interval (sec)", type: "number", value: snapshot.enemy.interval.toFixed(2), min: 0.1, step: 0.1 },
-      { name: "spawnSetup", label: "spawn setup (kind:count,...)", type: "text", value: spawnDefault },
-      { name: "statsKind", label: "stats target kind", type: "text", value: defaultKind },
-      { name: "hp", label: "hp", type: "number", value: `${baseStats.hp}`, min: 1, step: 1 },
-      { name: "attack", label: "attack", type: "number", value: `${baseStats.attack}`, min: 0, step: 0.1 },
-      { name: "speed", label: "speed", type: "number", value: `${baseStats.speed}`, min: 0, step: 0.1 },
-      { name: "attackFrequency", label: "attack frequency", type: "number", value: `${baseStats.attackFrequency}`, min: 0, step: 0.1 },
-    ]);
-    if (!values) return;
+      const dialog = document.createElement("dialog");
+      dialog.className = "developer-dialog";
+      dialog.setAttribute("aria-label", "developer · enemy");
 
-    play.setDeveloperEnemyInterval(parseNumericFormValue(values.interval, snapshot.enemy.interval));
+      const finalize = (): void => {
+        dialog.remove();
+        if (!wasPaused) setPaused(false);
+        resolve();
+      };
 
-    const spawnRaw = values.spawnSetup;
-    if (spawnRaw !== undefined) {
-      for (const kind of kinds) play.setDeveloperEnemySpawn(kind, false, 0);
-      for (const token of spawnRaw.split(",").map((s) => s.trim()).filter(Boolean)) {
-        const [kindRaw, countRaw] = token.split(":");
-        const kind = kindRaw as EnemyKind;
-        if (!kinds.includes(kind)) continue;
-        const count = Number(countRaw ?? "1");
-        play.setDeveloperEnemySpawn(kind, true, Number.isNaN(count) ? 1 : count);
+      const kinds: EnemyKind[] = ["circle", "square", "star", "pentagon", "hexagon", "diamond", "cross", "crescent", "boss"];
+
+      function renderList(): void {
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = "developer · enemy";
+        container.appendChild(heading);
+
+        // Spawn interval control
+        const snapshot = play.getDeveloperSnapshot();
+        const intervalRow = document.createElement("div");
+        intervalRow.className = "developer-form-row";
+        const intervalLabel = document.createElement("span");
+        intervalLabel.className = "developer-form-label";
+        intervalLabel.textContent = "interval";
+        const intervalGroup = document.createElement("div");
+        intervalGroup.className = "developer-form-slider-group";
+        const intervalRange = document.createElement("input");
+        intervalRange.type = "range";
+        intervalRange.className = "developer-form-range";
+        intervalRange.min = "0.1";
+        intervalRange.max = "10";
+        intervalRange.step = "0.1";
+        intervalRange.value = snapshot.enemy.interval.toFixed(1);
+        const intervalInput = document.createElement("input");
+        intervalInput.type = "number";
+        intervalInput.className = "developer-form-input developer-form-input--slim";
+        intervalInput.min = "0.1";
+        intervalInput.max = "10";
+        intervalInput.step = "0.1";
+        intervalInput.value = snapshot.enemy.interval.toFixed(1);
+        intervalRange.addEventListener("input", () => {
+          intervalInput.value = intervalRange.value;
+          play.setDeveloperEnemyInterval(parseNumericFormValue(intervalRange.value, 2));
+        });
+        intervalInput.addEventListener("input", () => {
+          intervalRange.value = intervalInput.value;
+          play.setDeveloperEnemyInterval(parseNumericFormValue(intervalInput.value, 2));
+        });
+        intervalGroup.appendChild(intervalRange);
+        intervalGroup.appendChild(intervalInput);
+        intervalRow.appendChild(intervalLabel);
+        intervalRow.appendChild(intervalGroup);
+        container.appendChild(intervalRow);
+
+        // Enemy cards
+        const list = document.createElement("div");
+        list.className = "developer-enemy-list";
+        for (let i = 0; i < developerEnemyEntries.length; i++) {
+          const entry = developerEnemyEntries[i]!;
+          const card = document.createElement("div");
+          card.className = "developer-enemy-card";
+
+          const info = document.createElement("div");
+          info.className = "developer-enemy-card-info";
+          const kindLabel = document.createElement("div");
+          kindLabel.className = "developer-enemy-card-kind";
+          kindLabel.textContent = entry.kind;
+          const statsLabel = document.createElement("div");
+          statsLabel.className = "developer-enemy-card-stats";
+          statsLabel.textContent = `×${entry.count}  hp:${entry.hp}  atk:${entry.attack}  spd:${entry.speed.toFixed(1)}`;
+          info.appendChild(kindLabel);
+          info.appendChild(statsLabel);
+
+          const actions = document.createElement("div");
+          actions.className = "developer-enemy-card-actions";
+          const editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.className = "secondary-btn";
+          editBtn.textContent = "edit";
+          editBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px";
+          const idx = i;
+          editBtn.addEventListener("click", () => renderEdit(idx));
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "secondary-btn";
+          delBtn.textContent = "del";
+          delBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)";
+          delBtn.addEventListener("click", () => {
+            developerEnemyEntries.splice(idx, 1);
+            applyDeveloperEnemyEntries();
+            renderList();
+          });
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+
+          card.appendChild(info);
+          card.appendChild(actions);
+          list.appendChild(card);
+        }
+        container.appendChild(list);
+
+        // + add button
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "menu-btn";
+        addBtn.textContent = "+ add enemy";
+        addBtn.addEventListener("click", () => renderAdd());
+        container.appendChild(addBtn);
+
+        // Close button
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "menu-btn";
+        closeBtn.textContent = "close";
+        closeBtn.addEventListener("click", () => { dialog.close(); finalize(); });
+        container.appendChild(closeBtn);
+
+        dialog.appendChild(container);
       }
-      play.spawnDeveloperEnemiesNow();
-    }
 
-    const kind = values.statsKind.trim() as EnemyKind;
-    if (!kinds.includes(kind)) return;
-    const stats = play.getDeveloperSnapshot().enemy.stats[kind];
-    play.setDeveloperEnemyStats(kind, {
-      hp: parseNumericFormValue(values.hp, stats.hp),
-      attack: parseNumericFormValue(values.attack, stats.attack),
-      speed: parseNumericFormValue(values.speed, stats.speed),
-      attackFrequency: parseNumericFormValue(values.attackFrequency, stats.attackFrequency),
+      function renderAdd(): void {
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = "add enemy";
+        container.appendChild(heading);
+
+        // Kind selector
+        const kindRow = document.createElement("div");
+        kindRow.className = "developer-form-row";
+        const kindLabel = document.createElement("span");
+        kindLabel.className = "developer-form-label";
+        kindLabel.textContent = "kind";
+        const kindSelect = document.createElement("select");
+        kindSelect.className = "developer-form-input";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "select...";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        kindSelect.appendChild(placeholder);
+        for (const k of kinds) {
+          const opt = document.createElement("option");
+          opt.value = k;
+          opt.textContent = k;
+          kindSelect.appendChild(opt);
+        }
+        kindRow.appendChild(kindLabel);
+        kindRow.appendChild(kindSelect);
+        container.appendChild(kindRow);
+
+        // Fields container (shown after kind selection)
+        const fieldsContainer = document.createElement("div");
+        fieldsContainer.className = "pause-panel";
+        fieldsContainer.hidden = true;
+        container.appendChild(fieldsContainer);
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "big-btn";
+        saveBtn.textContent = "save";
+        saveBtn.hidden = true;
+        container.appendChild(saveBtn);
+
+        const backBtn = document.createElement("button");
+        backBtn.type = "button";
+        backBtn.className = "menu-btn";
+        backBtn.textContent = "back";
+        backBtn.addEventListener("click", () => renderList());
+        container.appendChild(backBtn);
+
+        let currentInputs: { count: HTMLInputElement; hp: HTMLInputElement; attack: HTMLInputElement; speed: HTMLInputElement; attackFrequency: HTMLInputElement } | null = null;
+
+        kindSelect.addEventListener("change", () => {
+          const kind = kindSelect.value as EnemyKind;
+          if (!kinds.includes(kind)) return;
+          const snapshot = play.getDeveloperSnapshot();
+          const baseStats = snapshot.enemy.stats[kind];
+          fieldsContainer.innerHTML = "";
+          fieldsContainer.hidden = false;
+          saveBtn.hidden = false;
+
+          const inputs = buildEnemyStatsFields(fieldsContainer, {
+            count: 1, hp: baseStats.hp, attack: baseStats.attack,
+            speed: baseStats.speed, attackFrequency: baseStats.attackFrequency,
+          });
+          currentInputs = inputs;
+        });
+
+        saveBtn.addEventListener("click", () => {
+          const kind = kindSelect.value as EnemyKind;
+          if (!kinds.includes(kind) || !currentInputs) return;
+          developerEnemyEntries.push({
+            kind,
+            count: Math.max(1, Math.round(parseNumericFormValue(currentInputs.count.value, 1))),
+            hp: Math.max(1, Math.round(parseNumericFormValue(currentInputs.hp.value, 1))),
+            attack: Math.max(0, parseNumericFormValue(currentInputs.attack.value, 1)),
+            speed: Math.max(0, parseNumericFormValue(currentInputs.speed.value, 1)),
+            attackFrequency: Math.max(0, parseNumericFormValue(currentInputs.attackFrequency.value, 1)),
+          });
+          applyDeveloperEnemyEntries();
+          renderList();
+        });
+
+        dialog.appendChild(container);
+      }
+
+      function renderEdit(index: number): void {
+        const entry = developerEnemyEntries[index];
+        if (!entry) { renderList(); return; }
+
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = `edit · ${entry.kind}`;
+        container.appendChild(heading);
+
+        const fieldsContainer = document.createElement("div");
+        fieldsContainer.className = "pause-panel";
+        container.appendChild(fieldsContainer);
+
+        const inputs = buildEnemyStatsFields(fieldsContainer, entry);
+
+        const actions = document.createElement("div");
+        actions.className = "draft-actions";
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "big-btn";
+        saveBtn.textContent = "save";
+        saveBtn.addEventListener("click", () => {
+          entry.count = Math.max(1, Math.round(parseNumericFormValue(inputs.count.value, entry.count)));
+          entry.hp = Math.max(1, Math.round(parseNumericFormValue(inputs.hp.value, entry.hp)));
+          entry.attack = Math.max(0, parseNumericFormValue(inputs.attack.value, entry.attack));
+          entry.speed = Math.max(0, parseNumericFormValue(inputs.speed.value, entry.speed));
+          entry.attackFrequency = Math.max(0, parseNumericFormValue(inputs.attackFrequency.value, entry.attackFrequency));
+          applyDeveloperEnemyEntries();
+          renderList();
+        });
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "menu-btn";
+        cancelBtn.textContent = "back";
+        cancelBtn.addEventListener("click", () => renderList());
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+        container.appendChild(actions);
+
+        dialog.appendChild(container);
+      }
+
+      function buildEnemyStatsFields(
+        parent: HTMLElement,
+        defaults: { count: number; hp: number; attack: number; speed: number; attackFrequency: number },
+      ): { count: HTMLInputElement; hp: HTMLInputElement; attack: HTMLInputElement; speed: HTMLInputElement; attackFrequency: HTMLInputElement } {
+        const fieldDefs: { name: string; label: string; value: number; min: number; max: number; step: number }[] = [
+          { name: "count", label: "count", value: defaults.count, min: 1, max: 50, step: 1 },
+          { name: "hp", label: "hp", value: defaults.hp, min: 1, max: 9999, step: 1 },
+          { name: "attack", label: "attack", value: defaults.attack, min: 0, max: 100, step: 0.1 },
+          { name: "speed", label: "speed", value: defaults.speed, min: 0, max: 500, step: 0.1 },
+          { name: "attackFrequency", label: "atk freq", value: defaults.attackFrequency, min: 0, max: 10, step: 0.1 },
+        ];
+        const inputs: Record<string, HTMLInputElement> = {};
+        for (const fd of fieldDefs) {
+          const row = document.createElement("label");
+          row.className = "developer-form-row";
+          const label = document.createElement("span");
+          label.className = "developer-form-label";
+          label.textContent = fd.label;
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "developer-form-slider-group";
+          const range = document.createElement("input");
+          range.type = "range";
+          range.className = "developer-form-range";
+          range.min = `${fd.min}`;
+          range.max = `${fd.max}`;
+          range.step = `${fd.step}`;
+          range.value = `${fd.value}`;
+          const input = document.createElement("input");
+          input.type = "number";
+          input.className = "developer-form-input developer-form-input--slim";
+          input.min = `${fd.min}`;
+          input.max = `${fd.max}`;
+          input.step = `${fd.step}`;
+          input.value = `${fd.value}`;
+          range.addEventListener("input", () => { input.value = range.value; });
+          input.addEventListener("input", () => { range.value = input.value; });
+          wrapper.appendChild(range);
+          wrapper.appendChild(input);
+
+          row.appendChild(label);
+          row.appendChild(wrapper);
+          parent.appendChild(row);
+          inputs[fd.name] = input;
+        }
+        return inputs as { count: HTMLInputElement; hp: HTMLInputElement; attack: HTMLInputElement; speed: HTMLInputElement; attackFrequency: HTMLInputElement };
+      }
+
+      renderList();
+      document.body.appendChild(dialog);
+      dialog.showModal();
+
+      dialog.addEventListener("close", () => finalize(), { once: true });
     });
   }
 
@@ -641,7 +977,7 @@ async function boot(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
     const values = await openDeveloperForm("developer · enhance", [
       { name: "cardId", label: "card id", type: "text", value: "damagePlus" },
-      { name: "level", label: "target level", type: "number", value: "1", min: 1, step: 1 },
+      { name: "level", label: "target level", type: "number", value: "1", min: 1, max: 5, step: 1 },
     ]);
     if (!values) return;
     const cardId = values.cardId.trim();
@@ -657,9 +993,9 @@ async function boot(): Promise<void> {
     const values = await openDeveloperForm("developer · skills", [
       { name: "id", label: "skill id", type: "text", value: "barrage" },
       { name: "enabled", label: "enabled", type: "checkbox", value: "1" },
-      { name: "level", label: "level", type: "number", value: "0", min: 0, step: 1 },
-      { name: "duration", label: "duration", type: "number", value: "2", min: 0, step: 0.1 },
-      { name: "cooldown", label: "cooldown", type: "number", value: "8", min: 0, step: 0.1 },
+      { name: "level", label: "level", type: "number", value: "0", min: 0, max: 10, step: 1 },
+      { name: "duration", label: "duration", type: "number", value: "2", min: 0, max: 30, step: 0.1 },
+      { name: "cooldown", label: "cooldown", type: "number", value: "8", min: 0, max: 60, step: 0.1 },
     ]);
     if (!values) return;
     const id = values.id.trim() as PrimalSkillId;
@@ -765,13 +1101,16 @@ async function boot(): Promise<void> {
       ? (STAGE_WAVES[stageIndex] ?? WAVES)
       : [survivalWaveSpec(1, rng)]; // survival starts with wave 1
 
-    const activeSkills = createActiveSkillStates(skillTree);
+    // In develop mode, start with no skills and default skin (bare avatar).
+    const activeSkills = developMode ? [] : createActiveSkillStates(skillTree);
 
     const startingShape = resolveSelectedStartingShape(profile);
-    const runSkin = runSkinForStartingShape(startingShape, profile.activeSkin);
+    const runSkin = developMode ? "triangle" : runSkinForStartingShape(startingShape, profile.activeSkin);
 
     // Reset card inventory for this run.
     runInventory = new CardInventory();
+    // Reset developer enemy entries on new run.
+    if (developMode) developerEnemyEntries = [];
 
     play = new PlayScene(
       rng,
@@ -836,16 +1175,18 @@ async function boot(): Promise<void> {
       { mode, waves, gridColor: theme.gridColor, stageIndex, activeSkills, theme, activeSkin: runSkin, developerMode: developMode },
     );
 
-    applyStartingShapeLoadout(play.world, play.avatarId, startingShape);
-    // Apply equipment loadout at run start.
-    applyEquipment(equipment, play.world, play.avatarId);
+    if (!developMode) {
+      applyStartingShapeLoadout(play.world, play.avatarId, startingShape);
+      // Apply equipment loadout at run start.
+      applyEquipment(equipment, play.world, play.avatarId);
 
-    // Seed the card inventory with equipped equipment cards (they count as Lv 1).
-    for (const cardId of equipment.equipped) {
-      const runCardId = mapEquipmentToRunCardId(cardId) ?? cardId;
-      const poolCard = POOL_BY_ID.get(runCardId);
-      if (poolCard && !runInventory.has(runCardId)) {
-        runInventory.add(poolCard);
+      // Seed the card inventory with equipped equipment cards (they count as Lv 1).
+      for (const cardId of equipment.equipped) {
+        const runCardId = mapEquipmentToRunCardId(cardId) ?? cardId;
+        const poolCard = POOL_BY_ID.get(runCardId);
+        if (poolCard && !runInventory.has(runCardId)) {
+          runInventory.add(poolCard);
+        }
       }
     }
 
