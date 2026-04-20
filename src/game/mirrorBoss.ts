@@ -37,6 +37,16 @@ export interface MirrorBossSpec {
   contactDamage: number;
   maxSpeed: number;
   hp: number;
+  // ── Mirror-specific abilities ──────────────────────────────────────────
+  /** Regenerating shield (mirrors Aegis). */
+  shieldMax?: number;
+  shieldRegenPeriod?: number;
+  /** Auto-dodge period (mirrors Phase Shift). */
+  dodgePeriod?: number;
+  /** One-shot revive (mirrors Revenant). */
+  secondChance?: boolean;
+  /** Boss fires homing shots (mirrors Tracker). */
+  homingShots?: boolean;
 }
 
 export function mirrorBossSpec(picks: readonly Card[]): MirrorBossSpec {
@@ -44,6 +54,13 @@ export function mirrorBossSpec(picks: readonly Card[]): MirrorBossSpec {
   let contactDamage = BASE.contactDamage;
   let maxSpeed = BASE.maxSpeed;
   let hp = BASE.hp;
+
+  // Ability mirrors (true parity instead of HP conversion)
+  let shieldMax: number | undefined;
+  let shieldRegenPeriod: number | undefined;
+  let dodgePeriod: number | undefined;
+  let secondChance: boolean | undefined;
+  let homingShots: boolean | undefined;
 
   for (const card of picks) {
     const e = card.effect;
@@ -109,20 +126,29 @@ export function mirrorBossSpec(picks: readonly Card[]): MirrorBossSpec {
         }
         break;
       case 'shieldRegen':
-        // Aegis on the boss → meaningful chunk of bonus HP per shield point.
-        hp += e.max * 8;
+        // Aegis on the boss → actual regenerating shield (not HP).
+        shieldMax = (shieldMax ?? 0) + e.max;
+        // Adopt the shorter regen period when multiple Aegis are stacked.
+        shieldRegenPeriod =
+          shieldRegenPeriod === undefined
+            ? e.period
+            : Math.min(shieldRegenPeriod, e.period);
         break;
       case 'secondChance':
-        // Revenant → boss soaks one extra phase worth of HP.
-        hp += 20;
+        // Revenant → boss gets a real one-shot revive.
+        secondChance = true;
         break;
       case 'hitboxMul':
         // Compact shrinks the player; mirror as a faster, harder-to-pin boss.
         maxSpeed *= 1 + (1 - e.value) * 0.5;
         break;
       case 'dodgeCD':
-        // Phase Shift adds an extra HP cushion roughly equal to a half-life.
-        hp += 12;
+        // Phase Shift → boss gets periodic invincibility; each extra pick
+        // shortens the dodge period (minimum 8s so it's not oppressive).
+        dodgePeriod =
+          dodgePeriod === undefined
+            ? e.cooldown * 2
+            : Math.max(8, dodgePeriod * 0.85);
         break;
       case 'addWeapon':
         // Player gains a parallel weapon → boss gets a flavour-matched buff
@@ -138,8 +164,8 @@ export function mirrorBossSpec(picks: readonly Card[]): MirrorBossSpec {
             hp += 8;
             break;
           case 'homing':
-            w.damage += 1;
-            w.projectileSpeed *= 1.1;
+            // Tracker → boss fires homing shots instead of stat bump.
+            homingShots = true;
             break;
           case 'burst':
             w.damage += 2;
@@ -156,7 +182,17 @@ export function mirrorBossSpec(picks: readonly Card[]): MirrorBossSpec {
     }
   }
 
-  return { weapon: w, contactDamage, maxSpeed, hp };
+  return {
+    weapon: w,
+    contactDamage,
+    maxSpeed,
+    hp,
+    shieldMax,
+    shieldRegenPeriod,
+    dodgePeriod,
+    secondChance,
+    homingShots,
+  };
 }
 
 export function applyMirrorSpec(boss: Components, spec: MirrorBossSpec): void {
@@ -165,4 +201,26 @@ export function applyMirrorSpec(boss: Components, spec: MirrorBossSpec): void {
   boss.enemy.maxSpeed = spec.maxSpeed;
   boss.hp.value = spec.hp;
   boss.weapon = { ...spec.weapon };
+
+  // ── Ability mirrors ────────────────────────────────────────────────────
+  if (spec.shieldMax !== undefined && spec.shieldMax > 0) {
+    boss.enemy.shield = spec.shieldMax;
+    boss.enemy.mirrorShieldMax = spec.shieldMax;
+    boss.enemy.shieldRegenPeriod = spec.shieldRegenPeriod;
+    boss.enemy.shieldRegenTimer = 0;
+  }
+  if (spec.dodgePeriod !== undefined) {
+    boss.enemy.mirrorDodgePeriod = spec.dodgePeriod;
+    boss.enemy.mirrorDodgeCooldown = spec.dodgePeriod; // start with full cooldown
+    boss.enemy.mirrorIframes = 0;
+  }
+  if (spec.secondChance) {
+    boss.enemy.mirrorSecondChance = true;
+  }
+  if (spec.homingShots) {
+    boss.enemy.mirrorHomingShots = true;
+    // Parallel homing weapon fires on its own period (slightly slower than base).
+    boss.enemy.mirrorHomingPeriod = spec.weapon.period * 1.5;
+    boss.enemy.mirrorHomingCooldown = boss.enemy.mirrorHomingPeriod;
+  }
 }

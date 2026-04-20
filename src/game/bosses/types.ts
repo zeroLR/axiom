@@ -3,11 +3,11 @@
 // `BossId` and described by a `BossDef` that knows how to build its combat
 // spec and install it onto an ECS entity.
 
-import type { Card } from "../cards";
-import type { Components, WeaponState } from "../world";
+import type { Card } from '../cards';
+import type { Components, WeaponState } from '../world';
 
 /** Unique identifier for each boss in the main story. */
-export type BossId = "orthogon" | "jets" | "mirror";
+export type BossId = 'orthogon' | 'jets' | 'mirror';
 
 /** Combat stats produced by a boss definition. */
 export interface BossSpec {
@@ -16,7 +16,13 @@ export interface BossSpec {
   maxSpeed: number;
   weapon: WeaponState;
   /** Weapon pattern used by `bossWeapon.ts` to dispatch AI. */
-  patternKind: "standard" | "orthogon" | "jets";
+  patternKind: 'standard' | 'orthogon' | 'jets';
+  // ── Mirror-specific optional abilities ──────────────────────────────────
+  mirrorShieldMax?: number;
+  mirrorShieldRegenPeriod?: number;
+  mirrorDodgePeriod?: number;
+  mirrorSecondChance?: boolean;
+  mirrorHomingShots?: boolean;
 }
 
 /** Full boss definition — metadata + factory functions. */

@@ -76,6 +76,8 @@ export interface Projectile {
   homing?: boolean;
   /** Burst weapon: when the projectile despawns, spawn N radial fragments. */
   burstFragments?: number;
+  /** Enemy-shot homing: motion system steers velocity toward the avatar. */
+  homingAvatar?: boolean;
 }
 
 export interface Enemy {
@@ -84,7 +86,7 @@ export interface Enemy {
   contactDamage: number;
   maxSpeed: number;
   wobblePhase: number;
-  /** Shield HP (hexagon only). Absorbs one hit when > 0 before real HP takes damage. */
+  /** Shield HP (hexagon / Mirror boss). Absorbs one hit when > 0 before real HP takes damage. */
   shield?: number;
   /** Diamond dash state: cooldown timer, dash speed multiplier. */
   dashCooldown?: number;
@@ -122,6 +124,28 @@ export interface Enemy {
   bossTelegraphLines?: number[];
   /** Waypoint index for Jets Z-sweep movement. */
   bossWaypointIdx?: number;
+
+  // ── Mirror boss ability state (set by applyMirrorSpec) ─────────────────
+  /** Max shield HP for the Mirror boss (reuses `shield` for current value). */
+  mirrorShieldMax?: number;
+  /** Seconds per +1 shield regen while shield < mirrorShieldMax. */
+  shieldRegenPeriod?: number;
+  /** Accumulator for shield regen. */
+  shieldRegenTimer?: number;
+  /** Seconds between auto-dodge windows (mirrors Phase Shift). */
+  mirrorDodgePeriod?: number;
+  /** Current countdown timer toward the next dodge. */
+  mirrorDodgeCooldown?: number;
+  /** Seconds of projectile invincibility remaining (dodge active). */
+  mirrorIframes?: number;
+  /** One-shot revive flag (mirrors Revenant). Consumed on first lethal hit. */
+  mirrorSecondChance?: boolean;
+  /** When true, boss fires a separate parallel homing weapon (mirrors Tracker). */
+  mirrorHomingShots?: boolean;
+  /** Cooldown timer for the parallel homing weapon (seconds). */
+  mirrorHomingCooldown?: number;
+  /** Period (seconds) between homing shots for the parallel weapon. */
+  mirrorHomingPeriod?: number;
 }
 
 export type SynergyId = 'combustion' | 'desperate' | 'kinetic' | 'stillness';

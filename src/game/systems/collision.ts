@@ -1,8 +1,8 @@
-import { AVATAR_IFRAMES, HIT_FLASH_TIME } from "../config";
-import { spawnBurstFragments, spawnChainBolt, spawnEnemyAt } from "../entities";
-import type { GameEvents } from "../events";
-import type { Rng } from "../rng";
-import type { Components, EntityId, World } from "../world";
+import { AVATAR_IFRAMES, HIT_FLASH_TIME } from '../config';
+import { spawnBurstFragments, spawnChainBolt, spawnEnemyAt } from '../entities';
+import type { GameEvents } from '../events';
+import type { Rng } from '../rng';
+import type { Components, EntityId, World } from '../world';
 
 // Backward-compatible alias. Prefer importing `GameEvents` from `../events`.
 export type CombatEvents = GameEvents;
@@ -16,9 +16,9 @@ function findNextTarget(
 ): EntityId | null {
   let bestId: EntityId | null = null;
   let bestDist = maxDistSq;
-  for (const [id, c] of world.with("enemy", "pos", "hp")) {
+  for (const [id, c] of world.with('enemy', 'pos', 'hp')) {
     if (skip.has(id)) continue;
-    if ((c.hp!.value) <= 0) continue;
+    if (c.hp!.value <= 0) continue;
     const dx = c.pos!.x - fromX;
     const dy = c.pos!.y - fromY;
     const d = dx * dx + dy * dy;
@@ -36,30 +36,37 @@ export function updateCollisions(
   events: GameEvents,
   rng?: Rng,
 ): void {
-  for (const [pid, pc] of world.with("projectile", "pos", "radius")) {
-    if (pc.team === "enemy-shot") continue;
+  for (const [pid, pc] of world.with('projectile', 'pos', 'radius')) {
+    if (pc.team === 'enemy-shot') continue;
     const proj = pc.projectile!;
     const pr = pc.radius!;
     const px = pc.pos!.x;
     const py = pc.pos!.y;
-    for (const [eid, ec] of world.with("enemy", "pos", "radius", "hp")) {
+    for (const [eid, ec] of world.with('enemy', 'pos', 'radius', 'hp')) {
       if (ec.hp!.value <= 0) continue;
       if (proj.hitIds.has(eid)) continue;
       const er = ec.radius!;
       const dx = ec.pos!.x - px;
       const dy = ec.pos!.y - py;
-      const rr = (pr + er);
+      const rr = pr + er;
       if (dx * dx + dy * dy > rr * rr) continue;
 
-      // Hexagon shield: absorb the first hit without HP loss, but still
-      // consumes pierce/ricochet/chain like any other collision.
+      // Hexagon / Mirror boss shield: absorb the first hit without HP loss,
+      // but still consumes pierce/ricochet/chain like any other collision.
       if (ec.enemy!.shield !== undefined && ec.enemy!.shield > 0) {
         ec.enemy!.shield -= 1;
+        ec.enemy!.shieldRegenTimer = 0; // reset regen timer on hit
         ec.flash = HIT_FLASH_TIME;
         proj.hitIds.add(eid);
         if (!advanceProjectile(world, pid, pc, ec.pos!.x, ec.pos!.y)) {
           consumeProjectile(world, pid, pc);
         }
+        break;
+      }
+
+      // Mirror boss dodge invincibility: shots pass through.
+      if (ec.enemy!.kind === 'boss' && (ec.enemy!.mirrorIframes ?? 0) > 0) {
+        // Don't register hit; projectile continues.
         break;
       }
 
@@ -90,14 +97,23 @@ export function updateCollisions(
       events.onEnemyHit?.(eid, proj.damage, proj.crit);
 
       if (ec.hp!.value <= 0) {
-        // Pentagon splits into small circles on death near its position.
-        if (ec.enemy!.kind === "pentagon" && rng) {
-          const count = 2 + Math.floor(rng() * 2); // 2-3
-          for (let i = 0; i < count; i++) {
-            spawnEnemyAt(world, "circle", rng, ec.pos!.x, ec.pos!.y);
+        // Mirror boss second chance: revive at 50% HP instead of dying.
+        if (ec.enemy!.mirrorSecondChance) {
+          ec.enemy!.mirrorSecondChance = false;
+          const maxHp = ec.enemy!.maxHp ?? 400;
+          ec.hp!.value = Math.max(1, Math.floor(maxHp * 0.5));
+          ec.enemy!.mirrorIframes = 1.2; // brief invulnerability on revive
+          ec.flash = HIT_FLASH_TIME;
+        } else {
+          // Pentagon splits into small circles on death near its position.
+          if (ec.enemy!.kind === 'pentagon' && rng) {
+            const count = 2 + Math.floor(rng() * 2); // 2-3
+            for (let i = 0; i < count; i++) {
+              spawnEnemyAt(world, 'circle', rng, ec.pos!.x, ec.pos!.y);
+            }
           }
+          events.onEnemyKilled?.(eid);
         }
-        events.onEnemyKilled?.(eid);
       }
 
       if (!advanceProjectile(world, pid, pc, ec.pos!.x, ec.pos!.y)) {
@@ -114,7 +130,7 @@ export function updateCollisions(
   const ar = avatar.radius ?? 10;
   const ax = avatar.pos.x;
   const ay = avatar.pos.y;
-  for (const [, ec] of world.with("enemy", "pos", "radius", "hp")) {
+  for (const [, ec] of world.with('enemy', 'pos', 'radius', 'hp')) {
     if (ec.hp!.value <= 0) continue;
     const er = ec.radius!;
     const dx = ec.pos!.x - ax;
@@ -126,8 +142,8 @@ export function updateCollisions(
     break;
   }
 
-  for (const [sid, sc] of world.with("projectile", "pos", "radius")) {
-    if (sc.team !== "enemy-shot") continue;
+  for (const [sid, sc] of world.with('projectile', 'pos', 'radius')) {
+    if (sc.team !== 'enemy-shot') continue;
     if (a.iframes > 0) break;
     if (a.hp <= 0) break;
     const dx = sc.pos!.x - ax;
@@ -253,7 +269,7 @@ function consumeProjectile(world: World, pid: EntityId, pc: Components): void {
 }
 
 export function removeDeadEnemies(world: World): void {
-  for (const [id, c] of world.with("enemy", "hp")) {
+  for (const [id, c] of world.with('enemy', 'hp')) {
     if (c.hp!.value <= 0) world.remove(id);
   }
 }

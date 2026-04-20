@@ -8,7 +8,10 @@ import { bossForStage } from '../game/bosses/registry';
 import type { BossSpec } from '../game/bosses/types';
 import type { Rng } from '../game/rng';
 import { updateEnemyAi } from '../game/systems/ai';
-import { updateBossWeapon } from '../game/systems/bossWeapon';
+import {
+  updateBossWeapon,
+  updateMirrorBossAbilities,
+} from '../game/systems/bossWeapon';
 import { removeDeadEnemies, updateCollisions } from '../game/systems/collision';
 import {
   decayHitFlash,
@@ -485,6 +488,7 @@ export class PlayScene implements Scene {
     updateProjectileMotion(this.world, dt);
     updateWeapon(this.world, this.avatarId, this.rng, dt);
     updateBossWeapon(this.world, this.avatarId, this.rng, enemyDt);
+    updateMirrorBossAbilities(this.world, this.avatarId, this.rng, enemyDt);
 
     // Shadow clone weapon
     if (this.cloneId !== null) {

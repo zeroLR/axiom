@@ -1201,7 +1201,7 @@ async function boot(): Promise<void> {
         intervalRange.type = 'range';
         intervalRange.className = 'developer-form-range';
         intervalRange.min = '0.1';
-        intervalRange.max = '10';
+        intervalRange.max = '999';
         intervalRange.step = '0.1';
         intervalRange.value = snapshot.enemy.interval.toFixed(1);
         const intervalInput = document.createElement('input');
@@ -1209,7 +1209,7 @@ async function boot(): Promise<void> {
         intervalInput.className =
           'developer-form-input developer-form-input--slim';
         intervalInput.min = '0.1';
-        intervalInput.max = '10';
+        intervalInput.max = '999';
         intervalInput.step = '0.1';
         intervalInput.value = snapshot.enemy.interval.toFixed(1);
         intervalRange.addEventListener('input', () => {

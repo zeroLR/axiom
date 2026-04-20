@@ -3,16 +3,20 @@
 // `mirrorBossSpec` / `applyMirrorSpec` functions are re-exported for backwards
 // compatibility with existing tests.
 
-import type { Card } from "../cards";
-import type { Components } from "../world";
-import type { BossDef, BossSpec } from "./types";
+import type { Card } from '../cards';
+import type { Components } from '../world';
+import type { BossDef, BossSpec } from './types';
 import {
   mirrorBossSpec as legacyMirrorBossSpec,
   applyMirrorSpec as legacyApplyMirrorSpec,
   type MirrorBossSpec,
-} from "../mirrorBoss";
+} from '../mirrorBoss';
 
-export { mirrorBossSpec, applyMirrorSpec, type MirrorBossSpec } from "../mirrorBoss";
+export {
+  mirrorBossSpec,
+  applyMirrorSpec,
+  type MirrorBossSpec,
+} from '../mirrorBoss';
 
 function buildSpec(picks: readonly Card[]): BossSpec {
   const legacy = legacyMirrorBossSpec(picks);
@@ -21,7 +25,12 @@ function buildSpec(picks: readonly Card[]): BossSpec {
     contactDamage: legacy.contactDamage,
     maxSpeed: legacy.maxSpeed,
     weapon: legacy.weapon,
-    patternKind: "standard",
+    patternKind: 'standard',
+    mirrorShieldMax: legacy.shieldMax,
+    mirrorShieldRegenPeriod: legacy.shieldRegenPeriod,
+    mirrorDodgePeriod: legacy.dodgePeriod,
+    mirrorSecondChance: legacy.secondChance,
+    mirrorHomingShots: legacy.homingShots,
   };
 }
 
@@ -32,15 +41,20 @@ function install(entity: Components, spec: BossSpec): void {
     contactDamage: spec.contactDamage,
     maxSpeed: spec.maxSpeed,
     weapon: spec.weapon,
+    shieldMax: spec.mirrorShieldMax,
+    shieldRegenPeriod: spec.mirrorShieldRegenPeriod,
+    dodgePeriod: spec.mirrorDodgePeriod,
+    secondChance: spec.mirrorSecondChance,
+    homingShots: spec.mirrorHomingShots,
   };
   legacyApplyMirrorSpec(entity, legacySpec);
 }
 
 export const mirrorBossDef: BossDef = {
-  id: "mirror",
-  displayName: "MIRROR",
+  id: 'mirror',
+  displayName: 'MIRROR',
   theoremLine: '"every inference reflects"',
-  glyph: "⬡",
+  glyph: '⬡',
   buildSpec,
   install,
 };

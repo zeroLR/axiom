@@ -1,12 +1,12 @@
-import { AVATAR_BASE_SPEED, PLAY_H, PLAY_W } from "../config";
-import { spawnBurstFragments } from "../entities";
-import { closestEnemy } from "../targeting";
-import type { World } from "../world";
+import { AVATAR_BASE_SPEED, PLAY_H, PLAY_W } from '../config';
+import { spawnBurstFragments } from '../entities';
+import { closestEnemy } from '../targeting';
+import type { World } from '../world';
 
 const HOMING_TURN_RATE = 8; // radians per second; bounded so missiles arc, not snap
 
 export function updateAvatarMotion(world: World, dt: number): void {
-  for (const [, c] of world.with("avatar", "pos", "vel")) {
+  for (const [, c] of world.with('avatar', 'pos', 'vel')) {
     const a = c.avatar!;
     const p = c.pos!;
     // Glide toward target at capped speed. No acceleration — it feels snappy
@@ -56,7 +56,7 @@ export function updateAvatarMotion(world: World, dt: number): void {
 }
 
 export function updateProjectileMotion(world: World, dt: number): void {
-  for (const [id, c] of world.with("projectile", "pos", "vel")) {
+  for (const [id, c] of world.with('projectile', 'pos', 'vel')) {
     const orbit = c.projectile!.orbit;
     if (orbit) {
       const owner = world.get(orbit.ownerId);
@@ -83,7 +83,33 @@ export function updateProjectileMotion(world: World, dt: number): void {
           while (delta > Math.PI) delta -= Math.PI * 2;
           while (delta < -Math.PI) delta += Math.PI * 2;
           const maxTurn = HOMING_TURN_RATE * dt;
-          const newAngle = currentAngle + Math.max(-maxTurn, Math.min(maxTurn, delta));
+          const newAngle =
+            currentAngle + Math.max(-maxTurn, Math.min(maxTurn, delta));
+          c.vel!.x = Math.cos(newAngle) * speed;
+          c.vel!.y = Math.sin(newAngle) * speed;
+        }
+      }
+      // Enemy-shot homing: steer toward the avatar.
+      if (c.projectile!.homingAvatar) {
+        let avatarX: number | undefined;
+        let avatarY: number | undefined;
+        for (const [, ac] of world.with('avatar', 'pos')) {
+          avatarX = ac.pos!.x;
+          avatarY = ac.pos!.y;
+          break;
+        }
+        if (avatarX !== undefined && avatarY !== undefined) {
+          const dxh = avatarX - c.pos!.x;
+          const dyh = avatarY - c.pos!.y;
+          const speed = Math.hypot(c.vel!.x, c.vel!.y) || 1;
+          const targetAngle = Math.atan2(dyh, dxh);
+          const currentAngle = Math.atan2(c.vel!.y, c.vel!.x);
+          let delta = targetAngle - currentAngle;
+          while (delta > Math.PI) delta -= Math.PI * 2;
+          while (delta < -Math.PI) delta += Math.PI * 2;
+          const maxTurn = HOMING_TURN_RATE * dt;
+          const newAngle =
+            currentAngle + Math.max(-maxTurn, Math.min(maxTurn, delta));
           c.vel!.x = Math.cos(newAngle) * speed;
           c.vel!.y = Math.sin(newAngle) * speed;
         }
@@ -95,11 +121,19 @@ export function updateProjectileMotion(world: World, dt: number): void {
     // Despawn if out of bounds or timed out.
     if (
       c.projectile!.ttl <= 0 ||
-      c.pos!.x < -20 || c.pos!.x > PLAY_W + 20 ||
-      c.pos!.y < -20 || c.pos!.y > PLAY_H + 20
+      c.pos!.x < -20 ||
+      c.pos!.x > PLAY_W + 20 ||
+      c.pos!.y < -20 ||
+      c.pos!.y > PLAY_H + 20
     ) {
       if (c.projectile!.burstFragments) {
-        spawnBurstFragments(world, c.pos!.x, c.pos!.y, c.projectile!.burstFragments, c.projectile!.damage);
+        spawnBurstFragments(
+          world,
+          c.pos!.x,
+          c.pos!.y,
+          c.projectile!.burstFragments,
+          c.projectile!.damage,
+        );
       }
       world.remove(id);
     }
