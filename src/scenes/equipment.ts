@@ -33,6 +33,7 @@ export class EquipmentScene implements Scene {
     const inner = document.getElementById("overlay-inner");
     if (!overlay || !inner) return;
     inner.innerHTML = "";
+    inner.classList.add("overlay-constrained");
     const content = document.createElement("div");
     content.className = "overlay-scroll";
     inner.appendChild(content);
@@ -76,7 +77,10 @@ export class EquipmentScene implements Scene {
   exit(): void {
     const overlay = document.getElementById("overlay");
     const inner = document.getElementById("overlay-inner");
-    if (inner) inner.innerHTML = "";
+    if (inner) {
+      inner.classList.remove("overlay-constrained");
+      inner.innerHTML = "";
+    }
     if (overlay) overlay.hidden = true;
   }
 

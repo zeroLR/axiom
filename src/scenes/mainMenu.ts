@@ -2,7 +2,7 @@ import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import {
   iconPlay, iconInfinity, iconShop, iconEquipment,
-  iconSkills, iconAchievements, iconExport, iconImport, iconSkins,
+  iconSkills, iconAchievements, iconExport, iconImport, iconSkins, iconSettings,
   iconSpan,
 } from "../icons";
 
@@ -90,6 +90,7 @@ export class MainMenuScene implements Scene {
     inner.appendChild(row);
 
     this.addBtn(inner, iconSkins, "Starting Shape", "startShape", "menu-btn");
+    this.addBtn(inner, iconSettings, "Settings", "settings", "menu-btn");
 
     // Data row
     const dataRow = document.createElement("div");

@@ -19,6 +19,7 @@ import { EquipmentScene } from "./scenes/equipment";
 import { StartShapeSelectScene } from "./scenes/startShapeSelect";
 import { SkillTreeScene } from "./scenes/skillTree";
 import { AchievementsScene } from "./scenes/achievements";
+import { SettingsScene } from "./scenes/settings";
 import { STAGE_THEMES, DEFAULT_THEME, type StageTheme } from "./game/stageThemes";
 import { STAGE_WAVES } from "./game/stageWaves";
 import { WAVES } from "./game/waves";
@@ -2215,9 +2216,14 @@ async function boot(): Promise<void> {
           break;
 
         case "settings":
-          // Simple toggle for now
-          setMuted(!isMuted());
-          syncMuteLabel();
+          stack.pop();
+          stack.push(new SettingsScene({
+            onBack: () => { stack.pop(); showMainMenu(); },
+            onChanged: () => {
+              syncMuteLabel();
+              saveSettings(buildSettings());
+            },
+          }));
           break;
 
         case "exportData": {
