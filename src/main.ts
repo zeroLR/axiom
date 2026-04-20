@@ -27,7 +27,18 @@ import { survivalWaveSpec } from "./game/survivalWaves";
 import { applyEquipment } from "./game/equipment";
 import { equipCard, unequipCard } from "./game/equipment";
 import { mapEquipmentToRunCardId, listUnmappedEquipmentCards } from "./game/equipment";
-import { createActiveSkillStates, PRIMAL_SKILLS } from "./game/skills";
+import {
+  createActiveSkillStates,
+  PRIMAL_SKILLS,
+  cloneInheritRatio,
+  timeStopSpeedMul,
+  barrageProjectiles,
+  barrageDamage,
+  lifestealRadius,
+  lifestealDamage,
+  lifestealHeal,
+  reflectDamageRatio,
+} from "./game/skills";
 import { diffUnlocks } from "./game/unlocks";
 import { MAX_SKILL_LEVEL } from "./game/data/types";
 import { unlockAchievement } from "./game/achievements";
@@ -37,7 +48,7 @@ import {
   resolveSelectedStartingShape,
   runSkinForStartingShape,
 } from "./game/startingShapes";
-import { iconTimeStop, iconClone, iconReflect, iconBarrage, iconLifesteal, iconAxisFreeze, iconOverload, setIconHtml, CARD_GLYPHS, SHOP_GLYPHS } from "./icons";
+import { iconTimeStop, iconClone, iconReflect, iconBarrage, iconLifesteal, iconAxisFreeze, iconOverload, setIconHtml, CARD_GLYPHS, SHOP_GLYPHS, SKILL_GLYPHS } from "./icons";
 import {
   loadProfile, saveProfile,
   loadEquipment, saveEquipment,
@@ -162,6 +173,103 @@ async function boot(): Promise<void> {
     if (!overlay || !inner || !paused) return;
     inner.innerHTML = "";
 
+    const openPauseCardDetails = (entry: {
+      card: Card;
+      rarity: Card["rarity"];
+      level: number;
+      sourceCardIds: string[];
+    }): void => {
+      const dialog = document.createElement("dialog");
+      dialog.className = "developer-dialog pause-detail-dialog";
+      dialog.setAttribute("aria-label", `${entry.card.name} details`);
+
+      const container = document.createElement("div");
+      container.className = "developer-form";
+
+      const heading = document.createElement("div");
+      heading.className = "overlay-title";
+      heading.textContent = `${entry.card.name} · Lv${entry.level}`;
+      container.appendChild(heading);
+
+      const previewCard = document.createElement("div");
+      previewCard.className = "developer-enhance-preview";
+      const previewGlyph = document.createElement("span");
+      previewGlyph.className = "developer-enhance-preview-glyph";
+      previewGlyph.setAttribute("aria-hidden", "true");
+      const svgGlyph = CARD_GLYPHS[entry.card.id];
+      if (svgGlyph) setIconHtml(previewGlyph, svgGlyph);
+      else previewGlyph.textContent = entry.card.glyph;
+      const previewBody = document.createElement("div");
+      previewBody.className = "developer-enhance-preview-body";
+      const previewName = document.createElement("div");
+      previewName.className = "developer-enhance-preview-name";
+      previewName.textContent = `${entry.card.name} · ${entry.rarity}`;
+      const previewDesc = document.createElement("div");
+      previewDesc.className = "developer-enhance-preview-desc";
+      previewDesc.textContent = entry.card.text;
+      const previewScaled = document.createElement("div");
+      previewScaled.className = "developer-enhance-preview-scaled";
+      previewScaled.textContent = `Lv${entry.level}: ${projectedCardText(entry.card, entry.level)}`;
+      previewBody.appendChild(previewName);
+      previewBody.appendChild(previewDesc);
+      previewBody.appendChild(previewScaled);
+      previewCard.appendChild(previewGlyph);
+      previewCard.appendChild(previewBody);
+      container.appendChild(previewCard);
+
+      const detailPanel = document.createElement("div");
+      detailPanel.className = "pause-panel";
+      const panelTitle = document.createElement("div");
+      panelTitle.className = "pause-panel-title";
+      panelTitle.textContent = "ability values";
+      detailPanel.appendChild(panelTitle);
+      const rows = document.createElement("div");
+      rows.className = "pause-bonus-grid";
+      const statusLabel = entry.sourceCardIds.length > 1
+        ? `merged (${entry.sourceCardIds.length} cards)`
+        : "held";
+      const details: Array<[string, string]> = [
+        ["status", statusLabel],
+        ["rarity", entry.rarity],
+        ["level", `${entry.level}`],
+        ["scaled", projectedCardText(entry.card, entry.level)],
+      ];
+      for (const [k, v] of details) {
+        const row = document.createElement("div");
+        row.className = "pause-bonus-row";
+        const key = document.createElement("span");
+        key.className = "pause-bonus-key";
+        key.textContent = k;
+        const value = document.createElement("span");
+        value.className = "pause-bonus-value";
+        value.textContent = v;
+        row.appendChild(key);
+        row.appendChild(value);
+        rows.appendChild(row);
+      }
+      detailPanel.appendChild(rows);
+      container.appendChild(detailPanel);
+
+      if (entry.sourceCardIds.length > 1) {
+        const sourceText = document.createElement("div");
+        sourceText.className = "card-text";
+        sourceText.textContent = `shared with: ${entry.sourceCardIds.map((id) => POOL_BY_ID.get(id)?.name ?? id).join(", ")}`;
+        container.appendChild(sourceText);
+      }
+
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "menu-btn";
+      closeBtn.textContent = "close";
+      closeBtn.addEventListener("click", () => dialog.close());
+      container.appendChild(closeBtn);
+
+      dialog.appendChild(container);
+      dialog.addEventListener("close", () => dialog.remove(), { once: true });
+      document.body.appendChild(dialog);
+      dialog.showModal();
+    };
+
     const title = document.createElement("div");
     title.className = "overlay-title";
     title.textContent = "paused";
@@ -218,32 +326,52 @@ async function boot(): Promise<void> {
     statusPanel.className = "pause-panel";
     const statusTitle = document.createElement("div");
     statusTitle.className = "pause-panel-title";
-    statusTitle.textContent = "card holdings";
+    statusTitle.textContent = "card abilities";
     statusPanel.appendChild(statusTitle);
 
     const list = document.createElement("div");
-    list.className = "pause-card-list";
+    list.className = "pause-card-tag-list";
     const rarityRank: Record<Card["rarity"], number> = { common: 0, uncommon: 1, rare: 2 };
-    const sortedPool = [...POOL].sort((a, b) => {
+    const activeEntries = [...runInventory.all().values()].sort((a, b) => {
       const rankDelta = rarityRank[a.rarity] - rarityRank[b.rarity];
       if (rankDelta !== 0) return rankDelta;
-      return a.name.localeCompare(b.name);
+      return a.card.name.localeCompare(b.card.name);
     });
-    for (const card of sortedPool) {
-      const entry = runInventory.getForCard(card);
-      const row = document.createElement("div");
-      row.className = "pause-card-row";
-      const isSharedAbility = entry != null && !entry.sourceCardIds.includes(card.id);
-      const sourceLabel = isSharedAbility && entry
-        ? ` (shared with: ${entry.sourceCardIds.map((id) => POOL_BY_ID.get(id)?.name ?? id).join(", ")})`
-        : "";
-      const status = entry
-        ? (isSharedAbility ? `merged · Lv${entry.level}` : `held · Lv${entry.level}`)
-        : "not held";
-      row.textContent = `${card.name} · ${entry?.rarity ?? card.rarity} · ${status}${sourceLabel}`;
-      list.appendChild(row);
+    if (activeEntries.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "card-text";
+      empty.textContent = "no card abilities yet";
+      list.appendChild(empty);
+    }
+    for (const entry of activeEntries) {
+      const tag = document.createElement("button");
+      tag.type = "button";
+      tag.className = "pause-card-tag";
+      tag.title = `${entry.card.name} · Lv${entry.level}`;
+      tag.addEventListener("click", () => openPauseCardDetails(entry));
+
+      const glyph = document.createElement("span");
+      glyph.className = "pause-card-tag-glyph";
+      glyph.setAttribute("aria-hidden", "true");
+      const svgGlyph = CARD_GLYPHS[entry.card.id];
+      if (svgGlyph) setIconHtml(glyph, svgGlyph);
+      else glyph.textContent = entry.card.glyph;
+
+      const lv = document.createElement("span");
+      lv.className = "pause-card-tag-lv";
+      lv.textContent = `Lv${entry.level}`;
+
+      tag.appendChild(glyph);
+      tag.appendChild(lv);
+      list.appendChild(tag);
     }
     statusPanel.appendChild(list);
+    if (activeEntries.length > 0) {
+      const hint = document.createElement("div");
+      hint.className = "card-text";
+      hint.textContent = "tap a tag for full details";
+      statusPanel.appendChild(hint);
+    }
     inner.appendChild(statusPanel);
 
     const resumeBtn = document.createElement("button");
@@ -547,9 +675,41 @@ async function boot(): Promise<void> {
     step?: number;
   }
 
+  /** Parses a numeric form value and falls back when input is NaN/invalid. */
   function parseNumericFormValue(value: string, fallback: number): number {
     const n = Number(value);
     return Number.isNaN(n) ? fallback : n;
+  }
+
+  /**
+   * Formats a finite numeric value for UI labels while preserving sign.
+   * Keeps up to `digits` decimals and strips insignificant trailing zeros.
+   */
+  function formatNumeric(value: number, digits = 2): string {
+    const text = value.toFixed(digits);
+    return text.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
+  }
+
+  const UI_META_SEPARATOR = " · ";
+
+  /** Returns a short human-readable effect summary line for a skill at `level`. */
+  function skillEffectSummary(id: PrimalSkillId, level: number): string {
+    switch (id) {
+      case "timeStop":
+        return `Enemy speed ×${formatNumeric(timeStopSpeedMul(level))}`;
+      case "shadowClone":
+        return `Clone inherit ${Math.round(cloneInheritRatio(level) * 100)}% power`;
+      case "reflectShield":
+        return `Reflect ratio ×${formatNumeric(reflectDamageRatio(level))}`;
+      case "barrage":
+        return `${barrageProjectiles(level)} shots · ${barrageDamage(level)} dmg each`;
+      case "lifestealPulse":
+        return `Radius ${Math.round(lifestealRadius(level))} · ${lifestealDamage(level)} dmg/tick · +${lifestealHeal(level)} hp/tick`;
+      case "axisFreeze":
+        return "Snap to axis and stun enemies";
+      case "overload":
+        return "Triple fire-rate burst and self-damage 1";
+    }
   }
 
   async function openDeveloperForm(
@@ -1665,6 +1825,30 @@ async function boot(): Promise<void> {
         fieldsContainer.hidden = true;
         container.appendChild(fieldsContainer);
 
+        const previewCard = document.createElement("div");
+        previewCard.className = "developer-enhance-preview";
+        previewCard.hidden = true;
+        const previewGlyph = document.createElement("span");
+        previewGlyph.className = "developer-enhance-preview-glyph";
+        previewGlyph.setAttribute("aria-hidden", "true");
+        const previewBody = document.createElement("div");
+        previewBody.className = "developer-enhance-preview-body";
+        const previewName = document.createElement("div");
+        previewName.className = "developer-enhance-preview-name";
+        const previewDesc = document.createElement("div");
+        previewDesc.className = "developer-enhance-preview-desc";
+        const previewScaled = document.createElement("div");
+        previewScaled.className = "developer-enhance-preview-scaled";
+        const previewEffect = document.createElement("div");
+        previewEffect.className = "developer-enhance-preview-scaled";
+        previewBody.appendChild(previewName);
+        previewBody.appendChild(previewDesc);
+        previewBody.appendChild(previewScaled);
+        previewBody.appendChild(previewEffect);
+        previewCard.appendChild(previewGlyph);
+        previewCard.appendChild(previewBody);
+        container.appendChild(previewCard);
+
         const saveBtn = document.createElement("button");
         saveBtn.type = "button";
         saveBtn.className = "big-btn";
@@ -1680,6 +1864,20 @@ async function boot(): Promise<void> {
         container.appendChild(backBtn);
 
         let inputs: { level: HTMLInputElement; duration: HTMLInputElement; cooldown: HTMLInputElement } | null = null;
+        const syncSkillPreview = (id: PrimalSkillId): void => {
+          if (!inputs) return;
+          previewCard.hidden = false;
+          previewGlyph.innerHTML = "";
+          const icon = SKILL_GLYPHS[id];
+          if (icon) setIconHtml(previewGlyph, icon);
+          const level = Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, 0)));
+          const duration = Math.max(0, parseNumericFormValue(inputs.duration.value, 0));
+          const cooldown = Math.max(0, parseNumericFormValue(inputs.cooldown.value, 0));
+          previewName.textContent = PRIMAL_SKILLS[id].name;
+          previewDesc.textContent = PRIMAL_SKILLS[id].description;
+          previewScaled.textContent = `Lv${level}${UI_META_SEPARATOR}duration ${formatNumeric(duration)}s${UI_META_SEPARATOR}cooldown ${formatNumeric(cooldown)}s`;
+          previewEffect.textContent = skillEffectSummary(id, level);
+        };
 
         idSelect.addEventListener("change", () => {
           const id = idSelect.value as PrimalSkillId;
@@ -1690,6 +1888,11 @@ async function boot(): Promise<void> {
           fieldsContainer.hidden = false;
           saveBtn.hidden = false;
           inputs = buildSkillFields(fieldsContainer, defaults);
+          syncSkillPreview(id);
+          const currentInputs = inputs;
+          currentInputs.level.addEventListener("input", () => syncSkillPreview(id));
+          currentInputs.duration.addEventListener("input", () => syncSkillPreview(id));
+          currentInputs.cooldown.addEventListener("input", () => syncSkillPreview(id));
         });
 
         saveBtn.addEventListener("click", () => {
@@ -1727,6 +1930,44 @@ async function boot(): Promise<void> {
         fieldsContainer.className = "pause-panel";
         container.appendChild(fieldsContainer);
         const inputs = buildSkillFields(fieldsContainer, entry);
+
+        const previewCard = document.createElement("div");
+        previewCard.className = "developer-enhance-preview";
+        const previewGlyph = document.createElement("span");
+        previewGlyph.className = "developer-enhance-preview-glyph";
+        previewGlyph.setAttribute("aria-hidden", "true");
+        const icon = SKILL_GLYPHS[entry.id];
+        if (icon) setIconHtml(previewGlyph, icon);
+        const previewBody = document.createElement("div");
+        previewBody.className = "developer-enhance-preview-body";
+        const previewName = document.createElement("div");
+        previewName.className = "developer-enhance-preview-name";
+        previewName.textContent = PRIMAL_SKILLS[entry.id].name;
+        const previewDesc = document.createElement("div");
+        previewDesc.className = "developer-enhance-preview-desc";
+        previewDesc.textContent = PRIMAL_SKILLS[entry.id].description;
+        const previewScaled = document.createElement("div");
+        previewScaled.className = "developer-enhance-preview-scaled";
+        const previewEffect = document.createElement("div");
+        previewEffect.className = "developer-enhance-preview-scaled";
+        const syncSkillEditPreview = (): void => {
+          const level = Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, entry.level)));
+          const duration = Math.max(0, parseNumericFormValue(inputs.duration.value, entry.duration));
+          const cooldown = Math.max(0, parseNumericFormValue(inputs.cooldown.value, entry.cooldown));
+          previewScaled.textContent = `Lv${level}${UI_META_SEPARATOR}duration ${formatNumeric(duration)}s${UI_META_SEPARATOR}cooldown ${formatNumeric(cooldown)}s`;
+          previewEffect.textContent = skillEffectSummary(entry.id, level);
+        };
+        syncSkillEditPreview();
+        inputs.level.addEventListener("input", syncSkillEditPreview);
+        inputs.duration.addEventListener("input", syncSkillEditPreview);
+        inputs.cooldown.addEventListener("input", syncSkillEditPreview);
+        previewBody.appendChild(previewName);
+        previewBody.appendChild(previewDesc);
+        previewBody.appendChild(previewScaled);
+        previewBody.appendChild(previewEffect);
+        previewCard.appendChild(previewGlyph);
+        previewCard.appendChild(previewBody);
+        container.appendChild(previewCard);
 
         const actions = document.createElement("div");
         actions.className = "draft-actions";

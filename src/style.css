@@ -351,19 +351,55 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.pause-card-list {
+.pause-card-tag-list {
   max-height: 220px;
   overflow-y: auto;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.pause-card-row {
-  font-size: 11px;
+.pause-card-tag {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: #fff;
   color: var(--fg);
-  border-bottom: 1px dashed #eee;
-  padding-bottom: 2px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.pause-card-tag:active {
+  background: var(--chrome);
+}
+
+.pause-card-tag-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  font-size: 10px;
+}
+
+.pause-card-tag-glyph svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pause-card-tag-lv {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.pause-detail-dialog {
+  width: min(360px, calc(100vw - 24px));
 }
 
 #footer-hint {
