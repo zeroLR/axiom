@@ -575,7 +575,7 @@ async function boot(): Promise<void> {
       { name: "speedMul", label: "move speed", type: "number", value: avatar.avatar.speedMul.toFixed(2), min: 0.1, max: 5, step: 0.01 },
       { name: "damage", label: "damage", type: "number", value: `${avatar.weapon.damage}`, min: 1, max: 999, step: 1 },
       { name: "fireInterval", label: "fire interval", type: "number", value: avatar.weapon.period.toFixed(2), min: 0, max: 5, step: 0.01 },
-      { name: "projectileSpeed", label: "proj speed", type: "number", value: `${Math.round(avatar.weapon.projectileSpeed)}`, min: 1, max: 2000, step: 1 },
+      { name: "projectileSpeed", label: "projectile speed", type: "number", value: `${Math.round(avatar.weapon.projectileSpeed)}`, min: 1, max: 2000, step: 1 },
       { name: "projectiles", label: "projectiles", type: "number", value: `${avatar.weapon.projectiles}`, min: 1, max: 20, step: 1 },
       { name: "pierce", label: "pierce", type: "number", value: `${avatar.weapon.pierce}`, min: 0, max: 50, step: 1 },
       { name: "crit", label: "crit %", type: "number", value: `${Math.round(avatar.weapon.crit * 100)}`, min: 0, max: 100, step: 1 },
@@ -726,7 +726,7 @@ async function boot(): Promise<void> {
           const delBtn = document.createElement("button");
           delBtn.type = "button";
           delBtn.className = "secondary-btn";
-          delBtn.textContent = "del";
+          delBtn.textContent = "delete";
           delBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)";
           delBtn.addEventListener("click", () => {
             developerEnemyEntries.splice(idx, 1);
