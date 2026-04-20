@@ -88,6 +88,63 @@ export function drawOffer(rng: Rng, count: number, pool: readonly Card[] = POOL,
   return shuffle(rng, available).slice(0, Math.min(count, available.length));
 }
 
+function formatNum(value: number, maxDigits = 2): string {
+  const s = value.toFixed(maxDigits);
+  return s.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
+}
+
+/**
+ * Projected effect text for a card pick at a given target level.
+ * Level 1 returns the base card text.
+ */
+export function projectedCardText(card: Card, targetLevel: number): string {
+  if (!isLevelableEffect(card.effect) || targetLevel <= 1) return card.text;
+  const frac = levelBonusFraction(targetLevel);
+  const e = card.effect;
+  switch (e.kind) {
+    case "damageAdd":
+      return `+${Math.max(1, Math.round(e.value * frac))} damage`;
+    case "periodMul": {
+      const reduction = (1 - e.value) * frac;
+      return `-${Math.round(reduction * 100)}% fire interval`;
+    }
+    case "projectileSpeedMul": {
+      const boost = (e.value - 1) * frac;
+      return `+${Math.round(boost * 100)}% projectile speed`;
+    }
+    case "projectilesAdd": {
+      const add = e.value * frac >= 0.5 ? Math.max(1, Math.round(e.value * frac)) : 0;
+      return `+${add} projectile`;
+    }
+    case "pierceAdd": {
+      const add = e.value * frac >= 0.5 ? Math.max(1, Math.round(e.value * frac)) : 0;
+      return `+${add} pierce`;
+    }
+    case "critAdd":
+      return `+${Math.round(e.value * frac * 100)}% crit chance`;
+    case "maxHpAdd":
+      return `+${Math.max(1, Math.round(e.value * frac))} max HP`;
+    case "speedMul": {
+      const boost = (e.value - 1) * frac;
+      return `+${Math.round(boost * 100)}% move speed`;
+    }
+    case "ricochetAdd": {
+      const add = e.value * frac >= 0.5 ? Math.max(1, Math.round(e.value * frac)) : 0;
+      return `+${add} ricochet`;
+    }
+    case "chainAdd": {
+      const add = e.value * frac >= 0.5 ? Math.max(1, Math.round(e.value * frac)) : 0;
+      return `+${add} chain`;
+    }
+    case "burnAdd":
+      return `Burn ${formatNum(e.dps * frac)} dps for ${formatNum(e.duration)}s`;
+    case "slowAdd":
+      return `Slow ${Math.round(e.pct * frac * 100)}% for ${formatNum(e.duration)}s`;
+    default:
+      return card.text;
+  }
+}
+
 export function applyCard(world: World, avatarId: EntityId, card: Card): void {
   const c = world.get(avatarId);
   if (!c || !c.avatar || !c.weapon) return;

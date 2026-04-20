@@ -10,7 +10,7 @@
 //   5. Starting weapon/equipment also counts as a level-1 entry.
 //   6. Special-effect cards (synergy, evolution, weapon-class) don't level — deferred.
 
-import type { Card, CardEffect } from "./cards";
+import type { Card, CardEffect, Rarity } from "./cards";
 
 /** Unified max card level for every card. */
 export const MAX_CARD_LEVEL = 5;
@@ -50,15 +50,58 @@ export function isLevelableEffect(effect: CardEffect): boolean {
   }
 }
 
+const RARITY_RANK: Record<Rarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+};
+
+/** For merged abilities, keep the lower rarity as the primary display rarity. */
+export function lowerRarity(a: Rarity, b: Rarity): Rarity {
+  return RARITY_RANK[a] <= RARITY_RANK[b] ? a : b;
+}
+
+function effectStackKey(effect: CardEffect): string {
+  switch (effect.kind) {
+    case "damageAdd": return `damageAdd:${effect.value}`;
+    case "periodMul": return `periodMul:${effect.value}`;
+    case "projectileSpeedMul": return `projectileSpeedMul:${effect.value}`;
+    case "projectilesAdd": return `projectilesAdd:${effect.value}`;
+    case "pierceAdd": return `pierceAdd:${effect.value}`;
+    case "critAdd": return `critAdd:${effect.value}`;
+    case "maxHpAdd": return `maxHpAdd:${effect.value}`;
+    case "speedMul": return `speedMul:${effect.value}`;
+    case "ricochetAdd": return `ricochetAdd:${effect.value}`;
+    case "chainAdd": return `chainAdd:${effect.value}`;
+    case "burnAdd": return `burnAdd:${effect.dps}:${effect.duration}`;
+    case "slowAdd": return `slowAdd:${effect.pct}:${effect.duration}`;
+    default: return "";
+  }
+}
+
+/**
+ * Cards with identical levelable effects share one run entry (merged ability).
+ * Non-levelable cards are keyed by id.
+ */
+export function cardStackKey(card: Card): string {
+  if (!isLevelableEffect(card.effect)) return `id:${card.id}`;
+  return `fx:${effectStackKey(card.effect)}`;
+}
+
 /** A single entry in the run inventory. */
 export interface CardEntry {
+  stackKey: string;
   card: Card;
+  rarity: Rarity;
   level: number;
+  /** Card ids merged into this same ability stack. */
+  sourceCardIds: string[];
 }
 
 /** Run-scoped card inventory. */
 export class CardInventory {
   private readonly entries = new Map<string, CardEntry>();
+  private readonly cardIdToKey = new Map<string, string>();
 
   /** All current entries (read-only iteration). */
   all(): ReadonlyMap<string, CardEntry> {
@@ -67,19 +110,47 @@ export class CardInventory {
 
   /** Get entry by card id, or undefined. */
   get(cardId: string): CardEntry | undefined {
-    return this.entries.get(cardId);
+    const key = this.cardIdToKey.get(cardId);
+    if (!key) return undefined;
+    return this.entries.get(key);
+  }
+
+  /** Get entry by card effect-stack identity. */
+  getForCard(card: Card): CardEntry | undefined {
+    return this.entries.get(cardStackKey(card));
   }
 
   /** Register a new card at level 1. Returns the entry. */
   add(card: Card): CardEntry {
-    const entry: CardEntry = { card, level: 1 };
-    this.entries.set(card.id, entry);
+    const key = cardStackKey(card);
+    const existing = this.entries.get(key);
+    if (existing) {
+      existing.rarity = lowerRarity(existing.rarity, card.rarity);
+      if (!existing.sourceCardIds.includes(card.id)) existing.sourceCardIds.push(card.id);
+      this.cardIdToKey.set(card.id, key);
+      return existing;
+    }
+
+    const entry: CardEntry = {
+      stackKey: key,
+      card,
+      rarity: card.rarity,
+      level: 1,
+      sourceCardIds: [card.id],
+    };
+    this.entries.set(key, entry);
+    this.cardIdToKey.set(card.id, key);
     return entry;
   }
 
   /** Check whether a card is already held. */
   has(cardId: string): boolean {
-    return this.entries.has(cardId);
+    return this.get(cardId) !== undefined;
+  }
+
+  /** Check if a card (or duplicate effect) is already held. */
+  hasForCard(card: Card): boolean {
+    return this.getForCard(card) !== undefined;
   }
 
   /**
@@ -87,8 +158,20 @@ export class CardInventory {
    * Returns the new level, or 0 if the card is not held or is already at max.
    */
   levelUp(cardId: string): number {
-    const entry = this.entries.get(cardId);
+    const entry = this.get(cardId);
     if (!entry) return 0;
+    if (entry.level >= MAX_CARD_LEVEL) return 0;
+    entry.level += 1;
+    return entry.level;
+  }
+
+  /** Level up by card effect-stack identity and merge rarity/source metadata. */
+  levelUpForCard(card: Card): number {
+    const entry = this.getForCard(card);
+    if (!entry) return 0;
+    entry.rarity = lowerRarity(entry.rarity, card.rarity);
+    if (!entry.sourceCardIds.includes(card.id)) entry.sourceCardIds.push(card.id);
+    this.cardIdToKey.set(card.id, entry.stackKey);
     if (entry.level >= MAX_CARD_LEVEL) return 0;
     entry.level += 1;
     return entry.level;
@@ -96,7 +179,14 @@ export class CardInventory {
 
   /** True if the card can still gain a level. */
   canLevelUp(cardId: string): boolean {
-    const entry = this.entries.get(cardId);
+    const entry = this.get(cardId);
+    if (!entry) return false;
+    return entry.level < MAX_CARD_LEVEL;
+  }
+
+  /** True if the card/effect stack can still gain a level. */
+  canLevelUpForCard(card: Card): boolean {
+    const entry = this.getForCard(card);
     if (!entry) return false;
     return entry.level < MAX_CARD_LEVEL;
   }
@@ -109,5 +199,6 @@ export class CardInventory {
   /** Reset for a new run. */
   clear(): void {
     this.entries.clear();
+    this.cardIdToKey.clear();
   }
 }

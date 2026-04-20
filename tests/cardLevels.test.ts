@@ -54,6 +54,21 @@ describe("CardInventory", () => {
     expect(inv.size).toBe(0);
     expect(inv.has("sharp")).toBe(false);
   });
+
+  it("merges duplicate abilities across different card ids", () => {
+    const inv = new CardInventory();
+    inv.add(cardById("heavy")); // +2 damage (rare)
+    expect(inv.size).toBe(1);
+    expect(inv.has("heavy")).toBe(true);
+    expect(inv.has("axisLock")).toBe(false);
+
+    // axisLock has the same levelable effect as heavy.
+    const newLv = inv.levelUpForCard(cardById("axisLock"));
+    expect(newLv).toBe(2);
+    expect(inv.size).toBe(1);
+    expect(inv.has("axisLock")).toBe(true);
+    expect(inv.get("heavy")?.rarity).toBe("uncommon");
+  });
 });
 
 describe("levelBonusFraction", () => {

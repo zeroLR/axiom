@@ -1,6 +1,6 @@
 import { Container } from "pixi.js";
-import type { Card } from "../game/cards";
-import { isLevelableEffect, MAX_CARD_LEVEL, type CardInventory } from "../game/cardLevels";
+import { projectedCardText, type Card } from "../game/cards";
+import { isLevelableEffect, lowerRarity, MAX_CARD_LEVEL, type CardInventory } from "../game/cardLevels";
 import type { Scene } from "./scene";
 import { CARD_GLYPHS, setIconHtml } from "../icons";
 
@@ -89,9 +89,10 @@ export class DraftScene implements Scene {
       btn.setAttribute("data-card-id", card.id);
 
       // Check if this card is already held and can level up.
-      const entry = inventory.get(card.id);
+      const entry = inventory.getForCard(card);
       const isUpgrade = entry != null && isLevelableEffect(card.effect);
       const atMaxLevel = entry != null && entry.level >= MAX_CARD_LEVEL;
+      const targetLevel = isUpgrade ? Math.min(MAX_CARD_LEVEL, entry!.level + 1) : 1;
 
       if (isUpgrade) btn.classList.add("card-btn--upgrade");
       if (atMaxLevel) btn.classList.add("card-btn--maxed");
@@ -117,15 +118,16 @@ export class DraftScene implements Scene {
       }
       const text = document.createElement("span");
       text.className = "card-text";
-      text.textContent = card.text;
+      text.textContent = projectedCardText(card, targetLevel);
       const rarity = document.createElement("span");
       rarity.className = "card-rarity";
+      const mergedRarity = isUpgrade ? lowerRarity(entry!.rarity, card.rarity) : card.rarity;
       if (isUpgrade && !atMaxLevel) {
-        rarity.textContent = `${card.rarity} · level up`;
+        rarity.textContent = `${mergedRarity} · level up`;
       } else if (atMaxLevel) {
-        rarity.textContent = `${card.rarity} · max level`;
+        rarity.textContent = `${mergedRarity} · max level`;
       } else {
-        rarity.textContent = card.rarity;
+        rarity.textContent = mergedRarity;
       }
       body.appendChild(name);
       body.appendChild(text);
