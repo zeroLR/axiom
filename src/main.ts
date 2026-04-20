@@ -1,32 +1,50 @@
-import "./style.css";
-import { Application } from "pixi.js";
+import './style.css';
+import { Application } from 'pixi.js';
 
-import { isMuted, playSfx, primeSfx, setMuted, setVolumes } from "./game/audio";
-import { PLAY_H, PLAY_W, rerollTokenCostForUse } from "./game/config";
-import { startLoop } from "./game/loop";
-import { createRng, pickSeed } from "./game/rng";
-import { applyCard, applyCardLevelUp, drawOffer, POOL, projectedCardText, type Card } from "./game/cards";
-import { CardInventory, isLevelableEffect, MAX_CARD_LEVEL } from "./game/cardLevels";
-import { bossForStage } from "./game/bosses/registry";
-import { DraftScene } from "./scenes/draft";
-import { EndgameScene, type EndgameUnlocks } from "./scenes/endgame";
-import { PlayScene, type PointerMapper, type GameMode } from "./scenes/play";
-import { SceneStack } from "./scenes/scene";
-import { MainMenuScene, type MenuAction } from "./scenes/mainMenu";
-import { StageSelectScene } from "./scenes/stageSelect";
-import { ShopScene } from "./scenes/shop";
-import { EquipmentScene } from "./scenes/equipment";
-import { StartShapeSelectScene } from "./scenes/startShapeSelect";
-import { SkillTreeScene } from "./scenes/skillTree";
-import { AchievementsScene } from "./scenes/achievements";
-import { SettingsScene } from "./scenes/settings";
-import { STAGE_THEMES, DEFAULT_THEME, type StageTheme } from "./game/stageThemes";
-import { STAGE_WAVES } from "./game/stageWaves";
-import { WAVES } from "./game/waves";
-import { survivalWaveSpec } from "./game/survivalWaves";
-import { applyEquipment } from "./game/equipment";
-import { equipCard, unequipCard } from "./game/equipment";
-import { mapEquipmentToRunCardId, listUnmappedEquipmentCards } from "./game/equipment";
+import { isMuted, playSfx, primeSfx, setMuted, setVolumes } from './game/audio';
+import { PLAY_H, PLAY_W, rerollTokenCostForUse } from './game/config';
+import { startLoop } from './game/loop';
+import { createRng, pickSeed } from './game/rng';
+import {
+  applyCard,
+  applyCardLevelUp,
+  drawOffer,
+  POOL,
+  projectedCardText,
+  type Card,
+} from './game/cards';
+import {
+  CardInventory,
+  isLevelableEffect,
+  MAX_CARD_LEVEL,
+} from './game/cardLevels';
+import { bossForStage } from './game/bosses/registry';
+import { DraftScene } from './scenes/draft';
+import { EndgameScene, type EndgameUnlocks } from './scenes/endgame';
+import { PlayScene, type PointerMapper, type GameMode } from './scenes/play';
+import { SceneStack } from './scenes/scene';
+import { MainMenuScene, type MenuAction } from './scenes/mainMenu';
+import { StageSelectScene } from './scenes/stageSelect';
+import { ShopScene } from './scenes/shop';
+import { EquipmentScene } from './scenes/equipment';
+import { StartShapeSelectScene } from './scenes/startShapeSelect';
+import { SkillTreeScene } from './scenes/skillTree';
+import { AchievementsScene } from './scenes/achievements';
+import { SettingsScene } from './scenes/settings';
+import {
+  STAGE_THEMES,
+  DEFAULT_THEME,
+  type StageTheme,
+} from './game/stageThemes';
+import { STAGE_WAVES } from './game/stageWaves';
+import { WAVES } from './game/waves';
+import { survivalWaveSpec } from './game/survivalWaves';
+import { applyEquipment } from './game/equipment';
+import { equipCard, unequipCard } from './game/equipment';
+import {
+  mapEquipmentToRunCardId,
+  listUnmappedEquipmentCards,
+} from './game/equipment';
 import {
   createActiveSkillStates,
   PRIMAL_SKILLS,
@@ -38,27 +56,47 @@ import {
   lifestealDamage,
   lifestealHeal,
   reflectDamageRatio,
-} from "./game/skills";
-import { diffUnlocks } from "./game/unlocks";
-import { MAX_SKILL_LEVEL } from "./game/data/types";
-import { unlockAchievement } from "./game/achievements";
-import type { RunResult } from "./game/rewards";
+} from './game/skills';
+import { diffUnlocks } from './game/unlocks';
+import { MAX_SKILL_LEVEL } from './game/data/types';
+import { unlockAchievement } from './game/achievements';
+import type { RunResult } from './game/rewards';
 import {
   applyStartingShapeLoadout,
   resolveSelectedStartingShape,
   runSkinForStartingShape,
-} from "./game/startingShapes";
-import { iconTimeStop, iconClone, iconReflect, iconBarrage, iconLifesteal, iconAxisFreeze, iconOverload, setIconHtml, CARD_GLYPHS, SHOP_GLYPHS, SKILL_GLYPHS } from "./icons";
+} from './game/startingShapes';
 import {
-  loadProfile, saveProfile,
-  loadEquipment, saveEquipment,
-  loadSkillTree, saveSkillTree,
-  loadAchievements, saveAchievements,
-  loadShopUnlocks, saveShopUnlocks,
-  loadSettings, saveSettings,
-  exportSaveData, downloadSaveData,
-  parseSaveData, importSaveData,
-} from "./game/storage";
+  iconTimeStop,
+  iconClone,
+  iconReflect,
+  iconBarrage,
+  iconLifesteal,
+  iconAxisFreeze,
+  iconOverload,
+  setIconHtml,
+  CARD_GLYPHS,
+  SHOP_GLYPHS,
+  SKILL_GLYPHS,
+} from './icons';
+import {
+  loadProfile,
+  saveProfile,
+  loadEquipment,
+  saveEquipment,
+  loadSkillTree,
+  saveSkillTree,
+  loadAchievements,
+  saveAchievements,
+  loadShopUnlocks,
+  saveShopUnlocks,
+  loadSettings,
+  saveSettings,
+  exportSaveData,
+  downloadSaveData,
+  parseSaveData,
+  importSaveData,
+} from './game/storage';
 import type {
   PlayerProfile,
   EquipmentLoadout,
@@ -67,29 +105,29 @@ import type {
   ShopUnlocks,
   PrimalSkillId,
   GameSettings,
-} from "./game/data/types";
-import type { EnemyKind } from "./game/world";
-import { setScreenShakeEnabled } from "./game/screenShake";
-import { playMusic, stopMusic, setMusicVolume } from "./game/music";
+} from './game/data/types';
+import type { EnemyKind } from './game/world';
+import { setScreenShakeEnabled } from './game/screenShake';
+import { playMusic, stopMusic, setMusicVolume } from './game/music';
 
 /** O(1) lookup for pool cards by ID. */
 const POOL_BY_ID = new Map(POOL.map((c) => [c.id, c]));
 
 async function boot(): Promise<void> {
-  const gameEl = document.getElementById("game");
-  const hudHp = document.getElementById("hud-hp");
-  const hudWave = document.getElementById("hud-wave");
-  const hudPts = document.getElementById("hud-pts");
-  const hudTokens = document.getElementById("hud-tokens");
-  const hudSeed = document.getElementById("hud-seed");
-  const btnRestart = document.getElementById("btn-restart");
-  const btnPause = document.getElementById("btn-pause");
-  const btnComments = document.getElementById("btn-comments");
-  const btnMute = document.getElementById("btn-mute");
-  const btnMenu = document.getElementById("btn-menu");
-  const hudSkills = document.getElementById("hud-skills");
-  const commentsDialog = document.getElementById("comments-dialog");
-  if (!gameEl) throw new Error("#game element missing");
+  const gameEl = document.getElementById('game');
+  const hudHp = document.getElementById('hud-hp');
+  const hudWave = document.getElementById('hud-wave');
+  const hudPts = document.getElementById('hud-pts');
+  const hudTokens = document.getElementById('hud-tokens');
+  const hudSeed = document.getElementById('hud-seed');
+  const btnRestart = document.getElementById('btn-restart');
+  const btnPause = document.getElementById('btn-pause');
+  const btnComments = document.getElementById('btn-comments');
+  const btnMute = document.getElementById('btn-mute');
+  const btnMenu = document.getElementById('btn-menu');
+  const hudSkills = document.getElementById('hud-skills');
+  const commentsDialog = document.getElementById('comments-dialog');
+  if (!gameEl) throw new Error('#game element missing');
 
   // ── Load persistent state ───────────────────────────────────────────────
   let profile: PlayerProfile = await loadProfile();
@@ -138,77 +176,84 @@ async function boot(): Promise<void> {
     cachedRect = app.canvas.getBoundingClientRect();
   }
   fitCanvas();
-  window.addEventListener("resize", fitCanvas);
+  window.addEventListener('resize', fitCanvas);
 
   let play: PlayScene;
-  let currentRun: { mode: GameMode; stageIndex: number; developMode: boolean } | null = null;
+  let currentRun: {
+    mode: GameMode;
+    stageIndex: number;
+    developMode: boolean;
+  } | null = null;
   let paused = false;
   let seed = 0;
   let menuRng = createRng(42);
   let runInventory = new CardInventory();
   /** Snapshot of stats at run start, used to compute unlock diff at end. */
-  let statsBeforeRun: import("./game/data/types").PlayerStats | null = null;
+  let statsBeforeRun: import('./game/data/types').PlayerStats | null = null;
   /** Pending unlock diff from the latest settled run (set by settleRun, read by endgame). */
   let pendingUnlocks: EndgameUnlocks | null = null;
   let developerModeUnlocked = settings.developerMode ?? false;
 
   function syncRunControlButtons(): void {
     const runActive = currentRun !== null;
-    if (btnRestart instanceof HTMLButtonElement) btnRestart.disabled = !runActive;
+    if (btnRestart instanceof HTMLButtonElement)
+      btnRestart.disabled = !runActive;
     if (btnPause instanceof HTMLButtonElement) {
       btnPause.disabled = !runActive;
-      btnPause.textContent = paused ? "resume" : "pause";
-      btnPause.setAttribute("aria-pressed", paused ? "true" : "false");
-      btnPause.setAttribute("aria-label", paused ? "Resume run" : "Pause run");
+      btnPause.textContent = paused ? 'resume' : 'pause';
+      btnPause.setAttribute('aria-pressed', paused ? 'true' : 'false');
+      btnPause.setAttribute('aria-label', paused ? 'Resume run' : 'Pause run');
     }
     if (hudSkills) {
-      const toggleBtn = hudSkills.querySelector<HTMLButtonElement>("[data-dev-toggle='pause']");
-      if (toggleBtn) toggleBtn.textContent = paused ? "resume" : "pause";
+      const toggleBtn = hudSkills.querySelector<HTMLButtonElement>(
+        "[data-dev-toggle='pause']",
+      );
+      if (toggleBtn) toggleBtn.textContent = paused ? 'resume' : 'pause';
     }
   }
 
   function renderPauseOverlay(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
+    const overlay = document.getElementById('overlay');
+    const inner = document.getElementById('overlay-inner');
     if (!overlay || !inner || !paused) return;
-    inner.innerHTML = "";
+    inner.innerHTML = '';
 
     const openPauseCardDetails = (entry: {
       card: Card;
-      rarity: Card["rarity"];
+      rarity: Card['rarity'];
       level: number;
       sourceCardIds: string[];
     }): void => {
-      const dialog = document.createElement("dialog");
-      dialog.className = "developer-dialog pause-detail-dialog";
-      dialog.setAttribute("aria-label", `${entry.card.name} details`);
+      const dialog = document.createElement('dialog');
+      dialog.className = 'developer-dialog pause-detail-dialog';
+      dialog.setAttribute('aria-label', `${entry.card.name} details`);
 
-      const container = document.createElement("div");
-      container.className = "developer-form";
+      const container = document.createElement('div');
+      container.className = 'developer-form';
 
-      const heading = document.createElement("div");
-      heading.className = "overlay-title";
+      const heading = document.createElement('div');
+      heading.className = 'overlay-title';
       heading.textContent = `${entry.card.name} · Lv${entry.level}`;
       container.appendChild(heading);
 
-      const previewCard = document.createElement("div");
-      previewCard.className = "developer-enhance-preview";
-      const previewGlyph = document.createElement("span");
-      previewGlyph.className = "developer-enhance-preview-glyph";
-      previewGlyph.setAttribute("aria-hidden", "true");
+      const previewCard = document.createElement('div');
+      previewCard.className = 'developer-enhance-preview';
+      const previewGlyph = document.createElement('span');
+      previewGlyph.className = 'developer-enhance-preview-glyph';
+      previewGlyph.setAttribute('aria-hidden', 'true');
       const svgGlyph = CARD_GLYPHS[entry.card.id];
       if (svgGlyph) setIconHtml(previewGlyph, svgGlyph);
       else previewGlyph.textContent = entry.card.glyph;
-      const previewBody = document.createElement("div");
-      previewBody.className = "developer-enhance-preview-body";
-      const previewName = document.createElement("div");
-      previewName.className = "developer-enhance-preview-name";
+      const previewBody = document.createElement('div');
+      previewBody.className = 'developer-enhance-preview-body';
+      const previewName = document.createElement('div');
+      previewName.className = 'developer-enhance-preview-name';
       previewName.textContent = `${entry.card.name} · ${entry.rarity}`;
-      const previewDesc = document.createElement("div");
-      previewDesc.className = "developer-enhance-preview-desc";
+      const previewDesc = document.createElement('div');
+      previewDesc.className = 'developer-enhance-preview-desc';
       previewDesc.textContent = entry.card.text;
-      const previewScaled = document.createElement("div");
-      previewScaled.className = "developer-enhance-preview-scaled";
+      const previewScaled = document.createElement('div');
+      previewScaled.className = 'developer-enhance-preview-scaled';
       previewScaled.textContent = `Lv${entry.level}: ${projectedCardText(entry.card, entry.level)}`;
       previewBody.appendChild(previewName);
       previewBody.appendChild(previewDesc);
@@ -217,31 +262,32 @@ async function boot(): Promise<void> {
       previewCard.appendChild(previewBody);
       container.appendChild(previewCard);
 
-      const detailPanel = document.createElement("div");
-      detailPanel.className = "pause-panel";
-      const panelTitle = document.createElement("div");
-      panelTitle.className = "pause-panel-title";
-      panelTitle.textContent = "ability values";
+      const detailPanel = document.createElement('div');
+      detailPanel.className = 'pause-panel';
+      const panelTitle = document.createElement('div');
+      panelTitle.className = 'pause-panel-title';
+      panelTitle.textContent = 'ability values';
       detailPanel.appendChild(panelTitle);
-      const rows = document.createElement("div");
-      rows.className = "pause-bonus-grid";
-      const statusLabel = entry.sourceCardIds.length > 1
-        ? `merged (${entry.sourceCardIds.length} cards)`
-        : "held";
+      const rows = document.createElement('div');
+      rows.className = 'pause-bonus-grid';
+      const statusLabel =
+        entry.sourceCardIds.length > 1
+          ? `merged (${entry.sourceCardIds.length} cards)`
+          : 'held';
       const details: Array<[string, string]> = [
-        ["status", statusLabel],
-        ["rarity", entry.rarity],
-        ["level", `${entry.level}`],
-        ["scaled", projectedCardText(entry.card, entry.level)],
+        ['status', statusLabel],
+        ['rarity', entry.rarity],
+        ['level', `${entry.level}`],
+        ['scaled', projectedCardText(entry.card, entry.level)],
       ];
       for (const [k, v] of details) {
-        const row = document.createElement("div");
-        row.className = "pause-bonus-row";
-        const key = document.createElement("span");
-        key.className = "pause-bonus-key";
+        const row = document.createElement('div');
+        row.className = 'pause-bonus-row';
+        const key = document.createElement('span');
+        key.className = 'pause-bonus-key';
         key.textContent = k;
-        const value = document.createElement("span");
-        value.className = "pause-bonus-value";
+        const value = document.createElement('span');
+        value.className = 'pause-bonus-value';
         value.textContent = v;
         row.appendChild(key);
         row.appendChild(value);
@@ -251,68 +297,74 @@ async function boot(): Promise<void> {
       container.appendChild(detailPanel);
 
       if (entry.sourceCardIds.length > 1) {
-        const sourceText = document.createElement("div");
-        sourceText.className = "card-text";
-        sourceText.textContent = `shared with: ${entry.sourceCardIds.map((id) => POOL_BY_ID.get(id)?.name ?? id).join(", ")}`;
+        const sourceText = document.createElement('div');
+        sourceText.className = 'card-text';
+        sourceText.textContent = `shared with: ${entry.sourceCardIds.map((id) => POOL_BY_ID.get(id)?.name ?? id).join(', ')}`;
         container.appendChild(sourceText);
       }
 
-      const closeBtn = document.createElement("button");
-      closeBtn.type = "button";
-      closeBtn.className = "menu-btn";
-      closeBtn.textContent = "close";
-      closeBtn.addEventListener("click", () => dialog.close());
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'menu-btn';
+      closeBtn.textContent = 'close';
+      closeBtn.addEventListener('click', () => dialog.close());
       container.appendChild(closeBtn);
 
       dialog.appendChild(container);
-      dialog.addEventListener("close", () => dialog.remove(), { once: true });
+      dialog.addEventListener('close', () => dialog.remove(), { once: true });
       document.body.appendChild(dialog);
       dialog.showModal();
     };
 
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = "paused";
+    const title = document.createElement('div');
+    title.className = 'overlay-title';
+    title.textContent = 'paused';
     inner.appendChild(title);
 
     const avatar = play ? play.world.get(play.avatarId) : undefined;
     if (avatar?.avatar && avatar.weapon) {
-      const bonusPanel = document.createElement("div");
-      bonusPanel.className = "pause-panel";
+      const bonusPanel = document.createElement('div');
+      bonusPanel.className = 'pause-panel';
 
-      const panelTitle = document.createElement("div");
-      panelTitle.className = "pause-panel-title";
-      panelTitle.textContent = "current bonuses";
+      const panelTitle = document.createElement('div');
+      panelTitle.className = 'pause-panel-title';
+      panelTitle.textContent = 'current bonuses';
       bonusPanel.appendChild(panelTitle);
 
-      const rows = document.createElement("div");
-      rows.className = "pause-bonus-grid";
+      const rows = document.createElement('div');
+      rows.className = 'pause-bonus-grid';
       const bonusRows: Array<[string, string]> = [
-        ["damage", `${avatar.weapon.damage}`],
-        ["fire interval", `${avatar.weapon.period.toFixed(2)}s`],
-        ["projectile speed", `${Math.round(avatar.weapon.projectileSpeed)}`],
-        ["projectiles", `${avatar.weapon.projectiles}`],
-        ["pierce", `${avatar.weapon.pierce}`],
-        ["crit", `${Math.round(avatar.weapon.crit * 100)}%`],
-        ["move speed", `${Math.round(avatar.avatar.speedMul * 100)}%`],
-        ["max hp", `${avatar.avatar.maxHp}`],
-        ["ricochet", `${avatar.weapon.ricochet}`],
-        ["chain", `${avatar.weapon.chain}`],
+        ['damage', `${avatar.weapon.damage}`],
+        ['fire interval', `${avatar.weapon.period.toFixed(2)}s`],
+        ['projectile speed', `${Math.round(avatar.weapon.projectileSpeed)}`],
+        ['projectiles', `${avatar.weapon.projectiles}`],
+        ['pierce', `${avatar.weapon.pierce}`],
+        ['crit', `${Math.round(avatar.weapon.crit * 100)}%`],
+        ['move speed', `${Math.round(avatar.avatar.speedMul * 100)}%`],
+        ['max hp', `${avatar.avatar.maxHp}`],
+        ['ricochet', `${avatar.weapon.ricochet}`],
+        ['chain', `${avatar.weapon.chain}`],
       ];
       if (avatar.weapon.burnDps > 0) {
-        bonusRows.push(["burn", `${avatar.weapon.burnDps.toFixed(2)} dps / ${avatar.weapon.burnDuration.toFixed(1)}s`]);
+        bonusRows.push([
+          'burn',
+          `${avatar.weapon.burnDps.toFixed(2)} dps / ${avatar.weapon.burnDuration.toFixed(1)}s`,
+        ]);
       }
       if (avatar.weapon.slowPct > 0) {
-        bonusRows.push(["slow", `${Math.round(avatar.weapon.slowPct * 100)}% / ${avatar.weapon.slowDuration.toFixed(1)}s`]);
+        bonusRows.push([
+          'slow',
+          `${Math.round(avatar.weapon.slowPct * 100)}% / ${avatar.weapon.slowDuration.toFixed(1)}s`,
+        ]);
       }
       for (const [k, v] of bonusRows) {
-        const row = document.createElement("div");
-        row.className = "pause-bonus-row";
-        const key = document.createElement("span");
-        key.className = "pause-bonus-key";
+        const row = document.createElement('div');
+        row.className = 'pause-bonus-row';
+        const key = document.createElement('span');
+        key.className = 'pause-bonus-key';
         key.textContent = k;
-        const value = document.createElement("span");
-        value.className = "pause-bonus-value";
+        const value = document.createElement('span');
+        value.className = 'pause-bonus-value';
         value.textContent = v;
         row.appendChild(key);
         row.appendChild(value);
@@ -322,43 +374,47 @@ async function boot(): Promise<void> {
       inner.appendChild(bonusPanel);
     }
 
-    const statusPanel = document.createElement("div");
-    statusPanel.className = "pause-panel";
-    const statusTitle = document.createElement("div");
-    statusTitle.className = "pause-panel-title";
-    statusTitle.textContent = "card abilities";
+    const statusPanel = document.createElement('div');
+    statusPanel.className = 'pause-panel';
+    const statusTitle = document.createElement('div');
+    statusTitle.className = 'pause-panel-title';
+    statusTitle.textContent = 'card abilities';
     statusPanel.appendChild(statusTitle);
 
-    const list = document.createElement("div");
-    list.className = "pause-card-tag-list";
-    const rarityRank: Record<Card["rarity"], number> = { common: 0, uncommon: 1, rare: 2 };
+    const list = document.createElement('div');
+    list.className = 'pause-card-tag-list';
+    const rarityRank: Record<Card['rarity'], number> = {
+      common: 0,
+      uncommon: 1,
+      rare: 2,
+    };
     const activeEntries = [...runInventory.all().values()].sort((a, b) => {
       const rankDelta = rarityRank[a.rarity] - rarityRank[b.rarity];
       if (rankDelta !== 0) return rankDelta;
       return a.card.name.localeCompare(b.card.name);
     });
     if (activeEntries.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "card-text";
-      empty.textContent = "no card abilities yet";
+      const empty = document.createElement('div');
+      empty.className = 'card-text';
+      empty.textContent = 'no card abilities yet';
       list.appendChild(empty);
     }
     for (const entry of activeEntries) {
-      const tag = document.createElement("button");
-      tag.type = "button";
-      tag.className = "pause-card-tag";
+      const tag = document.createElement('button');
+      tag.type = 'button';
+      tag.className = 'pause-card-tag';
       tag.title = `${entry.card.name} · Lv${entry.level}`;
-      tag.addEventListener("click", () => openPauseCardDetails(entry));
+      tag.addEventListener('click', () => openPauseCardDetails(entry));
 
-      const glyph = document.createElement("span");
-      glyph.className = "pause-card-tag-glyph";
-      glyph.setAttribute("aria-hidden", "true");
+      const glyph = document.createElement('span');
+      glyph.className = 'pause-card-tag-glyph';
+      glyph.setAttribute('aria-hidden', 'true');
       const svgGlyph = CARD_GLYPHS[entry.card.id];
       if (svgGlyph) setIconHtml(glyph, svgGlyph);
       else glyph.textContent = entry.card.glyph;
 
-      const lv = document.createElement("span");
-      lv.className = "pause-card-tag-lv";
+      const lv = document.createElement('span');
+      lv.className = 'pause-card-tag-lv';
       lv.textContent = `Lv${entry.level}`;
 
       tag.appendChild(glyph);
@@ -367,35 +423,35 @@ async function boot(): Promise<void> {
     }
     statusPanel.appendChild(list);
     if (activeEntries.length > 0) {
-      const hint = document.createElement("div");
-      hint.className = "card-text";
-      hint.textContent = "tap a tag for full details";
+      const hint = document.createElement('div');
+      hint.className = 'card-text';
+      hint.textContent = 'tap a tag for full details';
       statusPanel.appendChild(hint);
     }
     inner.appendChild(statusPanel);
 
-    const resumeBtn = document.createElement("button");
-    resumeBtn.type = "button";
-    resumeBtn.className = "big-btn";
-    resumeBtn.textContent = "resume";
-    resumeBtn.addEventListener("click", () => setPaused(false));
+    const resumeBtn = document.createElement('button');
+    resumeBtn.type = 'button';
+    resumeBtn.className = 'big-btn';
+    resumeBtn.textContent = 'resume';
+    resumeBtn.addEventListener('click', () => setPaused(false));
     inner.appendChild(resumeBtn);
 
-    const restartBtn = document.createElement("button");
-    restartBtn.type = "button";
-    restartBtn.className = "menu-btn";
-    restartBtn.textContent = "restart";
-    restartBtn.addEventListener("click", () => {
+    const restartBtn = document.createElement('button');
+    restartBtn.type = 'button';
+    restartBtn.className = 'menu-btn';
+    restartBtn.textContent = 'restart';
+    restartBtn.addEventListener('click', () => {
       if (!currentRun) return;
       startRun(currentRun.mode, currentRun.stageIndex, currentRun.developMode);
     });
     inner.appendChild(restartBtn);
 
-    const menuBtn = document.createElement("button");
-    menuBtn.type = "button";
-    menuBtn.className = "menu-btn";
-    menuBtn.textContent = "main menu";
-    menuBtn.addEventListener("click", () => showMainMenu());
+    const menuBtn = document.createElement('button');
+    menuBtn.type = 'button';
+    menuBtn.className = 'menu-btn';
+    menuBtn.textContent = 'main menu';
+    menuBtn.addEventListener('click', () => showMainMenu());
     inner.appendChild(menuBtn);
 
     overlay.hidden = false;
@@ -404,11 +460,11 @@ async function boot(): Promise<void> {
   function setPaused(next: boolean): void {
     paused = next;
     syncRunControlButtons();
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
+    const overlay = document.getElementById('overlay');
+    const inner = document.getElementById('overlay-inner');
     if (!paused) {
       if (overlay) overlay.hidden = true;
-      if (inner) inner.innerHTML = "";
+      if (inner) inner.innerHTML = '';
       return;
     }
     renderPauseOverlay();
@@ -416,7 +472,7 @@ async function boot(): Promise<void> {
 
   function setTheme(theme: StageTheme): void {
     app.renderer.background.color = theme.background;
-    const overlay = document.getElementById("overlay");
+    const overlay = document.getElementById('overlay');
     if (overlay) overlay.style.background = theme.overlayBg;
   }
 
@@ -424,29 +480,29 @@ async function boot(): Promise<void> {
 
   /** Show a brief monospace title-card that fades in/out without blocking input. */
   function showTitleCard(lines: string[], durationMs = 1500): void {
-    const container = document.createElement("div");
-    container.className = "title-card";
+    const container = document.createElement('div');
+    container.className = 'title-card';
     for (const line of lines) {
-      const el = document.createElement("div");
+      const el = document.createElement('div');
       el.textContent = line;
       container.appendChild(el);
     }
-    document.getElementById("game")?.appendChild(container);
+    document.getElementById('game')?.appendChild(container);
 
     // Fade in (force reflow first to ensure transition triggers)
     container.offsetWidth; // eslint-disable-line @typescript-eslint/no-unused-expressions
-    container.style.opacity = "1";
+    container.style.opacity = '1';
 
     // Fade out then remove
     setTimeout(() => {
-      container.style.opacity = "0";
+      container.style.opacity = '0';
       setTimeout(() => container.remove(), 300);
     }, durationMs);
   }
 
   // ── HUD ─────────────────────────────────────────────────────────────────
 
-  const hudSynergy = document.getElementById("hud-synergy");
+  const hudSynergy = document.getElementById('hud-synergy');
 
   function updateHud(
     hp: number,
@@ -467,12 +523,12 @@ async function boot(): Promise<void> {
     if (!hudSynergy || !currentRun) return;
     const avatar = play?.world.get(play.avatarId);
     if (!avatar?.avatar) {
-      hudSynergy.innerHTML = "";
+      hudSynergy.innerHTML = '';
       return;
     }
     const synergies = avatar.avatar.synergies;
     if (!synergies || synergies.length === 0) {
-      hudSynergy.innerHTML = "";
+      hudSynergy.innerHTML = '';
       return;
     }
 
@@ -481,12 +537,12 @@ async function boot(): Promise<void> {
       hudSynergy.lastElementChild?.remove();
     }
     while (hudSynergy.children.length < synergies.length) {
-      const chip = document.createElement("div");
-      chip.className = "synergy-chip";
-      const icon = document.createElement("span");
-      icon.className = "synergy-icon";
-      const label = document.createElement("span");
-      label.className = "synergy-label";
+      const chip = document.createElement('div');
+      chip.className = 'synergy-chip';
+      const icon = document.createElement('span');
+      icon.className = 'synergy-icon';
+      const label = document.createElement('span');
+      label.className = 'synergy-label';
       chip.appendChild(icon);
       chip.appendChild(label);
       hudSynergy.appendChild(chip);
@@ -499,56 +555,56 @@ async function boot(): Promise<void> {
     for (let i = 0; i < synergies.length; i++) {
       const s = synergies[i]!;
       const chip = hudSynergy.children[i] as HTMLElement;
-      const iconEl = chip.querySelector(".synergy-icon") as HTMLElement;
-      const labelEl = chip.querySelector(".synergy-label") as HTMLElement;
+      const iconEl = chip.querySelector('.synergy-icon') as HTMLElement;
+      const labelEl = chip.querySelector('.synergy-label') as HTMLElement;
 
       // Set glyph
       const glyph = CARD_GLYPHS[s.id];
-      if (glyph && iconEl.dataset["sid"] !== s.id) {
+      if (glyph && iconEl.dataset['sid'] !== s.id) {
         setIconHtml(iconEl, glyph);
-        iconEl.dataset["sid"] = s.id;
+        iconEl.dataset['sid'] = s.id;
       }
 
       // Determine active state and label
       let active = false;
-      let text = "";
+      let text = '';
       switch (s.id) {
-        case "combustion": {
+        case 'combustion': {
           const count = s.killCounter ?? 0;
           text = `${count}/10`;
           active = count >= 8; // glow when close to triggering
           break;
         }
-        case "desperate":
+        case 'desperate':
           active = avatar.avatar!.hp <= 2;
-          text = active ? "×2" : "—";
+          text = active ? '×2' : '—';
           break;
-        case "kinetic":
+        case 'kinetic':
           active = velMag > 1 && avatar.avatar!.speedMul > 0;
-          text = active ? "+crit" : "—";
+          text = active ? '+crit' : '—';
           break;
-        case "stillness":
+        case 'stillness':
           active = !(velMag > 1 && avatar.avatar!.speedMul > 0);
-          text = active ? "+rate" : "—";
+          text = active ? '+rate' : '—';
           break;
       }
 
       labelEl.textContent = text;
-      chip.classList.toggle("active", active);
+      chip.classList.toggle('active', active);
     }
   }
 
   const skillButtonUpdaters = new WeakMap<HTMLButtonElement, () => void>();
-  let developerHudPanel: "settings" | "skills" = "settings";
+  let developerHudPanel: 'settings' | 'skills' = 'settings';
 
   function renderSkillButtonsInto(container: HTMLElement): void {
-    container.innerHTML = "";
+    container.innerHTML = '';
     for (let i = 0; i < play.activeSkills.length; i++) {
       const sk = play.activeSkills[i]!;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "skill-btn";
-      btn.addEventListener("click", () => play.activateSkill(i));
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'skill-btn';
+      btn.addEventListener('click', () => play.activateSkill(i));
 
       const SKILL_ICONS: Record<string, string> = {
         timeStop: iconTimeStop,
@@ -560,13 +616,13 @@ async function boot(): Promise<void> {
         overload: iconOverload,
       };
       const SKILL_LABELS: Record<string, string> = {
-        timeStop: "Time Stop",
-        shadowClone: "Clone",
-        reflectShield: "Shield",
-        barrage: "Barrage",
-        lifestealPulse: "Lifesteal",
-        axisFreeze: "Freeze",
-        overload: "Overload",
+        timeStop: 'Time Stop',
+        shadowClone: 'Clone',
+        reflectShield: 'Shield',
+        barrage: 'Barrage',
+        lifestealPulse: 'Lifesteal',
+        axisFreeze: 'Freeze',
+        overload: 'Overload',
       };
 
       const updateLabel = (): void => {
@@ -593,7 +649,7 @@ async function boot(): Promise<void> {
 
   function showSkillButtons(): void {
     if (!hudSkills) return;
-    hudSkills.classList.remove("developer-hud");
+    hudSkills.classList.remove('developer-hud');
     renderSkillButtonsInto(hudSkills);
   }
 
@@ -603,60 +659,74 @@ async function boot(): Promise<void> {
     onClick: () => void,
     attrs?: Record<string, string>,
   ): void {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "menu-btn";
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'menu-btn';
     btn.textContent = label;
-    btn.style.flex = "1 1 0";
+    btn.style.flex = '1 1 0';
     if (attrs) {
       for (const [k, v] of Object.entries(attrs)) {
         btn.setAttribute(k, v);
       }
     }
-    btn.addEventListener("click", onClick);
+    btn.addEventListener('click', onClick);
     container.appendChild(btn);
   }
 
   function refreshSkillButtons(): void {
     if (!hudSkills) return;
-    for (const btn of hudSkills.querySelectorAll<HTMLButtonElement>(".skill-btn")) {
+    for (const btn of hudSkills.querySelectorAll<HTMLButtonElement>(
+      '.skill-btn',
+    )) {
       skillButtonUpdaters.get(btn)?.();
     }
   }
 
   function showDeveloperControls(): void {
     if (!hudSkills) return;
-    hudSkills.innerHTML = "";
-    hudSkills.classList.add("developer-hud");
+    hudSkills.innerHTML = '';
+    hudSkills.classList.add('developer-hud');
 
-    const panelToggle = document.createElement("button");
-    panelToggle.type = "button";
-    panelToggle.className = "menu-btn developer-hud-toggle";
-    panelToggle.textContent = developerHudPanel === "settings" ? "skills" : "develop";
-    panelToggle.addEventListener("click", () => {
-      developerHudPanel = developerHudPanel === "settings" ? "skills" : "settings";
+    const panelToggle = document.createElement('button');
+    panelToggle.type = 'button';
+    panelToggle.className = 'menu-btn developer-hud-toggle';
+    panelToggle.textContent =
+      developerHudPanel === 'settings' ? 'skills' : 'develop';
+    panelToggle.addEventListener('click', () => {
+      developerHudPanel =
+        developerHudPanel === 'settings' ? 'skills' : 'settings';
       showDeveloperControls();
     });
 
-    const panel = document.createElement("div");
-    panel.className = "developer-hud-group";
+    const panel = document.createElement('div');
+    panel.className = 'developer-hud-group';
 
-    if (developerHudPanel === "settings") {
-      addDeveloperControlButton(panel, "player", openDeveloperPlayerMenu);
-      addDeveloperControlButton(panel, "enemy", openDeveloperEnemyMenu);
-      addDeveloperControlButton(panel, "enhance", openDeveloperEnhanceMenu);
-      addDeveloperControlButton(panel, "skills", openDeveloperSkillsMenu);
-      addDeveloperControlButton(panel, "start", () => {
+    if (developerHudPanel === 'settings') {
+      addDeveloperControlButton(panel, 'player', openDeveloperPlayerMenu);
+      addDeveloperControlButton(panel, 'enemy', openDeveloperEnemyMenu);
+      addDeveloperControlButton(panel, 'enhance', openDeveloperEnhanceMenu);
+      addDeveloperControlButton(panel, 'skills', openDeveloperSkillsMenu);
+      addDeveloperControlButton(panel, 'start', () => {
         play.spawnDeveloperEnemiesNow();
         setPaused(false);
       });
-      addDeveloperControlButton(panel, paused ? "resume" : "pause", () => {
-        const nextPaused = !paused;
-        setPaused(nextPaused);
-        const toggleBtn = hudSkills.querySelector<HTMLButtonElement>("[data-dev-toggle='pause']");
-        if (toggleBtn) toggleBtn.textContent = nextPaused ? "resume" : "pause";
-      }, { "data-dev-toggle": "pause" });
-      addDeveloperControlButton(panel, "restart", () => startRun("survival", 0, true));
+      addDeveloperControlButton(
+        panel,
+        paused ? 'resume' : 'pause',
+        () => {
+          const nextPaused = !paused;
+          setPaused(nextPaused);
+          const toggleBtn = hudSkills.querySelector<HTMLButtonElement>(
+            "[data-dev-toggle='pause']",
+          );
+          if (toggleBtn)
+            toggleBtn.textContent = nextPaused ? 'resume' : 'pause';
+        },
+        { 'data-dev-toggle': 'pause' },
+      );
+      addDeveloperControlButton(panel, 'restart', () =>
+        startRun('survival', 0, true),
+      );
     } else {
       renderSkillButtonsInto(panel);
     }
@@ -668,7 +738,7 @@ async function boot(): Promise<void> {
   interface DeveloperFormField {
     name: string;
     label: string;
-    type: "number" | "text" | "checkbox";
+    type: 'number' | 'text' | 'checkbox';
     value: string;
     min?: number;
     max?: number;
@@ -687,28 +757,28 @@ async function boot(): Promise<void> {
    */
   function formatNumeric(value: number, digits = 2): string {
     const text = value.toFixed(digits);
-    return text.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
+    return text.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
   }
 
-  const UI_META_SEPARATOR = " · ";
+  const UI_META_SEPARATOR = ' · ';
 
   /** Returns a short human-readable effect summary line for a skill at `level`. */
   function skillEffectSummary(id: PrimalSkillId, level: number): string {
     switch (id) {
-      case "timeStop":
+      case 'timeStop':
         return `Enemy speed ×${formatNumeric(timeStopSpeedMul(level))}`;
-      case "shadowClone":
+      case 'shadowClone':
         return `Clone inherit ${Math.round(cloneInheritRatio(level) * 100)}% power`;
-      case "reflectShield":
+      case 'reflectShield':
         return `Reflect ratio ×${formatNumeric(reflectDamageRatio(level))}`;
-      case "barrage":
+      case 'barrage':
         return `${barrageProjectiles(level)} shots · ${barrageDamage(level)} dmg each`;
-      case "lifestealPulse":
+      case 'lifestealPulse':
         return `Radius ${Math.round(lifestealRadius(level))} · ${lifestealDamage(level)} dmg/tick · +${lifestealHeal(level)} hp/tick`;
-      case "axisFreeze":
-        return "Snap to axis and stun enemies";
-      case "overload":
-        return "Triple fire-rate burst and self-damage 1";
+      case 'axisFreeze':
+        return 'Snap to axis and stun enemies';
+      case 'overload':
+        return 'Triple fire-rate burst and self-damage 1';
     }
   }
 
@@ -720,71 +790,80 @@ async function boot(): Promise<void> {
       const wasPaused = paused;
       if (!wasPaused) setPaused(true);
 
-      const dialog = document.createElement("dialog");
-      dialog.className = "developer-dialog";
-      dialog.setAttribute("aria-label", title);
+      const dialog = document.createElement('dialog');
+      dialog.className = 'developer-dialog';
+      dialog.setAttribute('aria-label', title);
 
-      const form = document.createElement("form");
-      form.className = "developer-form";
-      form.method = "dialog";
+      const form = document.createElement('form');
+      form.className = 'developer-form';
+      form.method = 'dialog';
       dialog.appendChild(form);
 
-      const heading = document.createElement("div");
-      heading.className = "overlay-title";
+      const heading = document.createElement('div');
+      heading.className = 'overlay-title';
       heading.textContent = title;
       form.appendChild(heading);
 
-      const body = document.createElement("div");
-      body.className = "pause-panel";
+      const body = document.createElement('div');
+      body.className = 'pause-panel';
       form.appendChild(body);
 
       for (const field of fields) {
-        const row = document.createElement("label");
-        row.className = "developer-form-row";
-        const label = document.createElement("span");
-        label.className = "developer-form-label";
+        const row = document.createElement('label');
+        row.className = 'developer-form-row';
+        const label = document.createElement('span');
+        label.className = 'developer-form-label';
         label.textContent = field.label;
 
-        if (field.type === "number" && field.min !== undefined && field.max !== undefined) {
+        if (
+          field.type === 'number' &&
+          field.min !== undefined &&
+          field.max !== undefined
+        ) {
           // Numeric field with known range — show range slider + number input
-          const wrapper = document.createElement("div");
-          wrapper.className = "developer-form-slider-group";
+          const wrapper = document.createElement('div');
+          wrapper.className = 'developer-form-slider-group';
 
-          const range = document.createElement("input");
-          range.type = "range";
-          range.className = "developer-form-range";
+          const range = document.createElement('input');
+          range.type = 'range';
+          range.className = 'developer-form-range';
           range.min = `${field.min}`;
           range.max = `${field.max}`;
           if (field.step !== undefined) range.step = `${field.step}`;
           range.value = field.value;
 
-          const input = document.createElement("input");
+          const input = document.createElement('input');
           input.name = field.name;
-          input.type = "number";
-          input.className = "developer-form-input developer-form-input--slim";
+          input.type = 'number';
+          input.className = 'developer-form-input developer-form-input--slim';
           input.min = `${field.min}`;
           input.max = `${field.max}`;
           if (field.step !== undefined) input.step = `${field.step}`;
           input.value = field.value;
 
-          range.addEventListener("input", () => { input.value = range.value; });
-          input.addEventListener("input", () => { range.value = input.value; });
+          range.addEventListener('input', () => {
+            input.value = range.value;
+          });
+          input.addEventListener('input', () => {
+            range.value = input.value;
+          });
 
           wrapper.appendChild(range);
           wrapper.appendChild(input);
           row.appendChild(label);
           row.appendChild(wrapper);
         } else {
-          const input = document.createElement("input");
+          const input = document.createElement('input');
           input.name = field.name;
-          input.className = "developer-form-input";
+          input.className = 'developer-form-input';
           input.type = field.type;
-          if (field.type === "checkbox") {
-            input.checked = field.value === "1" || field.value.toLowerCase() === "true";
-            input.classList.add("developer-form-checkbox");
+          if (field.type === 'checkbox') {
+            input.checked =
+              field.value === '1' || field.value.toLowerCase() === 'true';
+            input.classList.add('developer-form-checkbox');
           } else {
             input.value = field.value;
-            if (field.type === "number") {
+            if (field.type === 'number') {
               if (field.min !== undefined) input.min = `${field.min}`;
               if (field.max !== undefined) input.max = `${field.max}`;
               if (field.step !== undefined) input.step = `${field.step}`;
@@ -797,17 +876,17 @@ async function boot(): Promise<void> {
         body.appendChild(row);
       }
 
-      const actions = document.createElement("div");
-      actions.className = "draft-actions";
-      const saveBtn = document.createElement("button");
-      saveBtn.type = "submit";
-      saveBtn.className = "big-btn";
-      saveBtn.textContent = "save";
-      const cancelBtn = document.createElement("button");
-      cancelBtn.type = "button";
-      cancelBtn.className = "menu-btn";
-      cancelBtn.textContent = "cancel";
-      cancelBtn.addEventListener("click", () => dialog.close("cancel"));
+      const actions = document.createElement('div');
+      actions.className = 'draft-actions';
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'submit';
+      saveBtn.className = 'big-btn';
+      saveBtn.textContent = 'save';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'menu-btn';
+      cancelBtn.textContent = 'cancel';
+      cancelBtn.addEventListener('click', () => dialog.close('cancel'));
       actions.appendChild(saveBtn);
       actions.appendChild(cancelBtn);
       form.appendChild(actions);
@@ -818,21 +897,30 @@ async function boot(): Promise<void> {
         resolve(result);
       };
 
-      form.addEventListener("submit", (ev) => {
+      form.addEventListener('submit', (ev) => {
         ev.preventDefault();
         const values: Record<string, string> = {};
         for (const field of fields) {
           const input = form.elements.namedItem(field.name);
           if (input instanceof HTMLInputElement) {
-            values[field.name] = input.type === "checkbox" ? (input.checked ? "1" : "0") : input.value;
+            values[field.name] =
+              input.type === 'checkbox'
+                ? input.checked
+                  ? '1'
+                  : '0'
+                : input.value;
           }
         }
-        dialog.close("save");
+        dialog.close('save');
         finalize(values);
       });
-      dialog.addEventListener("close", () => {
-        if (dialog.returnValue !== "save") finalize(null);
-      }, { once: true });
+      dialog.addEventListener(
+        'close',
+        () => {
+          if (dialog.returnValue !== 'save') finalize(null);
+        },
+        { once: true },
+      );
 
       document.body.appendChild(dialog);
       dialog.showModal();
@@ -844,18 +932,100 @@ async function boot(): Promise<void> {
     const avatar = play.world.get(play.avatarId);
     if (!avatar?.avatar || !avatar.weapon) return;
     const snapshot = play.getDeveloperSnapshot();
-    const values = await openDeveloperForm("developer · player", [
-      { name: "hp", label: "hp", type: "number", value: `${avatar.avatar.hp}`, min: 1, max: 999, step: 1 },
-      { name: "maxHp", label: "max hp", type: "number", value: `${avatar.avatar.maxHp}`, min: 1, max: 999, step: 1 },
-      { name: "speedMul", label: "move speed", type: "number", value: avatar.avatar.speedMul.toFixed(2), min: 0.1, max: 5, step: 0.01 },
-      { name: "damage", label: "damage", type: "number", value: `${avatar.weapon.damage}`, min: 1, max: 999, step: 1 },
-      { name: "fireInterval", label: "fire interval", type: "number", value: avatar.weapon.period.toFixed(2), min: 0, max: 5, step: 0.01 },
-      { name: "projectileSpeed", label: "projectile speed", type: "number", value: `${Math.round(avatar.weapon.projectileSpeed)}`, min: 1, max: 2000, step: 1 },
-      { name: "projectiles", label: "projectiles", type: "number", value: `${avatar.weapon.projectiles}`, min: 1, max: 20, step: 1 },
-      { name: "pierce", label: "pierce", type: "number", value: `${avatar.weapon.pierce}`, min: 0, max: 50, step: 1 },
-      { name: "crit", label: "crit %", type: "number", value: `${Math.round(avatar.weapon.crit * 100)}`, min: 0, max: 100, step: 1 },
-      { name: "invincible", label: "invincible", type: "checkbox", value: snapshot.invincible ? "1" : "0" },
-      { name: "showEnemyHp", label: "show enemy hp", type: "checkbox", value: snapshot.showEnemyHp ? "1" : "0" },
+    const values = await openDeveloperForm('developer · player', [
+      {
+        name: 'hp',
+        label: 'hp',
+        type: 'number',
+        value: `${avatar.avatar.hp}`,
+        min: 1,
+        max: 999,
+        step: 1,
+      },
+      {
+        name: 'maxHp',
+        label: 'max hp',
+        type: 'number',
+        value: `${avatar.avatar.maxHp}`,
+        min: 1,
+        max: 999,
+        step: 1,
+      },
+      {
+        name: 'speedMul',
+        label: 'move speed',
+        type: 'number',
+        value: avatar.avatar.speedMul.toFixed(2),
+        min: 0.1,
+        max: 5,
+        step: 0.01,
+      },
+      {
+        name: 'damage',
+        label: 'damage',
+        type: 'number',
+        value: `${avatar.weapon.damage}`,
+        min: 1,
+        max: 999,
+        step: 1,
+      },
+      {
+        name: 'fireInterval',
+        label: 'fire interval',
+        type: 'number',
+        value: avatar.weapon.period.toFixed(2),
+        min: 0,
+        max: 5,
+        step: 0.01,
+      },
+      {
+        name: 'projectileSpeed',
+        label: 'projectile speed',
+        type: 'number',
+        value: `${Math.round(avatar.weapon.projectileSpeed)}`,
+        min: 1,
+        max: 2000,
+        step: 1,
+      },
+      {
+        name: 'projectiles',
+        label: 'projectiles',
+        type: 'number',
+        value: `${avatar.weapon.projectiles}`,
+        min: 1,
+        max: 20,
+        step: 1,
+      },
+      {
+        name: 'pierce',
+        label: 'pierce',
+        type: 'number',
+        value: `${avatar.weapon.pierce}`,
+        min: 0,
+        max: 50,
+        step: 1,
+      },
+      {
+        name: 'crit',
+        label: 'crit %',
+        type: 'number',
+        value: `${Math.round(avatar.weapon.crit * 100)}`,
+        min: 0,
+        max: 100,
+        step: 1,
+      },
+      {
+        name: 'invincible',
+        label: 'invincible',
+        type: 'checkbox',
+        value: snapshot.invincible ? '1' : '0',
+      },
+      {
+        name: 'showEnemyHp',
+        label: 'show enemy hp',
+        type: 'checkbox',
+        value: snapshot.showEnemyHp ? '1' : '0',
+      },
     ]);
     if (!values) return;
 
@@ -864,14 +1034,27 @@ async function boot(): Promise<void> {
       maxHp: parseNumericFormValue(values.maxHp, avatar.avatar.maxHp),
       speedMul: parseNumericFormValue(values.speedMul, avatar.avatar.speedMul),
       damage: parseNumericFormValue(values.damage, avatar.weapon.damage),
-      fireInterval: parseNumericFormValue(values.fireInterval, avatar.weapon.period),
-      projectileSpeed: parseNumericFormValue(values.projectileSpeed, avatar.weapon.projectileSpeed),
-      projectiles: parseNumericFormValue(values.projectiles, avatar.weapon.projectiles),
+      fireInterval: parseNumericFormValue(
+        values.fireInterval,
+        avatar.weapon.period,
+      ),
+      projectileSpeed: parseNumericFormValue(
+        values.projectileSpeed,
+        avatar.weapon.projectileSpeed,
+      ),
+      projectiles: parseNumericFormValue(
+        values.projectiles,
+        avatar.weapon.projectiles,
+      ),
       pierce: parseNumericFormValue(values.pierce, avatar.weapon.pierce),
-      crit: parseNumericFormValue(values.crit, Math.round(avatar.weapon.crit * 100)) / 100,
+      crit:
+        parseNumericFormValue(
+          values.crit,
+          Math.round(avatar.weapon.crit * 100),
+        ) / 100,
     });
-    play.setDeveloperInvincible(values.invincible === "1");
-    play.setDeveloperShowEnemyHp(values.showEnemyHp === "1");
+    play.setDeveloperInvincible(values.invincible === '1');
+    play.setDeveloperShowEnemyHp(values.showEnemyHp === '1');
   }
 
   // ── Developer enemy list (add/edit/delete card-based UI) ──────────────────
@@ -886,7 +1069,7 @@ async function boot(): Promise<void> {
   }
 
   interface DeveloperEnhanceEntry {
-    cardId: Card["id"];
+    cardId: Card['id'];
     level: number;
   }
 
@@ -907,7 +1090,17 @@ async function boot(): Promise<void> {
   /** Apply current enemy entries to the PlayScene. */
   function applyDeveloperEnemyEntries(): void {
     if (!play?.isDeveloperMode()) return;
-    const kinds: EnemyKind[] = ["circle", "square", "star", "pentagon", "hexagon", "diamond", "cross", "crescent", "boss"];
+    const kinds: EnemyKind[] = [
+      'circle',
+      'square',
+      'star',
+      'pentagon',
+      'hexagon',
+      'diamond',
+      'cross',
+      'crescent',
+      'boss',
+    ];
     for (const k of kinds) play.setDeveloperEnemySpawn(k, false, 0);
     for (const entry of developerEnemyEntries) {
       play.setDeveloperEnemySpawn(entry.kind, true, entry.count);
@@ -933,7 +1126,12 @@ async function boot(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
     const skillIds = Object.keys(PRIMAL_SKILLS) as PrimalSkillId[];
     for (const id of skillIds) {
-      play.setDeveloperSkillConfig(id, { enabled: false, level: 0, duration: 0, cooldown: 0 });
+      play.setDeveloperSkillConfig(id, {
+        enabled: false,
+        level: 0,
+        duration: 0,
+        cooldown: 0,
+      });
     }
     for (const entry of developerSkillEntries) {
       play.setDeveloperSkillConfig(entry.id, {
@@ -952,9 +1150,9 @@ async function boot(): Promise<void> {
       const wasPaused = paused;
       if (!wasPaused) setPaused(true);
 
-      const dialog = document.createElement("dialog");
-      dialog.className = "developer-dialog";
-      dialog.setAttribute("aria-label", "developer · enemy");
+      const dialog = document.createElement('dialog');
+      dialog.className = 'developer-dialog';
+      dialog.setAttribute('aria-label', 'developer · enemy');
 
       const finalize = (): void => {
         dialog.remove();
@@ -962,48 +1160,63 @@ async function boot(): Promise<void> {
         resolve();
       };
 
-      const kinds: EnemyKind[] = ["circle", "square", "star", "pentagon", "hexagon", "diamond", "cross", "crescent", "boss"];
+      const kinds: EnemyKind[] = [
+        'circle',
+        'square',
+        'star',
+        'pentagon',
+        'hexagon',
+        'diamond',
+        'cross',
+        'crescent',
+        'boss',
+      ];
 
       function renderList(): void {
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
-        heading.textContent = "developer · enemy";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
+        heading.textContent = 'developer · enemy';
         container.appendChild(heading);
 
         // Spawn interval control
         const snapshot = play.getDeveloperSnapshot();
-        const intervalRow = document.createElement("div");
-        intervalRow.className = "developer-form-row";
-        const intervalLabel = document.createElement("span");
-        intervalLabel.className = "developer-form-label";
-        intervalLabel.textContent = "interval";
-        const intervalGroup = document.createElement("div");
-        intervalGroup.className = "developer-form-slider-group";
-        const intervalRange = document.createElement("input");
-        intervalRange.type = "range";
-        intervalRange.className = "developer-form-range";
-        intervalRange.min = "0.1";
-        intervalRange.max = "10";
-        intervalRange.step = "0.1";
+        const intervalRow = document.createElement('div');
+        intervalRow.className = 'developer-form-row';
+        const intervalLabel = document.createElement('span');
+        intervalLabel.className = 'developer-form-label';
+        intervalLabel.textContent = 'interval';
+        const intervalGroup = document.createElement('div');
+        intervalGroup.className = 'developer-form-slider-group';
+        const intervalRange = document.createElement('input');
+        intervalRange.type = 'range';
+        intervalRange.className = 'developer-form-range';
+        intervalRange.min = '0.1';
+        intervalRange.max = '10';
+        intervalRange.step = '0.1';
         intervalRange.value = snapshot.enemy.interval.toFixed(1);
-        const intervalInput = document.createElement("input");
-        intervalInput.type = "number";
-        intervalInput.className = "developer-form-input developer-form-input--slim";
-        intervalInput.min = "0.1";
-        intervalInput.max = "10";
-        intervalInput.step = "0.1";
+        const intervalInput = document.createElement('input');
+        intervalInput.type = 'number';
+        intervalInput.className =
+          'developer-form-input developer-form-input--slim';
+        intervalInput.min = '0.1';
+        intervalInput.max = '10';
+        intervalInput.step = '0.1';
         intervalInput.value = snapshot.enemy.interval.toFixed(1);
-        intervalRange.addEventListener("input", () => {
+        intervalRange.addEventListener('input', () => {
           intervalInput.value = intervalRange.value;
-          play.setDeveloperEnemyInterval(parseNumericFormValue(intervalRange.value, 2));
+          play.setDeveloperEnemyInterval(
+            parseNumericFormValue(intervalRange.value, 2),
+          );
         });
-        intervalInput.addEventListener("input", () => {
+        intervalInput.addEventListener('input', () => {
           intervalRange.value = intervalInput.value;
-          play.setDeveloperEnemyInterval(parseNumericFormValue(intervalInput.value, 2));
+          play.setDeveloperEnemyInterval(
+            parseNumericFormValue(intervalInput.value, 2),
+          );
         });
         intervalGroup.appendChild(intervalRange);
         intervalGroup.appendChild(intervalInput);
@@ -1012,39 +1225,41 @@ async function boot(): Promise<void> {
         container.appendChild(intervalRow);
 
         // Enemy cards
-        const list = document.createElement("div");
-        list.className = "developer-enemy-list";
+        const list = document.createElement('div');
+        list.className = 'developer-enemy-list';
         for (let i = 0; i < developerEnemyEntries.length; i++) {
           const entry = developerEnemyEntries[i]!;
-          const card = document.createElement("div");
-          card.className = "developer-enemy-card";
+          const card = document.createElement('div');
+          card.className = 'developer-enemy-card';
 
-          const info = document.createElement("div");
-          info.className = "developer-enemy-card-info";
-          const kindLabel = document.createElement("div");
-          kindLabel.className = "developer-enemy-card-kind";
+          const info = document.createElement('div');
+          info.className = 'developer-enemy-card-info';
+          const kindLabel = document.createElement('div');
+          kindLabel.className = 'developer-enemy-card-kind';
           kindLabel.textContent = entry.kind;
-          const statsLabel = document.createElement("div");
-          statsLabel.className = "developer-enemy-card-stats";
+          const statsLabel = document.createElement('div');
+          statsLabel.className = 'developer-enemy-card-stats';
           statsLabel.textContent = `×${entry.count}  hp:${entry.hp}  atk:${entry.attack}  spd:${entry.speed.toFixed(1)}`;
           info.appendChild(kindLabel);
           info.appendChild(statsLabel);
 
-          const actions = document.createElement("div");
-          actions.className = "developer-enemy-card-actions";
-          const editBtn = document.createElement("button");
-          editBtn.type = "button";
-          editBtn.className = "secondary-btn";
-          editBtn.textContent = "edit";
-          editBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px";
+          const actions = document.createElement('div');
+          actions.className = 'developer-enemy-card-actions';
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'secondary-btn';
+          editBtn.textContent = 'edit';
+          editBtn.style.cssText =
+            'flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px';
           const idx = i;
-          editBtn.addEventListener("click", () => renderEdit(idx));
-          const delBtn = document.createElement("button");
-          delBtn.type = "button";
-          delBtn.className = "secondary-btn";
-          delBtn.textContent = "delete";
-          delBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)";
-          delBtn.addEventListener("click", () => {
+          editBtn.addEventListener('click', () => renderEdit(idx));
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'secondary-btn';
+          delBtn.textContent = 'delete';
+          delBtn.style.cssText =
+            'flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)';
+          delBtn.addEventListener('click', () => {
             developerEnemyEntries.splice(idx, 1);
             applyDeveloperEnemyEntries();
             renderList();
@@ -1059,50 +1274,53 @@ async function boot(): Promise<void> {
         container.appendChild(list);
 
         // + add button
-        const addBtn = document.createElement("button");
-        addBtn.type = "button";
-        addBtn.className = "menu-btn";
-        addBtn.textContent = "+ add enemy";
-        addBtn.addEventListener("click", () => renderAdd());
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'menu-btn';
+        addBtn.textContent = '+ add enemy';
+        addBtn.addEventListener('click', () => renderAdd());
         container.appendChild(addBtn);
 
         // Close button
-        const closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.className = "menu-btn";
-        closeBtn.textContent = "close";
-        closeBtn.addEventListener("click", () => { dialog.close(); finalize(); });
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'menu-btn';
+        closeBtn.textContent = 'close';
+        closeBtn.addEventListener('click', () => {
+          dialog.close();
+          finalize();
+        });
         container.appendChild(closeBtn);
 
         dialog.appendChild(container);
       }
 
       function renderAdd(): void {
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
-        heading.textContent = "add enemy";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
+        heading.textContent = 'add enemy';
         container.appendChild(heading);
 
         // Kind selector
-        const kindRow = document.createElement("div");
-        kindRow.className = "developer-form-row";
-        const kindLabel = document.createElement("span");
-        kindLabel.className = "developer-form-label";
-        kindLabel.textContent = "kind";
-        const kindSelect = document.createElement("select");
-        kindSelect.className = "developer-form-input";
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "select...";
+        const kindRow = document.createElement('div');
+        kindRow.className = 'developer-form-row';
+        const kindLabel = document.createElement('span');
+        kindLabel.className = 'developer-form-label';
+        kindLabel.textContent = 'kind';
+        const kindSelect = document.createElement('select');
+        kindSelect.className = 'developer-form-input';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'select...';
         placeholder.disabled = true;
         placeholder.selected = true;
         kindSelect.appendChild(placeholder);
         for (const k of kinds) {
-          const opt = document.createElement("option");
+          const opt = document.createElement('option');
           opt.value = k;
           opt.textContent = k;
           kindSelect.appendChild(opt);
@@ -1112,53 +1330,77 @@ async function boot(): Promise<void> {
         container.appendChild(kindRow);
 
         // Fields container (shown after kind selection)
-        const fieldsContainer = document.createElement("div");
-        fieldsContainer.className = "pause-panel";
+        const fieldsContainer = document.createElement('div');
+        fieldsContainer.className = 'pause-panel';
         fieldsContainer.hidden = true;
         container.appendChild(fieldsContainer);
 
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        saveBtn.className = "big-btn";
-        saveBtn.textContent = "save";
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'big-btn';
+        saveBtn.textContent = 'save';
         saveBtn.hidden = true;
         container.appendChild(saveBtn);
 
-        const backBtn = document.createElement("button");
-        backBtn.type = "button";
-        backBtn.className = "menu-btn";
-        backBtn.textContent = "back";
-        backBtn.addEventListener("click", () => renderList());
+        const backBtn = document.createElement('button');
+        backBtn.type = 'button';
+        backBtn.className = 'menu-btn';
+        backBtn.textContent = 'back';
+        backBtn.addEventListener('click', () => renderList());
         container.appendChild(backBtn);
 
-        let currentInputs: { count: HTMLInputElement; hp: HTMLInputElement; attack: HTMLInputElement; speed: HTMLInputElement; attackFrequency: HTMLInputElement } | null = null;
+        let currentInputs: {
+          count: HTMLInputElement;
+          hp: HTMLInputElement;
+          attack: HTMLInputElement;
+          speed: HTMLInputElement;
+          attackFrequency: HTMLInputElement;
+        } | null = null;
 
-        kindSelect.addEventListener("change", () => {
+        kindSelect.addEventListener('change', () => {
           const kind = kindSelect.value as EnemyKind;
           if (!kinds.includes(kind)) return;
           const snapshot = play.getDeveloperSnapshot();
           const baseStats = snapshot.enemy.stats[kind];
-          fieldsContainer.innerHTML = "";
+          fieldsContainer.innerHTML = '';
           fieldsContainer.hidden = false;
           saveBtn.hidden = false;
 
           const inputs = buildEnemyStatsFields(fieldsContainer, {
-            count: 1, hp: baseStats.hp, attack: baseStats.attack,
-            speed: baseStats.speed, attackFrequency: baseStats.attackFrequency,
+            count: 1,
+            hp: baseStats.hp,
+            attack: baseStats.attack,
+            speed: baseStats.speed,
+            attackFrequency: baseStats.attackFrequency,
           });
           currentInputs = inputs;
         });
 
-        saveBtn.addEventListener("click", () => {
+        saveBtn.addEventListener('click', () => {
           const kind = kindSelect.value as EnemyKind;
           if (!kinds.includes(kind) || !currentInputs) return;
           developerEnemyEntries.push({
             kind,
-            count: Math.max(1, Math.round(parseNumericFormValue(currentInputs.count.value, 1))),
-            hp: Math.max(1, Math.round(parseNumericFormValue(currentInputs.hp.value, 1))),
-            attack: Math.max(0, parseNumericFormValue(currentInputs.attack.value, 1)),
-            speed: Math.max(0, parseNumericFormValue(currentInputs.speed.value, 1)),
-            attackFrequency: Math.max(0, parseNumericFormValue(currentInputs.attackFrequency.value, 1)),
+            count: Math.max(
+              1,
+              Math.round(parseNumericFormValue(currentInputs.count.value, 1)),
+            ),
+            hp: Math.max(
+              1,
+              Math.round(parseNumericFormValue(currentInputs.hp.value, 1)),
+            ),
+            attack: Math.max(
+              0,
+              parseNumericFormValue(currentInputs.attack.value, 1),
+            ),
+            speed: Math.max(
+              0,
+              parseNumericFormValue(currentInputs.speed.value, 1),
+            ),
+            attackFrequency: Math.max(
+              0,
+              parseNumericFormValue(currentInputs.attackFrequency.value, 1),
+            ),
           });
           applyDeveloperEnemyEntries();
           renderList();
@@ -1169,43 +1411,64 @@ async function boot(): Promise<void> {
 
       function renderEdit(index: number): void {
         const entry = developerEnemyEntries[index];
-        if (!entry) { renderList(); return; }
+        if (!entry) {
+          renderList();
+          return;
+        }
 
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
         heading.textContent = `edit · ${entry.kind}`;
         container.appendChild(heading);
 
-        const fieldsContainer = document.createElement("div");
-        fieldsContainer.className = "pause-panel";
+        const fieldsContainer = document.createElement('div');
+        fieldsContainer.className = 'pause-panel';
         container.appendChild(fieldsContainer);
 
         const inputs = buildEnemyStatsFields(fieldsContainer, entry);
 
-        const actions = document.createElement("div");
-        actions.className = "draft-actions";
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        saveBtn.className = "big-btn";
-        saveBtn.textContent = "save";
-        saveBtn.addEventListener("click", () => {
-          entry.count = Math.max(1, Math.round(parseNumericFormValue(inputs.count.value, entry.count)));
-          entry.hp = Math.max(1, Math.round(parseNumericFormValue(inputs.hp.value, entry.hp)));
-          entry.attack = Math.max(0, parseNumericFormValue(inputs.attack.value, entry.attack));
-          entry.speed = Math.max(0, parseNumericFormValue(inputs.speed.value, entry.speed));
-          entry.attackFrequency = Math.max(0, parseNumericFormValue(inputs.attackFrequency.value, entry.attackFrequency));
+        const actions = document.createElement('div');
+        actions.className = 'draft-actions';
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'big-btn';
+        saveBtn.textContent = 'save';
+        saveBtn.addEventListener('click', () => {
+          entry.count = Math.max(
+            1,
+            Math.round(parseNumericFormValue(inputs.count.value, entry.count)),
+          );
+          entry.hp = Math.max(
+            1,
+            Math.round(parseNumericFormValue(inputs.hp.value, entry.hp)),
+          );
+          entry.attack = Math.max(
+            0,
+            parseNumericFormValue(inputs.attack.value, entry.attack),
+          );
+          entry.speed = Math.max(
+            0,
+            parseNumericFormValue(inputs.speed.value, entry.speed),
+          );
+          entry.attackFrequency = Math.max(
+            0,
+            parseNumericFormValue(
+              inputs.attackFrequency.value,
+              entry.attackFrequency,
+            ),
+          );
           applyDeveloperEnemyEntries();
           renderList();
         });
-        const cancelBtn = document.createElement("button");
-        cancelBtn.type = "button";
-        cancelBtn.className = "menu-btn";
-        cancelBtn.textContent = "back";
-        cancelBtn.addEventListener("click", () => renderList());
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'menu-btn';
+        cancelBtn.textContent = 'back';
+        cancelBtn.addEventListener('click', () => renderList());
         actions.appendChild(saveBtn);
         actions.appendChild(cancelBtn);
         container.appendChild(actions);
@@ -1215,41 +1478,99 @@ async function boot(): Promise<void> {
 
       function buildEnemyStatsFields(
         parent: HTMLElement,
-        defaults: { count: number; hp: number; attack: number; speed: number; attackFrequency: number },
-      ): { count: HTMLInputElement; hp: HTMLInputElement; attack: HTMLInputElement; speed: HTMLInputElement; attackFrequency: HTMLInputElement } {
-        const fieldDefs: { name: string; label: string; value: number; min: number; max: number; step: number }[] = [
-          { name: "count", label: "count", value: defaults.count, min: 1, max: 50, step: 1 },
-          { name: "hp", label: "hp", value: defaults.hp, min: 1, max: 9999, step: 1 },
-          { name: "attack", label: "attack", value: defaults.attack, min: 0, max: 100, step: 0.1 },
-          { name: "speed", label: "speed", value: defaults.speed, min: 0, max: 500, step: 0.1 },
-          { name: "attackFrequency", label: "atk freq", value: defaults.attackFrequency, min: 0, max: 10, step: 0.1 },
+        defaults: {
+          count: number;
+          hp: number;
+          attack: number;
+          speed: number;
+          attackFrequency: number;
+        },
+      ): {
+        count: HTMLInputElement;
+        hp: HTMLInputElement;
+        attack: HTMLInputElement;
+        speed: HTMLInputElement;
+        attackFrequency: HTMLInputElement;
+      } {
+        const fieldDefs: {
+          name: string;
+          label: string;
+          value: number;
+          min: number;
+          max: number;
+          step: number;
+        }[] = [
+          {
+            name: 'count',
+            label: 'count',
+            value: defaults.count,
+            min: 1,
+            max: 50,
+            step: 1,
+          },
+          {
+            name: 'hp',
+            label: 'hp',
+            value: defaults.hp,
+            min: 1,
+            max: 9999,
+            step: 1,
+          },
+          {
+            name: 'attack',
+            label: 'attack',
+            value: defaults.attack,
+            min: 0,
+            max: 100,
+            step: 0.1,
+          },
+          {
+            name: 'speed',
+            label: 'speed',
+            value: defaults.speed,
+            min: 0,
+            max: 500,
+            step: 0.1,
+          },
+          {
+            name: 'attackFrequency',
+            label: 'atk freq',
+            value: defaults.attackFrequency,
+            min: 0,
+            max: 10,
+            step: 0.1,
+          },
         ];
         const inputs: Record<string, HTMLInputElement> = {};
         for (const fd of fieldDefs) {
-          const row = document.createElement("label");
-          row.className = "developer-form-row";
-          const label = document.createElement("span");
-          label.className = "developer-form-label";
+          const row = document.createElement('label');
+          row.className = 'developer-form-row';
+          const label = document.createElement('span');
+          label.className = 'developer-form-label';
           label.textContent = fd.label;
 
-          const wrapper = document.createElement("div");
-          wrapper.className = "developer-form-slider-group";
-          const range = document.createElement("input");
-          range.type = "range";
-          range.className = "developer-form-range";
+          const wrapper = document.createElement('div');
+          wrapper.className = 'developer-form-slider-group';
+          const range = document.createElement('input');
+          range.type = 'range';
+          range.className = 'developer-form-range';
           range.min = `${fd.min}`;
           range.max = `${fd.max}`;
           range.step = `${fd.step}`;
           range.value = `${fd.value}`;
-          const input = document.createElement("input");
-          input.type = "number";
-          input.className = "developer-form-input developer-form-input--slim";
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.className = 'developer-form-input developer-form-input--slim';
           input.min = `${fd.min}`;
           input.max = `${fd.max}`;
           input.step = `${fd.step}`;
           input.value = `${fd.value}`;
-          range.addEventListener("input", () => { input.value = range.value; });
-          input.addEventListener("input", () => { range.value = input.value; });
+          range.addEventListener('input', () => {
+            input.value = range.value;
+          });
+          input.addEventListener('input', () => {
+            range.value = input.value;
+          });
           wrapper.appendChild(range);
           wrapper.appendChild(input);
 
@@ -1258,14 +1579,20 @@ async function boot(): Promise<void> {
           parent.appendChild(row);
           inputs[fd.name] = input;
         }
-        return inputs as { count: HTMLInputElement; hp: HTMLInputElement; attack: HTMLInputElement; speed: HTMLInputElement; attackFrequency: HTMLInputElement };
+        return inputs as {
+          count: HTMLInputElement;
+          hp: HTMLInputElement;
+          attack: HTMLInputElement;
+          speed: HTMLInputElement;
+          attackFrequency: HTMLInputElement;
+        };
       }
 
       renderList();
       document.body.appendChild(dialog);
       dialog.showModal();
 
-      dialog.addEventListener("close", () => finalize(), { once: true });
+      dialog.addEventListener('close', () => finalize(), { once: true });
     });
   }
 
@@ -1295,9 +1622,9 @@ async function boot(): Promise<void> {
       const wasPaused = paused;
       if (!wasPaused) setPaused(true);
 
-      const dialog = document.createElement("dialog");
-      dialog.className = "developer-dialog";
-      dialog.setAttribute("aria-label", "developer · enhance");
+      const dialog = document.createElement('dialog');
+      dialog.className = 'developer-dialog';
+      dialog.setAttribute('aria-label', 'developer · enhance');
 
       const finalize = (): void => {
         dialog.remove();
@@ -1305,40 +1632,55 @@ async function boot(): Promise<void> {
         resolve();
       };
 
-      function buildLevelField(parent: HTMLElement, defaultLevel: number): HTMLInputElement {
-        const row = document.createElement("label");
-        row.className = "developer-form-row";
-        const label = document.createElement("span");
-        label.className = "developer-form-label";
-        label.textContent = "target level";
+      function buildLevelField(
+        parent: HTMLElement,
+        defaultLevel: number,
+      ): HTMLInputElement {
+        const row = document.createElement('label');
+        row.className = 'developer-form-row';
+        const label = document.createElement('span');
+        label.className = 'developer-form-label';
+        label.textContent = 'target level';
 
-        const wrapper = document.createElement("div");
-        wrapper.className = "developer-form-slider-group";
-        const range = document.createElement("input");
-        range.type = "range";
-        range.className = "developer-form-range";
-        range.min = "1";
-        range.max = "5";
-        range.step = "1";
+        const wrapper = document.createElement('div');
+        wrapper.className = 'developer-form-slider-group';
+        const range = document.createElement('input');
+        range.type = 'range';
+        range.className = 'developer-form-range';
+        range.min = '1';
+        range.max = '5';
+        range.step = '1';
         range.value = `${Math.max(1, Math.min(5, Math.round(defaultLevel)))}`;
-        const input = document.createElement("input");
-        input.type = "number";
-        input.className = "developer-form-input developer-form-input--slim";
-        input.min = "1";
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'developer-form-input developer-form-input--slim';
+        input.min = '1';
         input.max = `${MAX_CARD_LEVEL}`;
-        input.step = "1";
+        input.step = '1';
         input.value = range.value;
         range.max = `${MAX_CARD_LEVEL}`;
-        range.addEventListener("input", () => {
+        range.addEventListener('input', () => {
           input.value = range.value;
-          input.dispatchEvent(new Event("change"));
+          input.dispatchEvent(new Event('change'));
         });
-        input.addEventListener("input", () => {
-          const n = Math.max(1, Math.min(MAX_CARD_LEVEL, Math.round(parseNumericFormValue(input.value, 1))));
+        input.addEventListener('input', () => {
+          const n = Math.max(
+            1,
+            Math.min(
+              MAX_CARD_LEVEL,
+              Math.round(parseNumericFormValue(input.value, 1)),
+            ),
+          );
           range.value = `${n}`;
         });
-        input.addEventListener("change", () => {
-          const n = Math.max(1, Math.min(MAX_CARD_LEVEL, Math.round(parseNumericFormValue(input.value, 1))));
+        input.addEventListener('change', () => {
+          const n = Math.max(
+            1,
+            Math.min(
+              MAX_CARD_LEVEL,
+              Math.round(parseNumericFormValue(input.value, 1)),
+            ),
+          );
           input.value = `${n}`;
           range.value = `${n}`;
         });
@@ -1351,52 +1693,54 @@ async function boot(): Promise<void> {
       }
 
       function renderList(): void {
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
-        heading.textContent = "developer · enhance";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
+        heading.textContent = 'developer · enhance';
         container.appendChild(heading);
 
-        const list = document.createElement("div");
-        list.className = "developer-enemy-list";
+        const list = document.createElement('div');
+        list.className = 'developer-enemy-list';
         for (let i = 0; i < developerEnhanceEntries.length; i++) {
           const entry = developerEnhanceEntries[i]!;
           const card = POOL_BY_ID.get(entry.cardId);
           const cardLabel = card?.name ?? entry.cardId;
           const cardStats = `id:${entry.cardId}  target Lv${Math.max(1, Math.floor(entry.level))}`;
 
-          const cardEl = document.createElement("div");
-          cardEl.className = "developer-enemy-card";
+          const cardEl = document.createElement('div');
+          cardEl.className = 'developer-enemy-card';
 
-          const info = document.createElement("div");
-          info.className = "developer-enemy-card-info";
-          const kindLabel = document.createElement("div");
-          kindLabel.className = "developer-enemy-card-kind";
+          const info = document.createElement('div');
+          info.className = 'developer-enemy-card-info';
+          const kindLabel = document.createElement('div');
+          kindLabel.className = 'developer-enemy-card-kind';
           kindLabel.textContent = cardLabel;
-          const statsLabel = document.createElement("div");
-          statsLabel.className = "developer-enemy-card-stats";
+          const statsLabel = document.createElement('div');
+          statsLabel.className = 'developer-enemy-card-stats';
           statsLabel.textContent = cardStats;
           info.appendChild(kindLabel);
           info.appendChild(statsLabel);
 
-          const actions = document.createElement("div");
-          actions.className = "developer-enemy-card-actions";
-          const editBtn = document.createElement("button");
-          editBtn.type = "button";
-          editBtn.className = "secondary-btn";
-          editBtn.textContent = "edit";
-          editBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px";
+          const actions = document.createElement('div');
+          actions.className = 'developer-enemy-card-actions';
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'secondary-btn';
+          editBtn.textContent = 'edit';
+          editBtn.style.cssText =
+            'flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px';
           const idx = i;
-          editBtn.addEventListener("click", () => renderEdit(idx));
-          const delBtn = document.createElement("button");
-          delBtn.type = "button";
-          delBtn.className = "secondary-btn";
-          delBtn.textContent = "delete";
-          delBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)";
-          delBtn.addEventListener("click", () => {
+          editBtn.addEventListener('click', () => renderEdit(idx));
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'secondary-btn';
+          delBtn.textContent = 'delete';
+          delBtn.style.cssText =
+            'flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)';
+          delBtn.addEventListener('click', () => {
             developerEnhanceEntries.splice(idx, 1);
             renderList();
           });
@@ -1409,48 +1753,51 @@ async function boot(): Promise<void> {
         }
         container.appendChild(list);
 
-        const addBtn = document.createElement("button");
-        addBtn.type = "button";
-        addBtn.className = "menu-btn";
-        addBtn.textContent = "+ add enhance";
-        addBtn.addEventListener("click", () => renderAdd());
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'menu-btn';
+        addBtn.textContent = '+ add enhance';
+        addBtn.addEventListener('click', () => renderAdd());
         container.appendChild(addBtn);
 
-        const closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.className = "menu-btn";
-        closeBtn.textContent = "close";
-        closeBtn.addEventListener("click", () => { dialog.close(); finalize(); });
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'menu-btn';
+        closeBtn.textContent = 'close';
+        closeBtn.addEventListener('click', () => {
+          dialog.close();
+          finalize();
+        });
         container.appendChild(closeBtn);
 
         dialog.appendChild(container);
       }
 
       function renderAdd(): void {
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
-        heading.textContent = "add enhance";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
+        heading.textContent = 'add enhance';
         container.appendChild(heading);
 
-        const cardRow = document.createElement("div");
-        cardRow.className = "developer-form-row";
-        const cardLabel = document.createElement("span");
-        cardLabel.className = "developer-form-label";
-        cardLabel.textContent = "card";
-        const cardSelect = document.createElement("select");
-        cardSelect.className = "developer-form-input";
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "select...";
+        const cardRow = document.createElement('div');
+        cardRow.className = 'developer-form-row';
+        const cardLabel = document.createElement('span');
+        cardLabel.className = 'developer-form-label';
+        cardLabel.textContent = 'card';
+        const cardSelect = document.createElement('select');
+        cardSelect.className = 'developer-form-input';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'select...';
         placeholder.disabled = true;
         placeholder.selected = true;
         cardSelect.appendChild(placeholder);
         for (const card of POOL) {
-          const opt = document.createElement("option");
+          const opt = document.createElement('option');
           opt.value = card.id;
           opt.textContent = `${card.name} (${card.id})`;
           cardSelect.appendChild(opt);
@@ -1459,25 +1806,25 @@ async function boot(): Promise<void> {
         cardRow.appendChild(cardSelect);
         container.appendChild(cardRow);
 
-        const fieldsContainer = document.createElement("div");
-        fieldsContainer.className = "pause-panel";
+        const fieldsContainer = document.createElement('div');
+        fieldsContainer.className = 'pause-panel';
         fieldsContainer.hidden = true;
         container.appendChild(fieldsContainer);
 
-        const previewCard = document.createElement("div");
-        previewCard.className = "developer-enhance-preview";
+        const previewCard = document.createElement('div');
+        previewCard.className = 'developer-enhance-preview';
         previewCard.hidden = true;
-        const previewGlyph = document.createElement("span");
-        previewGlyph.className = "developer-enhance-preview-glyph";
-        previewGlyph.setAttribute("aria-hidden", "true");
-        const previewBody = document.createElement("div");
-        previewBody.className = "developer-enhance-preview-body";
-        const previewName = document.createElement("div");
-        previewName.className = "developer-enhance-preview-name";
-        const previewDesc = document.createElement("div");
-        previewDesc.className = "developer-enhance-preview-desc";
-        const previewScaled = document.createElement("div");
-        previewScaled.className = "developer-enhance-preview-scaled";
+        const previewGlyph = document.createElement('span');
+        previewGlyph.className = 'developer-enhance-preview-glyph';
+        previewGlyph.setAttribute('aria-hidden', 'true');
+        const previewBody = document.createElement('div');
+        previewBody.className = 'developer-enhance-preview-body';
+        const previewName = document.createElement('div');
+        previewName.className = 'developer-enhance-preview-name';
+        const previewDesc = document.createElement('div');
+        previewDesc.className = 'developer-enhance-preview-desc';
+        const previewScaled = document.createElement('div');
+        previewScaled.className = 'developer-enhance-preview-scaled';
         previewBody.appendChild(previewName);
         previewBody.appendChild(previewDesc);
         previewBody.appendChild(previewScaled);
@@ -1485,56 +1832,72 @@ async function boot(): Promise<void> {
         previewCard.appendChild(previewBody);
         container.appendChild(previewCard);
 
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        saveBtn.className = "big-btn";
-        saveBtn.textContent = "save";
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'big-btn';
+        saveBtn.textContent = 'save';
         saveBtn.hidden = true;
         container.appendChild(saveBtn);
 
-        const backBtn = document.createElement("button");
-        backBtn.type = "button";
-        backBtn.className = "menu-btn";
-        backBtn.textContent = "back";
-        backBtn.addEventListener("click", () => renderList());
+        const backBtn = document.createElement('button');
+        backBtn.type = 'button';
+        backBtn.className = 'menu-btn';
+        backBtn.textContent = 'back';
+        backBtn.addEventListener('click', () => renderList());
         container.appendChild(backBtn);
 
         let levelInput: HTMLInputElement | null = null;
 
         const updateEnhancePreview = (card: Card, level: number): void => {
           previewCard.hidden = false;
-          previewGlyph.innerHTML = "";
+          previewGlyph.innerHTML = '';
           const svgGlyph = CARD_GLYPHS[card.id];
           if (svgGlyph) setIconHtml(previewGlyph, svgGlyph);
           else previewGlyph.textContent = card.glyph;
-          const safeLevel = Math.max(1, Math.min(MAX_CARD_LEVEL, Math.floor(level)));
+          const safeLevel = Math.max(
+            1,
+            Math.min(MAX_CARD_LEVEL, Math.floor(level)),
+          );
           previewName.textContent = card.name;
           previewDesc.textContent = card.text;
           previewScaled.textContent = `Lv${safeLevel}: ${projectedCardText(card, safeLevel)}`;
         };
 
-        cardSelect.addEventListener("change", () => {
-          const cardId = cardSelect.value as Card["id"];
+        cardSelect.addEventListener('change', () => {
+          const cardId = cardSelect.value as Card['id'];
           if (!cardId || !POOL_BY_ID.has(cardId)) return;
           const card = POOL_BY_ID.get(cardId);
           if (!card) return;
-          const existing = developerEnhanceEntries.find((entry) => entry.cardId === cardId);
-          fieldsContainer.innerHTML = "";
+          const existing = developerEnhanceEntries.find(
+            (entry) => entry.cardId === cardId,
+          );
+          fieldsContainer.innerHTML = '';
           fieldsContainer.hidden = false;
           saveBtn.hidden = false;
           levelInput = buildLevelField(fieldsContainer, existing?.level ?? 1);
           const activeLevelInput = levelInput;
-          updateEnhancePreview(card, parseNumericFormValue(activeLevelInput.value, 1));
-          activeLevelInput.addEventListener("change", () => {
-            updateEnhancePreview(card, parseNumericFormValue(activeLevelInput.value, 1));
+          updateEnhancePreview(
+            card,
+            parseNumericFormValue(activeLevelInput.value, 1),
+          );
+          activeLevelInput.addEventListener('change', () => {
+            updateEnhancePreview(
+              card,
+              parseNumericFormValue(activeLevelInput.value, 1),
+            );
           });
         });
 
-        saveBtn.addEventListener("click", () => {
-          const cardId = cardSelect.value as Card["id"];
+        saveBtn.addEventListener('click', () => {
+          const cardId = cardSelect.value as Card['id'];
           if (!cardId || !POOL_BY_ID.has(cardId) || !levelInput) return;
-          const level = Math.max(1, Math.floor(parseNumericFormValue(levelInput.value, 1)));
-          const existingIndex = developerEnhanceEntries.findIndex((entry) => entry.cardId === cardId);
+          const level = Math.max(
+            1,
+            Math.floor(parseNumericFormValue(levelInput.value, 1)),
+          );
+          const existingIndex = developerEnhanceEntries.findIndex(
+            (entry) => entry.cardId === cardId,
+          );
           if (existingIndex >= 0) {
             developerEnhanceEntries[existingIndex]!.level = level;
           } else {
@@ -1549,48 +1912,59 @@ async function boot(): Promise<void> {
 
       function renderEdit(index: number): void {
         const entry = developerEnhanceEntries[index];
-        if (!entry) { renderList(); return; }
+        if (!entry) {
+          renderList();
+          return;
+        }
         const card = POOL_BY_ID.get(entry.cardId);
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
         heading.textContent = `edit · ${card?.name ?? entry.cardId}`;
         container.appendChild(heading);
 
-        const fieldsContainer = document.createElement("div");
-        fieldsContainer.className = "pause-panel";
+        const fieldsContainer = document.createElement('div');
+        fieldsContainer.className = 'pause-panel';
         container.appendChild(fieldsContainer);
         const levelInput = buildLevelField(fieldsContainer, entry.level);
 
         if (card) {
-          const previewCard = document.createElement("div");
-          previewCard.className = "developer-enhance-preview";
-          const previewGlyph = document.createElement("span");
-          previewGlyph.className = "developer-enhance-preview-glyph";
-          previewGlyph.setAttribute("aria-hidden", "true");
+          const previewCard = document.createElement('div');
+          previewCard.className = 'developer-enhance-preview';
+          const previewGlyph = document.createElement('span');
+          previewGlyph.className = 'developer-enhance-preview-glyph';
+          previewGlyph.setAttribute('aria-hidden', 'true');
           const svgGlyph = CARD_GLYPHS[card.id];
           if (svgGlyph) setIconHtml(previewGlyph, svgGlyph);
           else previewGlyph.textContent = card.glyph;
 
-          const previewBody = document.createElement("div");
-          previewBody.className = "developer-enhance-preview-body";
-          const previewName = document.createElement("div");
-          previewName.className = "developer-enhance-preview-name";
+          const previewBody = document.createElement('div');
+          previewBody.className = 'developer-enhance-preview-body';
+          const previewName = document.createElement('div');
+          previewName.className = 'developer-enhance-preview-name';
           previewName.textContent = card.name;
-          const previewDesc = document.createElement("div");
-          previewDesc.className = "developer-enhance-preview-desc";
+          const previewDesc = document.createElement('div');
+          previewDesc.className = 'developer-enhance-preview-desc';
           previewDesc.textContent = card.text;
-          const previewScaled = document.createElement("div");
-          previewScaled.className = "developer-enhance-preview-scaled";
+          const previewScaled = document.createElement('div');
+          previewScaled.className = 'developer-enhance-preview-scaled';
           const syncScaled = (): void => {
-            const level = Math.max(1, Math.min(MAX_CARD_LEVEL, Math.floor(parseNumericFormValue(levelInput.value, entry.level))));
+            const level = Math.max(
+              1,
+              Math.min(
+                MAX_CARD_LEVEL,
+                Math.floor(
+                  parseNumericFormValue(levelInput.value, entry.level),
+                ),
+              ),
+            );
             previewScaled.textContent = `Lv${level}: ${projectedCardText(card, level)}`;
           };
           syncScaled();
-          levelInput.addEventListener("change", syncScaled);
+          levelInput.addEventListener('change', syncScaled);
 
           previewBody.appendChild(previewName);
           previewBody.appendChild(previewDesc);
@@ -1600,22 +1974,25 @@ async function boot(): Promise<void> {
           container.appendChild(previewCard);
         }
 
-        const actions = document.createElement("div");
-        actions.className = "draft-actions";
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        saveBtn.className = "big-btn";
-        saveBtn.textContent = "save";
-        saveBtn.addEventListener("click", () => {
-          entry.level = Math.max(1, Math.floor(parseNumericFormValue(levelInput.value, entry.level)));
+        const actions = document.createElement('div');
+        actions.className = 'draft-actions';
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'big-btn';
+        saveBtn.textContent = 'save';
+        saveBtn.addEventListener('click', () => {
+          entry.level = Math.max(
+            1,
+            Math.floor(parseNumericFormValue(levelInput.value, entry.level)),
+          );
           applyDeveloperEnhanceEntries();
           renderList();
         });
-        const cancelBtn = document.createElement("button");
-        cancelBtn.type = "button";
-        cancelBtn.className = "menu-btn";
-        cancelBtn.textContent = "back";
-        cancelBtn.addEventListener("click", () => renderList());
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'menu-btn';
+        cancelBtn.textContent = 'back';
+        cancelBtn.addEventListener('click', () => renderList());
         actions.appendChild(saveBtn);
         actions.appendChild(cancelBtn);
         container.appendChild(actions);
@@ -1627,7 +2004,7 @@ async function boot(): Promise<void> {
       document.body.appendChild(dialog);
       dialog.showModal();
 
-      dialog.addEventListener("close", () => finalize(), { once: true });
+      dialog.addEventListener('close', () => finalize(), { once: true });
     });
   }
 
@@ -1658,9 +2035,9 @@ async function boot(): Promise<void> {
       const wasPaused = paused;
       if (!wasPaused) setPaused(true);
 
-      const dialog = document.createElement("dialog");
-      dialog.className = "developer-dialog";
-      dialog.setAttribute("aria-label", "developer · skills");
+      const dialog = document.createElement('dialog');
+      dialog.className = 'developer-dialog';
+      dialog.setAttribute('aria-label', 'developer · skills');
 
       const finalize = (): void => {
         dialog.remove();
@@ -1671,38 +2048,74 @@ async function boot(): Promise<void> {
       function buildSkillFields(
         parent: HTMLElement,
         defaults: { level: number; duration: number; cooldown: number },
-      ): { level: HTMLInputElement; duration: HTMLInputElement; cooldown: HTMLInputElement } {
-        const fieldDefs: { name: "level" | "duration" | "cooldown"; label: string; value: number; min: number; max: number; step: number }[] = [
-          { name: "level", label: "level", value: defaults.level, min: 0, max: 10, step: 1 },
-          { name: "duration", label: "duration", value: defaults.duration, min: 0, max: 30, step: 0.1 },
-          { name: "cooldown", label: "cooldown", value: defaults.cooldown, min: 0, max: 60, step: 0.1 },
+      ): {
+        level: HTMLInputElement;
+        duration: HTMLInputElement;
+        cooldown: HTMLInputElement;
+      } {
+        const fieldDefs: {
+          name: 'level' | 'duration' | 'cooldown';
+          label: string;
+          value: number;
+          min: number;
+          max: number;
+          step: number;
+        }[] = [
+          {
+            name: 'level',
+            label: 'level',
+            value: defaults.level,
+            min: 0,
+            max: 10,
+            step: 1,
+          },
+          {
+            name: 'duration',
+            label: 'duration',
+            value: defaults.duration,
+            min: 0,
+            max: 30,
+            step: 0.1,
+          },
+          {
+            name: 'cooldown',
+            label: 'cooldown',
+            value: defaults.cooldown,
+            min: 0,
+            max: 60,
+            step: 0.1,
+          },
         ];
         const inputs: Record<string, HTMLInputElement> = {};
         for (const fd of fieldDefs) {
-          const row = document.createElement("label");
-          row.className = "developer-form-row";
-          const label = document.createElement("span");
-          label.className = "developer-form-label";
+          const row = document.createElement('label');
+          row.className = 'developer-form-row';
+          const label = document.createElement('span');
+          label.className = 'developer-form-label';
           label.textContent = fd.label;
 
-          const wrapper = document.createElement("div");
-          wrapper.className = "developer-form-slider-group";
-          const range = document.createElement("input");
-          range.type = "range";
-          range.className = "developer-form-range";
+          const wrapper = document.createElement('div');
+          wrapper.className = 'developer-form-slider-group';
+          const range = document.createElement('input');
+          range.type = 'range';
+          range.className = 'developer-form-range';
           range.min = `${fd.min}`;
           range.max = `${fd.max}`;
           range.step = `${fd.step}`;
           range.value = `${fd.value}`;
-          const input = document.createElement("input");
-          input.type = "number";
-          input.className = "developer-form-input developer-form-input--slim";
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.className = 'developer-form-input developer-form-input--slim';
           input.min = `${fd.min}`;
           input.max = `${fd.max}`;
           input.step = `${fd.step}`;
           input.value = `${fd.value}`;
-          range.addEventListener("input", () => { input.value = range.value; });
-          input.addEventListener("input", () => { range.value = input.value; });
+          range.addEventListener('input', () => {
+            input.value = range.value;
+          });
+          input.addEventListener('input', () => {
+            range.value = input.value;
+          });
           wrapper.appendChild(range);
           wrapper.appendChild(input);
 
@@ -1711,52 +2124,58 @@ async function boot(): Promise<void> {
           parent.appendChild(row);
           inputs[fd.name] = input;
         }
-        return inputs as { level: HTMLInputElement; duration: HTMLInputElement; cooldown: HTMLInputElement };
+        return inputs as {
+          level: HTMLInputElement;
+          duration: HTMLInputElement;
+          cooldown: HTMLInputElement;
+        };
       }
 
       function renderList(): void {
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
-        heading.textContent = "developer · skills";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
+        heading.textContent = 'developer · skills';
         container.appendChild(heading);
 
-        const list = document.createElement("div");
-        list.className = "developer-enemy-list";
+        const list = document.createElement('div');
+        list.className = 'developer-enemy-list';
         for (let i = 0; i < developerSkillEntries.length; i++) {
           const entry = developerSkillEntries[i]!;
-          const cardEl = document.createElement("div");
-          cardEl.className = "developer-enemy-card";
+          const cardEl = document.createElement('div');
+          cardEl.className = 'developer-enemy-card';
 
-          const info = document.createElement("div");
-          info.className = "developer-enemy-card-info";
-          const kindLabel = document.createElement("div");
-          kindLabel.className = "developer-enemy-card-kind";
+          const info = document.createElement('div');
+          info.className = 'developer-enemy-card-info';
+          const kindLabel = document.createElement('div');
+          kindLabel.className = 'developer-enemy-card-kind';
           kindLabel.textContent = entry.id;
-          const statsLabel = document.createElement("div");
-          statsLabel.className = "developer-enemy-card-stats";
+          const statsLabel = document.createElement('div');
+          statsLabel.className = 'developer-enemy-card-stats';
           statsLabel.textContent = `Lv${Math.max(0, Math.floor(entry.level))}  dur:${entry.duration.toFixed(1)}  cd:${entry.cooldown.toFixed(1)}`;
           info.appendChild(kindLabel);
           info.appendChild(statsLabel);
 
-          const actions = document.createElement("div");
-          actions.className = "developer-enemy-card-actions";
-          const editBtn = document.createElement("button");
-          editBtn.type = "button";
-          editBtn.className = "secondary-btn";
-          editBtn.textContent = "edit";
-          editBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px";
+          const actions = document.createElement('div');
+          actions.className = 'developer-enemy-card-actions';
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'secondary-btn';
+          editBtn.textContent = 'edit';
+          editBtn.style.cssText =
+            'flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px';
           const idx = i;
-          editBtn.addEventListener("click", () => renderEdit(idx));
-          const delBtn = document.createElement("button");
-          delBtn.type = "button";
-          delBtn.className = "secondary-btn";
-          delBtn.textContent = "delete";
-          delBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)";
-          delBtn.addEventListener("click", () => {
+          editBtn.addEventListener('click', () => renderEdit(idx));
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'secondary-btn';
+          delBtn.textContent = 'delete';
+          delBtn.style.cssText =
+            'flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)';
+          delBtn.addEventListener('click', () => {
             developerSkillEntries.splice(idx, 1);
             applyDeveloperSkillEntries();
             renderList();
@@ -1770,48 +2189,51 @@ async function boot(): Promise<void> {
         }
         container.appendChild(list);
 
-        const addBtn = document.createElement("button");
-        addBtn.type = "button";
-        addBtn.className = "menu-btn";
-        addBtn.textContent = "+ add skill";
-        addBtn.addEventListener("click", () => renderAdd());
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'menu-btn';
+        addBtn.textContent = '+ add skill';
+        addBtn.addEventListener('click', () => renderAdd());
         container.appendChild(addBtn);
 
-        const closeBtn = document.createElement("button");
-        closeBtn.type = "button";
-        closeBtn.className = "menu-btn";
-        closeBtn.textContent = "close";
-        closeBtn.addEventListener("click", () => { dialog.close(); finalize(); });
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'menu-btn';
+        closeBtn.textContent = 'close';
+        closeBtn.addEventListener('click', () => {
+          dialog.close();
+          finalize();
+        });
         container.appendChild(closeBtn);
 
         dialog.appendChild(container);
       }
 
       function renderAdd(): void {
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
-        heading.textContent = "add skill";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
+        heading.textContent = 'add skill';
         container.appendChild(heading);
 
-        const idRow = document.createElement("div");
-        idRow.className = "developer-form-row";
-        const idLabel = document.createElement("span");
-        idLabel.className = "developer-form-label";
-        idLabel.textContent = "skill";
-        const idSelect = document.createElement("select");
-        idSelect.className = "developer-form-input";
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "select...";
+        const idRow = document.createElement('div');
+        idRow.className = 'developer-form-row';
+        const idLabel = document.createElement('span');
+        idLabel.className = 'developer-form-label';
+        idLabel.textContent = 'skill';
+        const idSelect = document.createElement('select');
+        idSelect.className = 'developer-form-input';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'select...';
         placeholder.disabled = true;
         placeholder.selected = true;
         idSelect.appendChild(placeholder);
         for (const id of skillIds) {
-          const opt = document.createElement("option");
+          const opt = document.createElement('option');
           opt.value = id;
           opt.textContent = id;
           idSelect.appendChild(opt);
@@ -1820,27 +2242,27 @@ async function boot(): Promise<void> {
         idRow.appendChild(idSelect);
         container.appendChild(idRow);
 
-        const fieldsContainer = document.createElement("div");
-        fieldsContainer.className = "pause-panel";
+        const fieldsContainer = document.createElement('div');
+        fieldsContainer.className = 'pause-panel';
         fieldsContainer.hidden = true;
         container.appendChild(fieldsContainer);
 
-        const previewCard = document.createElement("div");
-        previewCard.className = "developer-enhance-preview";
+        const previewCard = document.createElement('div');
+        previewCard.className = 'developer-enhance-preview';
         previewCard.hidden = true;
-        const previewGlyph = document.createElement("span");
-        previewGlyph.className = "developer-enhance-preview-glyph";
-        previewGlyph.setAttribute("aria-hidden", "true");
-        const previewBody = document.createElement("div");
-        previewBody.className = "developer-enhance-preview-body";
-        const previewName = document.createElement("div");
-        previewName.className = "developer-enhance-preview-name";
-        const previewDesc = document.createElement("div");
-        previewDesc.className = "developer-enhance-preview-desc";
-        const previewScaled = document.createElement("div");
-        previewScaled.className = "developer-enhance-preview-scaled";
-        const previewEffect = document.createElement("div");
-        previewEffect.className = "developer-enhance-preview-scaled";
+        const previewGlyph = document.createElement('span');
+        previewGlyph.className = 'developer-enhance-preview-glyph';
+        previewGlyph.setAttribute('aria-hidden', 'true');
+        const previewBody = document.createElement('div');
+        previewBody.className = 'developer-enhance-preview-body';
+        const previewName = document.createElement('div');
+        previewName.className = 'developer-enhance-preview-name';
+        const previewDesc = document.createElement('div');
+        previewDesc.className = 'developer-enhance-preview-desc';
+        const previewScaled = document.createElement('div');
+        previewScaled.className = 'developer-enhance-preview-scaled';
+        const previewEffect = document.createElement('div');
+        previewEffect.className = 'developer-enhance-preview-scaled';
         previewBody.appendChild(previewName);
         previewBody.appendChild(previewDesc);
         previewBody.appendChild(previewScaled);
@@ -1849,63 +2271,102 @@ async function boot(): Promise<void> {
         previewCard.appendChild(previewBody);
         container.appendChild(previewCard);
 
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        saveBtn.className = "big-btn";
-        saveBtn.textContent = "save";
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'big-btn';
+        saveBtn.textContent = 'save';
         saveBtn.hidden = true;
         container.appendChild(saveBtn);
 
-        const backBtn = document.createElement("button");
-        backBtn.type = "button";
-        backBtn.className = "menu-btn";
-        backBtn.textContent = "back";
-        backBtn.addEventListener("click", () => renderList());
+        const backBtn = document.createElement('button');
+        backBtn.type = 'button';
+        backBtn.className = 'menu-btn';
+        backBtn.textContent = 'back';
+        backBtn.addEventListener('click', () => renderList());
         container.appendChild(backBtn);
 
-        let inputs: { level: HTMLInputElement; duration: HTMLInputElement; cooldown: HTMLInputElement } | null = null;
+        let inputs: {
+          level: HTMLInputElement;
+          duration: HTMLInputElement;
+          cooldown: HTMLInputElement;
+        } | null = null;
         const syncSkillPreview = (id: PrimalSkillId): void => {
           if (!inputs) return;
           previewCard.hidden = false;
-          previewGlyph.innerHTML = "";
+          previewGlyph.innerHTML = '';
           const icon = SKILL_GLYPHS[id];
           if (icon) setIconHtml(previewGlyph, icon);
-          const level = Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, 0)));
-          const duration = Math.max(0, parseNumericFormValue(inputs.duration.value, 0));
-          const cooldown = Math.max(0, parseNumericFormValue(inputs.cooldown.value, 0));
+          const level = Math.max(
+            0,
+            Math.floor(parseNumericFormValue(inputs.level.value, 0)),
+          );
+          const duration = Math.max(
+            0,
+            parseNumericFormValue(inputs.duration.value, 0),
+          );
+          const cooldown = Math.max(
+            0,
+            parseNumericFormValue(inputs.cooldown.value, 0),
+          );
           previewName.textContent = PRIMAL_SKILLS[id].name;
           previewDesc.textContent = PRIMAL_SKILLS[id].description;
           previewScaled.textContent = `Lv${level}${UI_META_SEPARATOR}duration ${formatNumeric(duration)}s${UI_META_SEPARATOR}cooldown ${formatNumeric(cooldown)}s`;
           previewEffect.textContent = skillEffectSummary(id, level);
         };
 
-        idSelect.addEventListener("change", () => {
+        idSelect.addEventListener('change', () => {
           const id = idSelect.value as PrimalSkillId;
           if (!skillIds.includes(id)) return;
-          const existing = developerSkillEntries.find((entry) => entry.id === id);
+          const existing = developerSkillEntries.find(
+            (entry) => entry.id === id,
+          );
           const defaults = existing ?? snapshot.skills[id];
-          fieldsContainer.innerHTML = "";
+          fieldsContainer.innerHTML = '';
           fieldsContainer.hidden = false;
           saveBtn.hidden = false;
           inputs = buildSkillFields(fieldsContainer, defaults);
           syncSkillPreview(id);
           const currentInputs = inputs;
-          currentInputs.level.addEventListener("input", () => syncSkillPreview(id));
-          currentInputs.duration.addEventListener("input", () => syncSkillPreview(id));
-          currentInputs.cooldown.addEventListener("input", () => syncSkillPreview(id));
+          currentInputs.level.addEventListener('input', () =>
+            syncSkillPreview(id),
+          );
+          currentInputs.duration.addEventListener('input', () =>
+            syncSkillPreview(id),
+          );
+          currentInputs.cooldown.addEventListener('input', () =>
+            syncSkillPreview(id),
+          );
         });
 
-        saveBtn.addEventListener("click", () => {
+        saveBtn.addEventListener('click', () => {
           const id = idSelect.value as PrimalSkillId;
           if (!skillIds.includes(id) || !inputs) return;
           const nextEntry: DeveloperSkillEntry = {
             id,
-            level: Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, 0))),
-            duration: Math.max(0, parseNumericFormValue(inputs.duration.value, snapshot.skills[id].duration)),
-            cooldown: Math.max(0, parseNumericFormValue(inputs.cooldown.value, snapshot.skills[id].cooldown)),
+            level: Math.max(
+              0,
+              Math.floor(parseNumericFormValue(inputs.level.value, 0)),
+            ),
+            duration: Math.max(
+              0,
+              parseNumericFormValue(
+                inputs.duration.value,
+                snapshot.skills[id].duration,
+              ),
+            ),
+            cooldown: Math.max(
+              0,
+              parseNumericFormValue(
+                inputs.cooldown.value,
+                snapshot.skills[id].cooldown,
+              ),
+            ),
           };
-          const existingIndex = developerSkillEntries.findIndex((entry) => entry.id === id);
-          if (existingIndex >= 0) developerSkillEntries[existingIndex] = nextEntry;
+          const existingIndex = developerSkillEntries.findIndex(
+            (entry) => entry.id === id,
+          );
+          if (existingIndex >= 0)
+            developerSkillEntries[existingIndex] = nextEntry;
           else developerSkillEntries.push(nextEntry);
           applyDeveloperSkillEntries();
           renderList();
@@ -1916,51 +2377,63 @@ async function boot(): Promise<void> {
 
       function renderEdit(index: number): void {
         const entry = developerSkillEntries[index];
-        if (!entry) { renderList(); return; }
-        dialog.innerHTML = "";
-        const container = document.createElement("div");
-        container.className = "developer-form";
+        if (!entry) {
+          renderList();
+          return;
+        }
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
 
-        const heading = document.createElement("div");
-        heading.className = "overlay-title";
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
         heading.textContent = `edit · ${entry.id}`;
         container.appendChild(heading);
 
-        const fieldsContainer = document.createElement("div");
-        fieldsContainer.className = "pause-panel";
+        const fieldsContainer = document.createElement('div');
+        fieldsContainer.className = 'pause-panel';
         container.appendChild(fieldsContainer);
         const inputs = buildSkillFields(fieldsContainer, entry);
 
-        const previewCard = document.createElement("div");
-        previewCard.className = "developer-enhance-preview";
-        const previewGlyph = document.createElement("span");
-        previewGlyph.className = "developer-enhance-preview-glyph";
-        previewGlyph.setAttribute("aria-hidden", "true");
+        const previewCard = document.createElement('div');
+        previewCard.className = 'developer-enhance-preview';
+        const previewGlyph = document.createElement('span');
+        previewGlyph.className = 'developer-enhance-preview-glyph';
+        previewGlyph.setAttribute('aria-hidden', 'true');
         const icon = SKILL_GLYPHS[entry.id];
         if (icon) setIconHtml(previewGlyph, icon);
-        const previewBody = document.createElement("div");
-        previewBody.className = "developer-enhance-preview-body";
-        const previewName = document.createElement("div");
-        previewName.className = "developer-enhance-preview-name";
+        const previewBody = document.createElement('div');
+        previewBody.className = 'developer-enhance-preview-body';
+        const previewName = document.createElement('div');
+        previewName.className = 'developer-enhance-preview-name';
         previewName.textContent = PRIMAL_SKILLS[entry.id].name;
-        const previewDesc = document.createElement("div");
-        previewDesc.className = "developer-enhance-preview-desc";
+        const previewDesc = document.createElement('div');
+        previewDesc.className = 'developer-enhance-preview-desc';
         previewDesc.textContent = PRIMAL_SKILLS[entry.id].description;
-        const previewScaled = document.createElement("div");
-        previewScaled.className = "developer-enhance-preview-scaled";
-        const previewEffect = document.createElement("div");
-        previewEffect.className = "developer-enhance-preview-scaled";
+        const previewScaled = document.createElement('div');
+        previewScaled.className = 'developer-enhance-preview-scaled';
+        const previewEffect = document.createElement('div');
+        previewEffect.className = 'developer-enhance-preview-scaled';
         const syncSkillEditPreview = (): void => {
-          const level = Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, entry.level)));
-          const duration = Math.max(0, parseNumericFormValue(inputs.duration.value, entry.duration));
-          const cooldown = Math.max(0, parseNumericFormValue(inputs.cooldown.value, entry.cooldown));
+          const level = Math.max(
+            0,
+            Math.floor(parseNumericFormValue(inputs.level.value, entry.level)),
+          );
+          const duration = Math.max(
+            0,
+            parseNumericFormValue(inputs.duration.value, entry.duration),
+          );
+          const cooldown = Math.max(
+            0,
+            parseNumericFormValue(inputs.cooldown.value, entry.cooldown),
+          );
           previewScaled.textContent = `Lv${level}${UI_META_SEPARATOR}duration ${formatNumeric(duration)}s${UI_META_SEPARATOR}cooldown ${formatNumeric(cooldown)}s`;
           previewEffect.textContent = skillEffectSummary(entry.id, level);
         };
         syncSkillEditPreview();
-        inputs.level.addEventListener("input", syncSkillEditPreview);
-        inputs.duration.addEventListener("input", syncSkillEditPreview);
-        inputs.cooldown.addEventListener("input", syncSkillEditPreview);
+        inputs.level.addEventListener('input', syncSkillEditPreview);
+        inputs.duration.addEventListener('input', syncSkillEditPreview);
+        inputs.cooldown.addEventListener('input', syncSkillEditPreview);
         previewBody.appendChild(previewName);
         previewBody.appendChild(previewDesc);
         previewBody.appendChild(previewScaled);
@@ -1969,24 +2442,33 @@ async function boot(): Promise<void> {
         previewCard.appendChild(previewBody);
         container.appendChild(previewCard);
 
-        const actions = document.createElement("div");
-        actions.className = "draft-actions";
-        const saveBtn = document.createElement("button");
-        saveBtn.type = "button";
-        saveBtn.className = "big-btn";
-        saveBtn.textContent = "save";
-        saveBtn.addEventListener("click", () => {
-          entry.level = Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, entry.level)));
-          entry.duration = Math.max(0, parseNumericFormValue(inputs.duration.value, entry.duration));
-          entry.cooldown = Math.max(0, parseNumericFormValue(inputs.cooldown.value, entry.cooldown));
+        const actions = document.createElement('div');
+        actions.className = 'draft-actions';
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'big-btn';
+        saveBtn.textContent = 'save';
+        saveBtn.addEventListener('click', () => {
+          entry.level = Math.max(
+            0,
+            Math.floor(parseNumericFormValue(inputs.level.value, entry.level)),
+          );
+          entry.duration = Math.max(
+            0,
+            parseNumericFormValue(inputs.duration.value, entry.duration),
+          );
+          entry.cooldown = Math.max(
+            0,
+            parseNumericFormValue(inputs.cooldown.value, entry.cooldown),
+          );
           applyDeveloperSkillEntries();
           renderList();
         });
-        const cancelBtn = document.createElement("button");
-        cancelBtn.type = "button";
-        cancelBtn.className = "menu-btn";
-        cancelBtn.textContent = "back";
-        cancelBtn.addEventListener("click", () => renderList());
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'menu-btn';
+        cancelBtn.textContent = 'back';
+        cancelBtn.addEventListener('click', () => renderList());
         actions.appendChild(saveBtn);
         actions.appendChild(cancelBtn);
         container.appendChild(actions);
@@ -1998,34 +2480,34 @@ async function boot(): Promise<void> {
       document.body.appendChild(dialog);
       dialog.showModal();
 
-      dialog.addEventListener("close", () => finalize(), { once: true });
+      dialog.addEventListener('close', () => finalize(), { once: true });
     });
   }
 
   // ── Card HUD (top-left overlay) ─────────────────────────────────────────
 
   function renderCardHud(): void {
-    let container = document.getElementById("hud-cards");
+    let container = document.getElementById('hud-cards');
     if (!container) {
-      container = document.createElement("div");
-      container.id = "hud-cards";
+      container = document.createElement('div');
+      container.id = 'hud-cards';
       gameEl!.appendChild(container);
     }
-    container.innerHTML = "";
+    container.innerHTML = '';
 
     for (const [, entry] of runInventory.all()) {
-      const chip = document.createElement("span");
-      chip.className = "card-chip";
+      const chip = document.createElement('span');
+      chip.className = 'card-chip';
       chip.title = `${entry.card.name} Lv${entry.level}`;
 
-      const glyphSpan = document.createElement("span");
-      glyphSpan.className = "card-chip-glyph";
+      const glyphSpan = document.createElement('span');
+      glyphSpan.className = 'card-chip-glyph';
       const svgGlyph = CARD_GLYPHS[entry.card.id];
       if (svgGlyph) setIconHtml(glyphSpan, svgGlyph);
       else glyphSpan.textContent = entry.card.glyph;
 
-      const lvSpan = document.createElement("span");
-      lvSpan.className = "card-chip-lv";
+      const lvSpan = document.createElement('span');
+      lvSpan.className = 'card-chip-lv';
       lvSpan.textContent = `${entry.level}`;
 
       chip.appendChild(glyphSpan);
@@ -2033,41 +2515,48 @@ async function boot(): Promise<void> {
       container.appendChild(chip);
     }
 
-    const unmappedEquipment = currentRun?.developMode ? [] : listUnmappedEquipmentCards(equipment.equipped);
+    const unmappedEquipment = currentRun?.developMode
+      ? []
+      : listUnmappedEquipmentCards(equipment.equipped);
     for (const eqCard of unmappedEquipment) {
-      const chip = document.createElement("span");
-      chip.className = "card-chip";
+      const chip = document.createElement('span');
+      chip.className = 'card-chip';
       chip.title = `${eqCard.name} (equipment)`;
 
-      const glyphSpan = document.createElement("span");
-      glyphSpan.className = "card-chip-glyph";
+      const glyphSpan = document.createElement('span');
+      glyphSpan.className = 'card-chip-glyph';
       const svgGlyph = SHOP_GLYPHS[eqCard.id];
       if (svgGlyph) setIconHtml(glyphSpan, svgGlyph);
       else glyphSpan.textContent = eqCard.glyph;
 
-      const lvSpan = document.createElement("span");
-      lvSpan.className = "card-chip-lv";
-      lvSpan.textContent = "E";
+      const lvSpan = document.createElement('span');
+      lvSpan.className = 'card-chip-lv';
+      lvSpan.textContent = 'E';
 
       chip.appendChild(glyphSpan);
       chip.appendChild(lvSpan);
       container.appendChild(chip);
     }
 
-    container.hidden = runInventory.size === 0 && unmappedEquipment.length === 0;
+    container.hidden =
+      runInventory.size === 0 && unmappedEquipment.length === 0;
   }
 
   function clearCardHud(): void {
-    const container = document.getElementById("hud-cards");
+    const container = document.getElementById('hud-cards');
     if (container) {
-      container.innerHTML = "";
+      container.innerHTML = '';
       container.hidden = true;
     }
   }
 
   // ── Run lifecycle ───────────────────────────────────────────────────────
 
-  function startRun(mode: GameMode, stageIndex: number, developMode = false): void {
+  function startRun(
+    mode: GameMode,
+    stageIndex: number,
+    developMode = false,
+  ): void {
     while (stack.top()) stack.pop();
     app.stage.removeChildren();
     currentRun = { mode, stageIndex, developMode };
@@ -2080,28 +2569,36 @@ async function boot(): Promise<void> {
       normalCleared: [...profile.stats.normalCleared],
     };
 
-    const theme = mode === "normal" ? (STAGE_THEMES[stageIndex] ?? DEFAULT_THEME) : DEFAULT_THEME;
+    const theme =
+      mode === 'normal'
+        ? (STAGE_THEMES[stageIndex] ?? DEFAULT_THEME)
+        : DEFAULT_THEME;
     setTheme(theme);
 
     // Start ambient music for this stage
-    playMusic(stageIndex);
+    playMusic('level', stageIndex);
 
     seed = pickSeed();
     const rng = createRng(seed);
     // eslint-disable-next-line no-console
-    console.log(`[axiom] run seed = ${seed}, mode = ${mode}, stage = ${stageIndex}`);
+    console.log(
+      `[axiom] run seed = ${seed}, mode = ${mode}, stage = ${stageIndex}`,
+    );
     if (hudSeed) hudSeed.textContent = `seed: ${seed}`;
 
     // Build waves
-    const waves = mode === "normal"
-      ? (STAGE_WAVES[stageIndex] ?? WAVES)
-      : [survivalWaveSpec(1, rng)]; // survival starts with wave 1
+    const waves =
+      mode === 'normal'
+        ? (STAGE_WAVES[stageIndex] ?? WAVES)
+        : [survivalWaveSpec(1, rng)]; // survival starts with wave 1
 
     // In develop mode, start with no skills and default skin (bare avatar).
     const activeSkills = developMode ? [] : createActiveSkillStates(skillTree);
 
     const startingShape = resolveSelectedStartingShape(profile);
-    const runSkin = developMode ? "triangle" : runSkinForStartingShape(startingShape, profile.activeSkin);
+    const runSkin = developMode
+      ? 'triangle'
+      : runSkinForStartingShape(startingShape, profile.activeSkin);
 
     // Reset card inventory for this run.
     runInventory = new CardInventory();
@@ -2117,10 +2614,11 @@ async function boot(): Promise<void> {
       {
         updateHud,
         onWaveCleared: (cleared) => {
-          playSfx("draft");
-          const label = mode === "survival"
-            ? `${cleared}`
-            : `${cleared} of ${play.totalWaves()}`;
+          playSfx('draft');
+          const label =
+            mode === 'survival'
+              ? `${cleared}`
+              : `${cleared} of ${play.totalWaves()}`;
           const offer = drawOffer(rng, 3, POOL, profile.stats);
           let rerollUses = 0;
           let draft: DraftScene;
@@ -2145,21 +2643,40 @@ async function boot(): Promise<void> {
           stack.push(draft);
         },
         onPlayerDied: () => {
-          playSfx("death");
+          playSfx('death');
           currentRun = null;
           setPaused(false);
-          const total = mode === "survival" ? play.currentWave1() : play.totalWaves();
-          stack.push(new EndgameScene("dead", play.currentWave1(), total, () => showMainMenu(), pendingUnlocks ?? undefined));
+          const total =
+            mode === 'survival' ? play.currentWave1() : play.totalWaves();
+          stack.push(
+            new EndgameScene(
+              'dead',
+              play.currentWave1(),
+              total,
+              () => showMainMenu(),
+              pendingUnlocks ?? undefined,
+            ),
+          );
         },
         onRunWon: () => {
           currentRun = null;
           setPaused(false);
           const total = play.totalWaves();
-          stack.push(new EndgameScene("won", total, total, () => showMainMenu(), pendingUnlocks ?? undefined));
+          stack.push(
+            new EndgameScene(
+              'won',
+              total,
+              total,
+              () => showMainMenu(),
+              pendingUnlocks ?? undefined,
+            ),
+          );
         },
         onRunComplete: (result) => settleRun(result),
         onBossWaveStart: () => {
-          if (mode === "normal") {
+          // Switch to boss music
+          playMusic('boss', stageIndex);
+          if (mode === 'normal') {
             const bossDef = bossForStage(stageIndex);
             const stageTheme = STAGE_THEMES[stageIndex];
             if (stageTheme) {
@@ -2172,7 +2689,16 @@ async function boot(): Promise<void> {
         },
       },
       mapper,
-      { mode, waves, gridColor: theme.gridColor, stageIndex, activeSkills, theme, activeSkin: runSkin, developerMode: developMode },
+      {
+        mode,
+        waves,
+        gridColor: theme.gridColor,
+        stageIndex,
+        activeSkills,
+        theme,
+        activeSkin: runSkin,
+        developerMode: developMode,
+      },
     );
 
     if (!developMode) {
@@ -2193,7 +2719,7 @@ async function boot(): Promise<void> {
     app.stage.addChild(play.root);
     stack.push(play);
     if (developMode) {
-      developerHudPanel = "settings";
+      developerHudPanel = 'settings';
       showDeveloperControls();
     } else {
       showSkillButtons();
@@ -2201,7 +2727,7 @@ async function boot(): Promise<void> {
     renderCardHud();
 
     // Stage-entry title-card (normal mode only).
-    if (mode === "normal") {
+    if (mode === 'normal') {
       const stageTheme = STAGE_THEMES[stageIndex];
       if (stageTheme) {
         showTitleCard([
@@ -2239,70 +2765,92 @@ async function boot(): Promise<void> {
 
     // Apply loot
     for (const drop of result.loot) {
-      if (drop.kind === "core") skillTree.cores += drop.value;
-      if (drop.kind === "skillPoints") skillTree.skillPoints += drop.value;
+      if (drop.kind === 'core') skillTree.cores += drop.value;
+      if (drop.kind === 'skillPoints') skillTree.skillPoints += drop.value;
     }
 
     // Survival best
-    if (result.mode === "survival") {
-      profile.stats.bestSurvivalWave = Math.max(profile.stats.bestSurvivalWave, result.wavesCleared);
+    if (result.mode === 'survival') {
+      profile.stats.bestSurvivalWave = Math.max(
+        profile.stats.bestSurvivalWave,
+        result.wavesCleared,
+      );
     }
 
-    const normalStageWaveTarget = result.mode === "normal"
-      ? (STAGE_WAVES[result.stageIndex]?.length ?? WAVES.length)
-      : 0;
+    const normalStageWaveTarget =
+      result.mode === 'normal'
+        ? (STAGE_WAVES[result.stageIndex]?.length ?? WAVES.length)
+        : 0;
 
     // Normal mode clear tracking
-    if (result.mode === "normal" && result.wavesCleared >= normalStageWaveTarget) {
+    if (
+      result.mode === 'normal' &&
+      result.wavesCleared >= normalStageWaveTarget
+    ) {
       profile.stats.normalCleared[result.stageIndex] = true;
     }
 
     // Check achievements
     if (result.bossKills > 0) {
-      if (unlockAchievement(achievements, "firstBossKill")) {
+      if (unlockAchievement(achievements, 'firstBossKill')) {
         // eslint-disable-next-line no-console
-        console.log("[axiom] Achievement unlocked: firstBossKill");
+        console.log('[axiom] Achievement unlocked: firstBossKill');
       }
     }
-    if (result.noPowerRun && result.mode === "normal" && result.wavesCleared >= normalStageWaveTarget) {
-      unlockAchievement(achievements, "noPowerNormalClear");
+    if (
+      result.noPowerRun &&
+      result.mode === 'normal' &&
+      result.wavesCleared >= normalStageWaveTarget
+    ) {
+      unlockAchievement(achievements, 'noPowerNormalClear');
     }
-    if (result.noPowerRun && result.mode === "survival" && result.wavesCleared >= 16) {
-      unlockAchievement(achievements, "noPowerSurvival16");
+    if (
+      result.noPowerRun &&
+      result.mode === 'survival' &&
+      result.wavesCleared >= 16
+    ) {
+      unlockAchievement(achievements, 'noPowerSurvival16');
     }
 
     // Progress achievements
     if (profile.stats.totalKills >= 100) {
-      unlockAchievement(achievements, "kill100");
+      unlockAchievement(achievements, 'kill100');
     }
     if (profile.stats.totalKills >= 1000) {
-      unlockAchievement(achievements, "kill1000");
+      unlockAchievement(achievements, 'kill1000');
     }
     if (profile.stats.normalCleared.filter(Boolean).length >= 3) {
-      unlockAchievement(achievements, "clear3Stages");
+      unlockAchievement(achievements, 'clear3Stages');
     }
 
     // Difficulty achievements
-    if (result.mode === "survival" && result.wavesCleared >= 32) {
-      unlockAchievement(achievements, "survival32");
+    if (result.mode === 'survival' && result.wavesCleared >= 32) {
+      unlockAchievement(achievements, 'survival32');
     }
-    if (result.mode === "normal" && result.stageIndex === 2 && result.wavesCleared >= normalStageWaveTarget) {
-      unlockAchievement(achievements, "clearStage3");
+    if (
+      result.mode === 'normal' &&
+      result.stageIndex === 2 &&
+      result.wavesCleared >= normalStageWaveTarget
+    ) {
+      unlockAchievement(achievements, 'clearStage3');
     }
 
     // Boss rush
     if (profile.stats.totalBossKills >= 3) {
-      unlockAchievement(achievements, "bossRush3");
+      unlockAchievement(achievements, 'bossRush3');
     }
 
     // Style: full equipment
-    if (equipment.equipped.length >= equipment.maxSlots && equipment.maxSlots >= 3) {
-      unlockAchievement(achievements, "fullEquipment");
+    if (
+      equipment.equipped.length >= equipment.maxSlots &&
+      equipment.maxSlots >= 3
+    ) {
+      unlockAchievement(achievements, 'fullEquipment');
     }
 
     // Style: own 5 skins
     if (profile.ownedSkins.length >= 5) {
-      unlockAchievement(achievements, "own5Skins");
+      unlockAchievement(achievements, 'own5Skins');
     }
 
     // Persist
@@ -2315,11 +2863,18 @@ async function boot(): Promise<void> {
     // Compute unlock diff for endgame banner (map IDs to display names).
     if (statsBeforeRun) {
       const allSkillDefs = Object.values(PRIMAL_SKILLS);
-      const diff = diffUnlocks(statsBeforeRun, profile.stats, POOL, allSkillDefs);
+      const diff = diffUnlocks(
+        statsBeforeRun,
+        profile.stats,
+        POOL,
+        allSkillDefs,
+      );
       if (diff.newCards.length > 0 || diff.newSkills.length > 0) {
         pendingUnlocks = {
           newCards: diff.newCards.map((id) => POOL_BY_ID.get(id)?.name ?? id),
-          newSkills: diff.newSkills.map((id) => PRIMAL_SKILLS[id as keyof typeof PRIMAL_SKILLS]?.name ?? id),
+          newSkills: diff.newSkills.map(
+            (id) => PRIMAL_SKILLS[id as keyof typeof PRIMAL_SKILLS]?.name ?? id,
+          ),
         };
       }
     }
@@ -2334,172 +2889,232 @@ async function boot(): Promise<void> {
     setPaused(false);
     setTheme(DEFAULT_THEME);
     stopMusic();
+    // Start menu music
+    playMusic('menu');
     if (hudSkills) {
-      hudSkills.innerHTML = "";
-      hudSkills.classList.remove("developer-hud");
+      hudSkills.innerHTML = '';
+      hudSkills.classList.remove('developer-hud');
     }
     clearCardHud();
-    if (hudSynergy) hudSynergy.innerHTML = "";
+    if (hudSynergy) hudSynergy.innerHTML = '';
 
     const menu = new MainMenuScene(
       async (action: MenuAction) => {
         switch (action.kind) {
-        case "normalMode":
-          stack.pop(); // remove menu
-          stack.push(new StageSelectScene(
-            (idx) => { stack.pop(); startRun("normal", idx); },
-            () => { stack.pop(); showMainMenu(); },
-            () => profile.stats,
-          ));
-          break;
+          case 'normalMode':
+            stack.pop(); // remove menu
+            stack.push(
+              new StageSelectScene(
+                (idx) => {
+                  stack.pop();
+                  startRun('normal', idx);
+                },
+                () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+                () => profile.stats,
+              ),
+            );
+            break;
 
-        case "survivalMode":
-          stack.pop();
-          startRun("survival", 0);
-          break;
+          case 'survivalMode':
+            stack.pop();
+            startRun('survival', 0);
+            break;
 
-        case "developMode":
-          stack.pop();
-          startRun("survival", 0, true);
-          break;
+          case 'developMode':
+            stack.pop();
+            startRun('survival', 0, true);
+            break;
 
-        case "shop":
-          stack.pop();
-          stack.push(new ShopScene({
-            getProfile: () => profile,
-            getEquipment: () => equipment,
-            getShopUnlocks: () => shopUnlocks,
-            onPurchase: async (item) => {
-              if (profile.points < item.price) return;
-              profile.points -= item.price;
-              if (item.category === "skin") {
-                if (!profile.ownedSkins.includes(item.id)) profile.ownedSkins.push(item.id);
-              } else if (item.category === "equipCard") {
-                if (!equipment.ownedCards.includes(item.id)) equipment.ownedCards.push(item.id);
-              } else if (item.category === "slotExpand") {
-                equipment.maxSlots += 1;
+          case 'shop':
+            stack.pop();
+            stack.push(
+              new ShopScene({
+                getProfile: () => profile,
+                getEquipment: () => equipment,
+                getShopUnlocks: () => shopUnlocks,
+                onPurchase: async (item) => {
+                  if (profile.points < item.price) return;
+                  profile.points -= item.price;
+                  if (item.category === 'skin') {
+                    if (!profile.ownedSkins.includes(item.id))
+                      profile.ownedSkins.push(item.id);
+                  } else if (item.category === 'equipCard') {
+                    if (!equipment.ownedCards.includes(item.id))
+                      equipment.ownedCards.push(item.id);
+                  } else if (item.category === 'slotExpand') {
+                    equipment.maxSlots += 1;
+                  }
+                  if (!shopUnlocks.purchased.includes(item.id))
+                    shopUnlocks.purchased.push(item.id);
+                  await Promise.all([
+                    saveProfile(profile),
+                    saveEquipment(equipment),
+                    saveShopUnlocks(shopUnlocks),
+                  ]);
+                },
+                onBack: () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+              }),
+            );
+            break;
+
+          case 'equipment':
+            stack.pop();
+            stack.push(
+              new EquipmentScene({
+                getLoadout: () => equipment,
+                getProfile: () => profile,
+                onEquip: async (cardId) => {
+                  equipCard(equipment, cardId);
+                  await saveEquipment(equipment);
+                },
+                onUnequip: async (cardId) => {
+                  unequipCard(equipment, cardId);
+                  await saveEquipment(equipment);
+                },
+                onActivateSkin: async (skinId) => {
+                  profile.activeSkin = skinId;
+                  await saveProfile(profile);
+                },
+                onBack: () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+              }),
+            );
+            break;
+
+          case 'startShape':
+            stack.pop();
+            stack.push(
+              new StartShapeSelectScene({
+                getProfile: () => profile,
+                onSelect: async (shapeId) => {
+                  profile.activeStartShape = shapeId;
+                  await saveProfile(profile);
+                },
+                onBack: () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+              }),
+            );
+            break;
+
+          case 'skillTree':
+            stack.pop();
+            stack.push(
+              new SkillTreeScene({
+                getState: () => skillTree,
+                getStats: () => profile.stats,
+                getRng: () => menuRng,
+                onStateChanged: async (state) => {
+                  skillTree = state;
+                  // Check achievements
+                  const anyUnlocked = Object.values(skillTree.skills).some(
+                    (s) => s.unlocked,
+                  );
+                  if (anyUnlocked) {
+                    if (unlockAchievement(achievements, 'firstPrimalSkill')) {
+                      await saveAchievements(achievements);
+                    }
+                  }
+                  const anyMaxed = Object.values(skillTree.skills).some(
+                    (s) => s.unlocked && s.level >= MAX_SKILL_LEVEL,
+                  );
+                  if (anyMaxed) {
+                    if (unlockAchievement(achievements, 'maxSkillLevel')) {
+                      await saveAchievements(achievements);
+                    }
+                  }
+                  await saveSkillTree(skillTree);
+                },
+                onBack: () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+              }),
+            );
+            break;
+
+          case 'achievements':
+            stack.pop();
+            stack.push(
+              new AchievementsScene(
+                () => achievements,
+                () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+              ),
+            );
+            break;
+
+          case 'settings':
+            stack.pop();
+            stack.push(
+              new SettingsScene({
+                onBack: () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+                onChanged: () => {
+                  syncMuteLabel();
+                  saveSettings(buildSettings());
+                },
+                getMasterVolume: () => settings.masterVolume ?? 1,
+                getSfxVolume: () => settings.sfxVolume ?? 1,
+                getMusicVolume: () => settings.musicVolume ?? 0.5,
+                setVolumes: (master, sfx, music) => {
+                  settings.masterVolume = master;
+                  settings.sfxVolume = sfx;
+                  settings.musicVolume = music;
+                  setVolumes(master, sfx);
+                  setMusicVolume(music, master);
+                },
+              }),
+            );
+            break;
+
+          case 'exportData': {
+            const data = await exportSaveData();
+            downloadSaveData(data);
+            break;
+          }
+
+          case 'importData': {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.addEventListener('change', async () => {
+              const file = input.files?.[0];
+              if (!file) return;
+              const text = await file.text();
+              const data = parseSaveData(text);
+              if (!data) {
+                alert('Invalid save file.');
+                return;
               }
-              if (!shopUnlocks.purchased.includes(item.id)) shopUnlocks.purchased.push(item.id);
-              await Promise.all([saveProfile(profile), saveEquipment(equipment), saveShopUnlocks(shopUnlocks)]);
-            },
-            onBack: () => { stack.pop(); showMainMenu(); },
-          }));
-          break;
-
-        case "equipment":
-          stack.pop();
-          stack.push(new EquipmentScene({
-            getLoadout: () => equipment,
-            getProfile: () => profile,
-            onEquip: async (cardId) => {
-              equipCard(equipment, cardId);
-              await saveEquipment(equipment);
-            },
-            onUnequip: async (cardId) => {
-              unequipCard(equipment, cardId);
-              await saveEquipment(equipment);
-            },
-            onActivateSkin: async (skinId) => {
-              profile.activeSkin = skinId;
-              await saveProfile(profile);
-            },
-            onBack: () => { stack.pop(); showMainMenu(); },
-          }));
-          break;
-
-        case "startShape":
-          stack.pop();
-          stack.push(new StartShapeSelectScene({
-            getProfile: () => profile,
-            onSelect: async (shapeId) => {
-              profile.activeStartShape = shapeId;
-              await saveProfile(profile);
-            },
-            onBack: () => { stack.pop(); showMainMenu(); },
-          }));
-          break;
-
-        case "skillTree":
-          stack.pop();
-          stack.push(new SkillTreeScene({
-            getState: () => skillTree,
-            getStats: () => profile.stats,
-            getRng: () => menuRng,
-            onStateChanged: async (state) => {
-              skillTree = state;
-              // Check achievements
-              const anyUnlocked = Object.values(skillTree.skills).some((s) => s.unlocked);
-              if (anyUnlocked) {
-                if (unlockAchievement(achievements, "firstPrimalSkill")) {
-                  await saveAchievements(achievements);
-                }
-              }
-              const anyMaxed = Object.values(skillTree.skills).some(
-                (s) => s.unlocked && s.level >= MAX_SKILL_LEVEL,
-              );
-              if (anyMaxed) {
-                if (unlockAchievement(achievements, "maxSkillLevel")) {
-                  await saveAchievements(achievements);
-                }
-              }
-              await saveSkillTree(skillTree);
-            },
-            onBack: () => { stack.pop(); showMainMenu(); },
-          }));
-          break;
-
-        case "achievements":
-          stack.pop();
-          stack.push(new AchievementsScene(
-            () => achievements,
-            () => { stack.pop(); showMainMenu(); },
-          ));
-          break;
-
-        case "settings":
-          stack.pop();
-          stack.push(new SettingsScene({
-            onBack: () => { stack.pop(); showMainMenu(); },
-            onChanged: () => {
-              syncMuteLabel();
-              saveSettings(buildSettings());
-            },
-          }));
-          break;
-
-        case "exportData": {
-          const data = await exportSaveData();
-          downloadSaveData(data);
-          break;
-        }
-
-        case "importData": {
-          const input = document.createElement("input");
-          input.type = "file";
-          input.accept = ".json";
-          input.addEventListener("change", async () => {
-            const file = input.files?.[0];
-            if (!file) return;
-            const text = await file.text();
-            const data = parseSaveData(text);
-            if (!data) {
-              alert("Invalid save file.");
-              return;
-            }
-            await importSaveData(data);
-            // Reload state
-            profile = await loadProfile();
-            equipment = await loadEquipment();
-            skillTree = await loadSkillTree();
-            achievements = await loadAchievements();
-            shopUnlocks = await loadShopUnlocks();
-            developerModeUnlocked = (await loadSettings()).developerMode ?? false;
-            alert("Data imported successfully!");
-            showMainMenu();
-          });
-          input.click();
-          break;
-        }
+              await importSaveData(data);
+              // Reload state
+              profile = await loadProfile();
+              equipment = await loadEquipment();
+              skillTree = await loadSkillTree();
+              achievements = await loadAchievements();
+              shopUnlocks = await loadShopUnlocks();
+              developerModeUnlocked =
+                (await loadSettings()).developerMode ?? false;
+              alert('Data imported successfully!');
+              showMainMenu();
+            });
+            input.click();
+            break;
+          }
         }
       },
       {
@@ -2508,7 +3123,7 @@ async function boot(): Promise<void> {
           if (developerModeUnlocked) return;
           developerModeUnlocked = true;
           await saveSettings({ ...buildSettings(), developerMode: true });
-          alert("Developer mode enabled.");
+          alert('Developer mode enabled.');
           showMainMenu();
         },
       },
@@ -2519,33 +3134,33 @@ async function boot(): Promise<void> {
 
   // ── Controls ──────────────────────────────────────────────────────────
 
-  btnRestart?.addEventListener("click", () => {
+  btnRestart?.addEventListener('click', () => {
     if (!currentRun) return;
     startRun(currentRun.mode, currentRun.stageIndex, currentRun.developMode);
   });
-  btnPause?.addEventListener("click", () => {
+  btnPause?.addEventListener('click', () => {
     if (!currentRun) return;
     const top = stack.top();
     if (!paused && top !== play) return;
     setPaused(!paused);
   });
-  btnComments?.addEventListener("click", () => {
+  btnComments?.addEventListener('click', () => {
     if (!(commentsDialog instanceof HTMLDialogElement)) return;
     if (!paused && currentRun) setPaused(true);
     commentsDialog.showModal();
   });
-  btnMenu?.addEventListener("click", () => showMainMenu());
+  btnMenu?.addEventListener('click', () => showMainMenu());
 
   function onFirstGesture(): void {
     primeSfx();
-    document.removeEventListener("pointerdown", onFirstGesture);
+    document.removeEventListener('pointerdown', onFirstGesture);
   }
-  document.addEventListener("pointerdown", onFirstGesture);
+  document.addEventListener('pointerdown', onFirstGesture);
 
   function syncMuteLabel(): void {
-    if (btnMute) btnMute.textContent = isMuted() ? "sfx off" : "sfx on";
+    if (btnMute) btnMute.textContent = isMuted() ? 'sfx off' : 'sfx on';
   }
-  btnMute?.addEventListener("click", () => {
+  btnMute?.addEventListener('click', () => {
     setMuted(!isMuted());
     syncMuteLabel();
     saveSettings(buildSettings());
@@ -2587,5 +3202,5 @@ async function boot(): Promise<void> {
 
 boot().catch((err) => {
   // eslint-disable-next-line no-console
-  console.error("[axiom] boot failed:", err);
+  console.error('[axiom] boot failed:', err);
 });
