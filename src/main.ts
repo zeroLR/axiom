@@ -2260,7 +2260,7 @@ async function boot(): Promise<void> {
         onDeveloperUnlock: async () => {
           if (developerModeUnlocked) return;
           developerModeUnlocked = true;
-          await saveSettings({ muted: isMuted(), developerMode: true, masterVolume: settings.masterVolume ?? 1, sfxVolume: settings.sfxVolume ?? 1, musicVolume: settings.musicVolume ?? 0.5, screenShake: settings.screenShake ?? true });
+          await saveSettings({ ...buildSettings(), developerMode: true });
           alert("Developer mode enabled.");
           showMainMenu();
         },

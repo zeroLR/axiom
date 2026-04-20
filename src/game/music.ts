@@ -43,7 +43,7 @@ export function playMusic(stageIdx: number): void {
 
   const audioCtx = getCtx();
   if (audioCtx.state === "suspended") {
-    audioCtx.resume().catch(() => {});
+    audioCtx.resume().catch(() => { /* user gesture required — no-op */ });
   }
 
   const dest = getMaster();
