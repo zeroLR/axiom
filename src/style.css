@@ -495,6 +495,116 @@ body {
   padding: 0;
 }
 
+/* Range slider + number input combo */
+
+.developer-form-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 160px;
+  max-width: 60%;
+}
+
+.developer-form-range {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #ddd;
+  border-radius: 2px;
+  outline: none;
+}
+
+.developer-form-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--fg);
+  cursor: pointer;
+}
+
+.developer-form-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--fg);
+  cursor: pointer;
+}
+
+.developer-form-input--slim {
+  width: 56px;
+  max-width: none;
+  flex: 0 0 auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Enemy card list in developer modal */
+
+.developer-enemy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.developer-enemy-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.developer-enemy-card-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.developer-enemy-card-kind {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.developer-enemy-card-stats {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.developer-enemy-card-actions {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+/* Developer form select dropdown */
+
+.developer-form-input select,
+select.developer-form-input {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+  width: 140px;
+  max-width: 60%;
+}
+
 /* ── Discussions ─────────────────────────────────────────────────────────── */
 
 #comments-dialog {
