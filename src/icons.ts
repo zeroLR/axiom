@@ -75,6 +75,11 @@ export const iconEnhance = wrap(
   `<polyline points="6,18 12,12 18,18"/><polyline points="6,13 12,7 18,13"/>`,
 );
 
+/** Settings: gear / cog. */
+export const iconSettings = wrap(
+  `<circle cx="12" cy="12" r="3"/><path d="M12,2v2M12,20v2M4.22,4.22l1.42,1.42M18.36,18.36l1.42,1.42M2,12h2M20,12h2M4.22,19.78l1.42-1.42M18.36,5.64l1.42-1.42"/>`,
+);
+
 // ── Skill button icons ──────────────────────────────────────────────────────
 
 /** Time Stop: octagon (stop-sign shape). */

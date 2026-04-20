@@ -121,7 +121,7 @@ body {
 #overlay-inner {
   width: 100%;
   max-width: 340px;
-  max-height: calc(100dvh - 32px);
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -130,7 +130,7 @@ body {
   padding-right: 2px;
 }
 
-#overlay-inner:has(> .overlay-scroll) {
+#overlay-inner.overlay-constrained {
   height: 100%;
   overflow: hidden;
 }
