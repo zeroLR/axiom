@@ -20,7 +20,6 @@ let currentStage: StageMusicIndex | null = null;
 let currentTrack: Howl | null = null;
 let musicVolume = 0.5;
 let masterVolMul = 1;
-let playing = false;
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
@@ -61,7 +60,6 @@ export function playMusic(stageIdx: number): void {
   const stage = normalizeStage(stageIdx);
   if (currentStage === stage && currentTrack?.playing()) {
     currentTrack.volume(effectiveVolume(stage));
-    playing = true;
     return;
   }
 
@@ -72,9 +70,8 @@ export function playMusic(stageIdx: number): void {
 
   try {
     currentTrack.play();
-    playing = true;
   } catch {
-    playing = false;
+    // Ignore — browsers may block audio before first user gesture.
   }
 }
 
@@ -89,10 +86,9 @@ export function stopMusic(): void {
   }
   currentTrack = null;
   currentStage = null;
-  playing = false;
 }
 
 /** Whether music is currently playing. */
 export function isMusicPlaying(): boolean {
-  return currentTrack?.playing() ?? playing;
+  return currentTrack?.playing() ?? false;
 }
