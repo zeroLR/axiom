@@ -1,17 +1,25 @@
-import { ENEMY_SEEK_ACCEL, PLAY_H, PLAY_W } from "../config";
-import { spawnEnemyShot } from "../entities";
-import type { Rng } from "../rng";
-import type { EntityId, World } from "../world";
+import { ENEMY_SEEK_ACCEL, PLAY_H, PLAY_W } from '../config';
+import { spawnEnemyShot } from '../entities';
+import type { Rng } from '../rng';
+import type { EntityId, World } from '../world';
 
-export function updateEnemyAi(world: World, avatarId: EntityId, dt: number, rng?: Rng): void {
+export function updateEnemyAi(
+  world: World,
+  avatarId: EntityId,
+  dt: number,
+  rng?: Rng,
+): void {
   const avatar = world.get(avatarId);
   if (!avatar || !avatar.pos) return;
   const ax = avatar.pos.x;
   const ay = avatar.pos.y;
-  for (const [, c] of world.with("enemy", "pos", "vel")) {
+  for (const [, c] of world.with('enemy', 'pos', 'vel')) {
     const p = c.pos!;
     const v = c.vel!;
     const e = c.enemy!;
+
+    // Jets boss controls its own movement via bossWeapon.ts.
+    if (e.kind === 'boss' && e.bossPattern === 'jets') continue;
 
     let dx = ax - p.x;
     let dy = ay - p.y;
@@ -19,7 +27,7 @@ export function updateEnemyAi(world: World, avatarId: EntityId, dt: number, rng?
     let nx = dx / dist;
     let ny = dy / dist;
 
-    if (e.kind === "star") {
+    if (e.kind === 'star') {
       // Lateral wobble: perpendicular sine added to direction.
       e.wobblePhase += dt * 3.2;
       const wob = Math.sin(e.wobblePhase) * 0.7;
@@ -28,11 +36,12 @@ export function updateEnemyAi(world: World, avatarId: EntityId, dt: number, rng?
       nx += px * wob;
       ny += py * wob;
       const len = Math.hypot(nx, ny) || 1;
-      nx /= len; ny /= len;
+      nx /= len;
+      ny /= len;
     }
 
     // ── Diamond: periodic dash toward player ──────────────────────────────
-    if (e.kind === "diamond" && e.dashCooldown !== undefined) {
+    if (e.kind === 'diamond' && e.dashCooldown !== undefined) {
       e.dashCooldown -= dt;
       if (e.dashCooldown <= 0) {
         const dashMul = e.slow ? 1 - e.slow.pct : 1;
@@ -46,7 +55,7 @@ export function updateEnemyAi(world: World, avatarId: EntityId, dt: number, rng?
     }
 
     // ── Crescent: orbit / arc movement ────────────────────────────────────
-    if (e.kind === "crescent" && e.orbitAngle !== undefined) {
+    if (e.kind === 'crescent' && e.orbitAngle !== undefined) {
       e.orbitAngle += dt * 1.8;
       // Move toward player but with a strong tangential component.
       const tangX = -ny;
@@ -55,11 +64,12 @@ export function updateEnemyAi(world: World, avatarId: EntityId, dt: number, rng?
       nx = nx * (1 - blend) + tangX * blend * Math.sin(e.orbitAngle);
       ny = ny * (1 - blend) + tangY * blend * Math.sin(e.orbitAngle);
       const len = Math.hypot(nx, ny) || 1;
-      nx /= len; ny /= len;
+      nx /= len;
+      ny /= len;
     }
 
     // ── Cross: shoot at player periodically ───────────────────────────────
-    if (e.kind === "cross" && e.shootCooldown !== undefined && rng) {
+    if (e.kind === 'cross' && e.shootCooldown !== undefined && rng) {
       e.shootCooldown -= dt;
       if (e.shootCooldown <= 0 && (c.hp?.value ?? 0) > 0) {
         const spd = 160;

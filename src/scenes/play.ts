@@ -1,24 +1,34 @@
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics } from 'pixi.js';
 
-import { playSfx } from "../game/audio";
-import type { Card } from "../game/cards";
-import { PLAY_H, PLAY_W, STARTING_DRAFT_TOKENS } from "../game/config";
-import { spawnAvatar, spawnEnemy } from "../game/entities";
-import { bossForStage } from "../game/bosses/registry";
-import type { BossSpec } from "../game/bosses/types";
-import type { Rng } from "../game/rng";
-import { updateEnemyAi } from "../game/systems/ai";
-import { updateBossWeapon } from "../game/systems/bossWeapon";
-import { removeDeadEnemies, updateCollisions } from "../game/systems/collision";
-import { decayHitFlash, updateAvatarMotion, updateProjectileMotion } from "../game/systems/motion";
-import { resetStatusPhase, updateStatusEffects } from "../game/systems/status";
-import { newWaveState, updateWave, type WaveState } from "../game/systems/wave";
-import { updateWeapon } from "../game/systems/weapon";
-import type { WaveSpec } from "../game/waves";
-import { type EntityId, World } from "../game/world";
-import { drawGrid, drawWorld } from "../render";
-import type { Scene } from "./scene";
-import { BOSS_WAVE_BONUS, killPointsForEnemy, rollBossLoot, type LootDrop, type RunResult } from "../game/rewards";
+import { playSfx } from '../game/audio';
+import type { Card } from '../game/cards';
+import { PLAY_H, PLAY_W, STARTING_DRAFT_TOKENS } from '../game/config';
+import { spawnAvatar, spawnEnemy } from '../game/entities';
+import { bossForStage } from '../game/bosses/registry';
+import type { BossSpec } from '../game/bosses/types';
+import type { Rng } from '../game/rng';
+import { updateEnemyAi } from '../game/systems/ai';
+import { updateBossWeapon } from '../game/systems/bossWeapon';
+import { removeDeadEnemies, updateCollisions } from '../game/systems/collision';
+import {
+  decayHitFlash,
+  updateAvatarMotion,
+  updateProjectileMotion,
+} from '../game/systems/motion';
+import { resetStatusPhase, updateStatusEffects } from '../game/systems/status';
+import { newWaveState, updateWave, type WaveState } from '../game/systems/wave';
+import { updateWeapon } from '../game/systems/weapon';
+import type { WaveSpec } from '../game/waves';
+import { type EntityId, World } from '../game/world';
+import { drawGrid, drawWorld } from '../render';
+import type { Scene } from './scene';
+import {
+  BOSS_WAVE_BONUS,
+  killPointsForEnemy,
+  rollBossLoot,
+  type LootDrop,
+  type RunResult,
+} from '../game/rewards';
 import {
   type ActiveSkillState,
   PRIMAL_SKILLS,
@@ -33,15 +43,20 @@ import {
   lifestealRadius,
   lifestealDamage,
   lifestealHeal,
-} from "../game/skills";
-import { survivalWaveSpec, isMirrorBossWave, survivalHpScale, survivalSpeedScale } from "../game/survivalWaves";
-import type { PrimalSkillId } from "../game/data/types";
-import type { StageTheme } from "../game/stageThemes";
-import { SYNERGY_CONFIG, explodeAt } from "../game/synergies";
-import { triggerShake, tickShake, getShakeOffset } from "../game/screenShake";
-import type { EnemyKind } from "../game/world";
+} from '../game/skills';
+import {
+  survivalWaveSpec,
+  isMirrorBossWave,
+  survivalHpScale,
+  survivalSpeedScale,
+} from '../game/survivalWaves';
+import type { PrimalSkillId } from '../game/data/types';
+import type { StageTheme } from '../game/stageThemes';
+import { SYNERGY_CONFIG, explodeAt } from '../game/synergies';
+import { triggerShake, tickShake, getShakeOffset } from '../game/screenShake';
+import type { EnemyKind } from '../game/world';
 
-export type GameMode = "normal" | "survival";
+export type GameMode = 'normal' | 'survival';
 
 // Stage 1 / Stage 2 / Stage 3 normal-mode enemy strength multipliers.
 const NORMAL_STAGE_STRENGTH_MUL: readonly number[] = [1, 1.5, 2.5];
@@ -54,7 +69,14 @@ export interface PlayCallbacks {
   onPlayerDied: () => void;
   onRunWon: () => void;
   onRunComplete: (result: RunResult) => void;
-  updateHud: (hp: number, maxHp: number, waveIdx: number, totalWaves: number, points: number, tokens: number) => void;
+  updateHud: (
+    hp: number,
+    maxHp: number,
+    waveIdx: number,
+    totalWaves: number,
+    points: number,
+    tokens: number,
+  ) => void;
   /** Called once when the boss wave begins (wave index is 1-based). */
   onBossWaveStart?: (wave1: number) => void;
 }
@@ -95,6 +117,9 @@ function defaultEnemySpawnConfig(): Record<EnemyKind, DeveloperEnemySpawn> {
     diamond: { enabled: false, count: 1 },
     cross: { enabled: false, count: 1 },
     crescent: { enabled: false, count: 1 },
+    orthogon: { enabled: false, count: 1 },
+    jets: { enabled: false, count: 1 },
+    mirror: { enabled: false, count: 1 },
   };
 }
 
@@ -193,7 +218,7 @@ export class PlayScene implements Scene {
     this.activeSkills = opts.activeSkills ?? [];
     this.theme = opts.theme;
     this.developerMode = opts.developerMode ?? false;
-    this.avatarId = spawnAvatar(this.world, opts.activeSkin ?? "triangle");
+    this.avatarId = spawnAvatar(this.world, opts.activeSkin ?? 'triangle');
     this.waveIdx = 0;
     this.wave = newWaveState(this.waves[this.waveIdx]!);
     resetStatusPhase();
@@ -210,27 +235,27 @@ export class PlayScene implements Scene {
 
   enter(): void {
     const t = this.mapper.target;
-    t.addEventListener("pointerdown", this.boundOnDown);
-    t.addEventListener("pointermove", this.boundOnMove);
-    t.addEventListener("pointerup", this.boundOnUp);
-    t.addEventListener("pointercancel", this.boundOnUp);
+    t.addEventListener('pointerdown', this.boundOnDown);
+    t.addEventListener('pointermove', this.boundOnMove);
+    t.addEventListener('pointerup', this.boundOnUp);
+    t.addEventListener('pointercancel', this.boundOnUp);
   }
 
   exit(): void {
     this.tracking = false;
     const t = this.mapper.target;
-    t.removeEventListener("pointerdown", this.boundOnDown);
-    t.removeEventListener("pointermove", this.boundOnMove);
-    t.removeEventListener("pointerup", this.boundOnUp);
-    t.removeEventListener("pointercancel", this.boundOnUp);
+    t.removeEventListener('pointerdown', this.boundOnDown);
+    t.removeEventListener('pointermove', this.boundOnMove);
+    t.removeEventListener('pointerup', this.boundOnUp);
+    t.removeEventListener('pointercancel', this.boundOnUp);
   }
 
   advanceToNextWave(): void {
-    if (this.mode === "normal" && this.waveIdx + 1 >= this.waves.length) return;
+    if (this.mode === 'normal' && this.waveIdx + 1 >= this.waves.length) return;
 
     this.waveIdx += 1;
 
-    if (this.mode === "survival") {
+    if (this.mode === 'survival') {
       // Dynamically generate the next wave.
       const spec = survivalWaveSpec(this.waveIdx + 1, this.rng);
       this.wave = newWaveState(spec);
@@ -251,7 +276,7 @@ export class PlayScene implements Scene {
   }
 
   totalWaves(): number {
-    return this.mode === "survival" ? this.waveIdx + 1 : this.waves.length;
+    return this.mode === 'survival' ? this.waveIdx + 1 : this.waves.length;
   }
 
   isDeveloperMode(): boolean {
@@ -272,7 +297,10 @@ export class PlayScene implements Scene {
     const avatar = this.world.get(this.avatarId);
     if (!avatar?.avatar || !avatar.weapon) return;
     avatar.avatar.maxHp = Math.max(1, Math.round(next.maxHp));
-    avatar.avatar.hp = Math.max(1, Math.min(avatar.avatar.maxHp, Math.round(next.hp)));
+    avatar.avatar.hp = Math.max(
+      1,
+      Math.min(avatar.avatar.maxHp, Math.round(next.hp)),
+    );
     avatar.avatar.speedMul = Math.max(0.1, next.speedMul);
     avatar.weapon.damage = Math.max(1, Math.round(next.damage));
     avatar.weapon.period = Math.max(0, next.fireInterval);
@@ -296,7 +324,11 @@ export class PlayScene implements Scene {
     this.developerEnemyTimer = 0;
   }
 
-  setDeveloperEnemySpawn(kind: EnemyKind, enabled: boolean, count: number): void {
+  setDeveloperEnemySpawn(
+    kind: EnemyKind,
+    enabled: boolean,
+    count: number,
+  ): void {
     this.developerEnemySpawn[kind] = {
       enabled,
       count: Math.max(0, Math.round(count)),
@@ -312,7 +344,10 @@ export class PlayScene implements Scene {
     };
   }
 
-  setDeveloperSkillConfig(skillId: PrimalSkillId, cfg: DeveloperSkillConfig): void {
+  setDeveloperSkillConfig(
+    skillId: PrimalSkillId,
+    cfg: DeveloperSkillConfig,
+  ): void {
     const idx = this.activeSkills.findIndex((s) => s.id === skillId);
     if (!cfg.enabled) {
       if (idx >= 0) this.activeSkills.splice(idx, 1);
@@ -322,16 +357,17 @@ export class PlayScene implements Scene {
     const level = Math.max(0, Math.floor(cfg.level));
     const duration = Math.max(0, cfg.duration);
     const cooldown = Math.max(0, cfg.cooldown);
-    const target: ActiveSkillState = idx >= 0
-      ? this.activeSkills[idx]!
-      : {
-        id: skillId,
-        level,
-        cooldown: 0,
-        active: 0,
-        duration: skillDuration(def, level),
-        maxCooldown: skillCooldown(def, level),
-      };
+    const target: ActiveSkillState =
+      idx >= 0
+        ? this.activeSkills[idx]!
+        : {
+            id: skillId,
+            level,
+            cooldown: 0,
+            active: 0,
+            duration: skillDuration(def, level),
+            maxCooldown: skillCooldown(def, level),
+          };
     target.level = level;
     target.duration = duration;
     target.maxCooldown = cooldown;
@@ -380,13 +416,13 @@ export class PlayScene implements Scene {
     if (!sk) return;
     if (!activateSkill(sk)) return;
 
-    if (sk.id === "shadowClone") {
+    if (sk.id === 'shadowClone') {
       this.spawnClone(sk);
-    } else if (sk.id === "barrage") {
+    } else if (sk.id === 'barrage') {
       this.fireBarrage(sk);
-    } else if (sk.id === "axisFreeze") {
+    } else if (sk.id === 'axisFreeze') {
       this.triggerAxisFreeze(sk);
-    } else if (sk.id === "overload") {
+    } else if (sk.id === 'overload') {
       this.triggerOverload(sk);
     }
   }
@@ -408,7 +444,9 @@ export class PlayScene implements Scene {
     if (this.ended) return;
 
     // Tick primal skills.
-    const timeStopActive = this.activeSkills.some((s) => s.id === "timeStop" && s.active > 0);
+    const timeStopActive = this.activeSkills.some(
+      (s) => s.id === 'timeStop' && s.active > 0,
+    );
     const slowMul = timeStopActive ? timeStopSpeedMul(0) : 1;
     for (const sk of this.activeSkills) tickSkillState(sk, dt);
 
@@ -427,7 +465,7 @@ export class PlayScene implements Scene {
       // Boss application (normal mode last wave, or survival mirror waves).
       const wave1 = this.waveIdx + 1;
       const shouldApplyBoss =
-        this.mode === "normal"
+        this.mode === 'normal'
           ? wave1 === this.waves.length
           : isMirrorBossWave(wave1);
       if (shouldApplyBoss && !this.bossApplied) {
@@ -435,7 +473,7 @@ export class PlayScene implements Scene {
       }
 
       // Apply mode-specific scaling to newly spawned enemies after mirror stats.
-      if (this.mode === "survival") {
+      if (this.mode === 'survival') {
         this.applySurvivalScaling();
       } else {
         this.applyNormalStageScaling();
@@ -462,7 +500,7 @@ export class PlayScene implements Scene {
         updateAvatarMotion(this.world, dt);
       }
       // Check if clone should expire (managed by skill state)
-      const cloneSkill = this.activeSkills.find((s) => s.id === "shadowClone");
+      const cloneSkill = this.activeSkills.find((s) => s.id === 'shadowClone');
       if (!cloneSkill || cloneSkill.active <= 0) {
         if (this.cloneId !== null) {
           this.world.remove(this.cloneId);
@@ -472,7 +510,9 @@ export class PlayScene implements Scene {
     }
 
     // Reflect shield: grant invincibility while active
-    const reflectActive = this.activeSkills.some((s) => s.id === "reflectShield" && s.active > 0);
+    const reflectActive = this.activeSkills.some(
+      (s) => s.id === 'reflectShield' && s.active > 0,
+    );
     {
       const avatar = this.world.get(this.avatarId);
       if (avatar?.avatar) {
@@ -483,7 +523,9 @@ export class PlayScene implements Scene {
     }
 
     // Lifesteal pulse: damage nearby enemies and heal avatar every ~1 second
-    const lifestealSkill = this.activeSkills.find((s) => s.id === "lifestealPulse" && s.active > 0);
+    const lifestealSkill = this.activeSkills.find(
+      (s) => s.id === 'lifestealPulse' && s.active > 0,
+    );
     if (lifestealSkill) {
       this.lifestealTick += dt;
       if (this.lifestealTick >= 1) {
@@ -494,7 +536,7 @@ export class PlayScene implements Scene {
           const dmg = lifestealDamage(lifestealSkill.level);
           const heal = lifestealHeal(lifestealSkill.level);
           let healed = false;
-          for (const [, c] of this.world.with("pos", "hp", "enemy")) {
+          for (const [, c] of this.world.with('pos', 'hp', 'enemy')) {
             const dx = c.pos!.x - avatar.pos.x;
             const dy = c.pos!.y - avatar.pos.y;
             if (dx * dx + dy * dy <= radius * radius) {
@@ -503,7 +545,10 @@ export class PlayScene implements Scene {
             }
           }
           if (healed) {
-            avatar.avatar.hp = Math.min(avatar.avatar.maxHp, avatar.avatar.hp + heal);
+            avatar.avatar.hp = Math.min(
+              avatar.avatar.maxHp,
+              avatar.avatar.hp + heal,
+            );
           }
         }
       }
@@ -512,16 +557,20 @@ export class PlayScene implements Scene {
     }
 
     // Axis Freeze: stun all enemies while active (snap is done once on activation)
-    const axisFreezeActive = this.activeSkills.some((s) => s.id === "axisFreeze" && s.active > 0);
+    const axisFreezeActive = this.activeSkills.some(
+      (s) => s.id === 'axisFreeze' && s.active > 0,
+    );
     if (axisFreezeActive) {
-      for (const [, c] of this.world.with("vel", "enemy")) {
+      for (const [, c] of this.world.with('vel', 'enemy')) {
         c.vel!.x = 0;
         c.vel!.y = 0;
       }
     }
 
     // Overload: triple fire rate while active (applied as weapon period modifier)
-    const overloadSkill = this.activeSkills.find((s) => s.id === "overload" && s.active > 0);
+    const overloadSkill = this.activeSkills.find(
+      (s) => s.id === 'overload' && s.active > 0,
+    );
     if (overloadSkill && !this.overloadApplied) {
       const avatar = this.world.get(this.avatarId);
       if (avatar?.weapon) {
@@ -543,11 +592,11 @@ export class PlayScene implements Scene {
     }
 
     let died = false;
-    const events: import("../game/events").GameEvents = {
+    const events: import('../game/events').GameEvents = {
       onEnemyKilled: (eid: EntityId) => {
-        playSfx("hit");
+        playSfx('hit');
         const ec = this.world.get(eid);
-        if (ec?.enemy?.kind === "boss") {
+        if (ec?.enemy?.kind === 'boss') {
           triggerShake(8, 0.25);
         } else {
           triggerShake(1.5, 0.08);
@@ -558,7 +607,9 @@ export class PlayScene implements Scene {
       onPlayerHit: (_amount: number) => {
         triggerShake(5, 0.15);
       },
-      onPlayerDied: () => { died = true; },
+      onPlayerDied: () => {
+        died = true;
+      },
     };
     updateCollisions(this.world, this.avatarId, events, this.rng);
     updateStatusEffects(this.world, enemyDt, events);
@@ -568,7 +619,8 @@ export class PlayScene implements Scene {
 
     if (this.developerInvincible) {
       const avatar = this.world.get(this.avatarId);
-      if (avatar?.avatar) avatar.avatar.iframes = Math.max(avatar.avatar.iframes, 0.2);
+      if (avatar?.avatar)
+        avatar.avatar.iframes = Math.max(avatar.avatar.iframes, 0.2);
     }
 
     this.updateHud();
@@ -582,7 +634,7 @@ export class PlayScene implements Scene {
 
     if (!this.developerMode && this.wave.cleared) {
       const cleared = this.waveIdx + 1;
-      if (this.mode === "normal" && cleared >= this.waves.length) {
+      if (this.mode === 'normal' && cleared >= this.waves.length) {
         this.ended = true;
         this.cb.onRunComplete(this.buildRunResult());
         this.cb.onRunWon();
@@ -598,7 +650,9 @@ export class PlayScene implements Scene {
   render(_alpha: number): void {
     const shake = getShakeOffset();
     this.root.position.set(shake.x, shake.y);
-    drawWorld(this.g, this.world, this.theme, { showEnemyHp: this.developerShowEnemyHp });
+    drawWorld(this.g, this.world, this.theme, {
+      showEnemyHp: this.developerShowEnemyHp,
+    });
   }
 
   // ── Private ─────────────────────────────────────────────────────────────
@@ -616,25 +670,25 @@ export class PlayScene implements Scene {
       this.draftTokens += 1;
     }
 
-    if (kind === "boss") {
+    if (kind === 'boss') {
       this.runBossKills += 1;
       // Boss wave bonus
       this.runPoints += BOSS_WAVE_BONUS * (this.waveIdx + 1);
       // Roll loot
       const drop = rollBossLoot(this.rng);
       this.loot.push(drop);
-      if (drop.kind === "points") this.runPoints += drop.value;
+      if (drop.kind === 'points') this.runPoints += drop.value;
     }
   }
 
-  private tickCombustion(events: import("../game/events").GameEvents): void {
+  private tickCombustion(events: import('../game/events').GameEvents): void {
     const a = this.world.get(this.avatarId);
     const pos = a?.pos;
     const synergies = a?.avatar?.synergies;
     if (!pos || !synergies) return;
     const cfg = SYNERGY_CONFIG.combustion;
     for (const s of synergies) {
-      if (s.id !== "combustion") continue;
+      if (s.id !== 'combustion') continue;
       s.killCounter = (s.killCounter ?? 0) + 1;
       if (s.killCounter >= cfg.interval) {
         // Reset before firing so chain-kills start a fresh cycle and we can't
@@ -646,12 +700,13 @@ export class PlayScene implements Scene {
   }
 
   private applyBossOnce(): void {
-    const bossDef = this.mode === "survival"
-      ? bossForStage(2)   // survival always uses Mirror
-      : bossForStage(this.stageIndex);
+    const bossDef =
+      this.mode === 'survival'
+        ? bossForStage(2) // survival always uses Mirror
+        : bossForStage(this.stageIndex);
     const spec: BossSpec = bossDef.buildSpec(this.picks);
-    for (const [, c] of this.world.with("enemy", "hp")) {
-      if (c.enemy!.kind !== "boss") continue;
+    for (const [, c] of this.world.with('enemy', 'hp')) {
+      if (c.enemy!.kind !== 'boss') continue;
       bossDef.install(c, spec);
       this.bossApplied = true;
       this.cb.onBossWaveStart?.(this.waveIdx + 1);
@@ -663,8 +718,8 @@ export class PlayScene implements Scene {
     const wave1 = this.waveIdx + 1;
     const hpMul = survivalHpScale(wave1);
     const spdMul = survivalSpeedScale(wave1);
-    for (const [, c] of this.world.with("enemy", "hp")) {
-      if (c.enemy!.kind === "boss") continue;
+    for (const [, c] of this.world.with('enemy', 'hp')) {
+      if (c.enemy!.kind === 'boss') continue;
       if (c.enemy!.scaled) continue;
       c.hp!.value = Math.ceil(c.hp!.value * hpMul);
       c.enemy!.maxHp = c.hp!.value;
@@ -675,18 +730,26 @@ export class PlayScene implements Scene {
 
   private applyNormalStageScaling(): void {
     // `stageIndex` is 0-based (0=stage 1, 1=stage 2, 2=stage 3).
-    const stageMul = this.stageIndex >= 0 && this.stageIndex < NORMAL_STAGE_STRENGTH_MUL.length
-      ? NORMAL_STAGE_STRENGTH_MUL[this.stageIndex]!
-      : 1;
-    for (const [, c] of this.world.with("enemy", "hp")) {
+    const stageMul =
+      this.stageIndex >= 0 && this.stageIndex < NORMAL_STAGE_STRENGTH_MUL.length
+        ? NORMAL_STAGE_STRENGTH_MUL[this.stageIndex]!
+        : 1;
+    for (const [, c] of this.world.with('enemy', 'hp')) {
       if (c.enemy!.scaled) continue;
       // Boss stats are set by BossDef.install — skip stage scaling for bosses.
-      if (c.enemy!.kind === "boss") { c.enemy!.scaled = true; continue; }
+      if (c.enemy!.kind === 'boss') {
+        c.enemy!.scaled = true;
+        continue;
+      }
       c.hp!.value = Math.max(1, Math.ceil(c.hp!.value * stageMul));
       c.enemy!.maxHp = c.hp!.value;
       c.enemy!.maxSpeed *= stageMul;
-      c.enemy!.contactDamage = Math.max(1, Math.ceil(c.enemy!.contactDamage * stageMul));
-      if (c.weapon) c.weapon.damage = Math.max(1, Math.ceil(c.weapon.damage * stageMul));
+      c.enemy!.contactDamage = Math.max(
+        1,
+        Math.ceil(c.enemy!.contactDamage * stageMul),
+      );
+      if (c.weapon)
+        c.weapon.damage = Math.max(1, Math.ceil(c.weapon.damage * stageMul));
       c.enemy!.scaled = true;
     }
   }
@@ -699,7 +762,7 @@ export class PlayScene implements Scene {
       pos: { x: avatar.pos.x + 20, y: avatar.pos.y + 20 },
       vel: { x: 0, y: 0 },
       radius: 8,
-      team: "player",
+      team: 'player',
       avatar: {
         hp: 1,
         maxHp: 1,
@@ -739,7 +802,7 @@ export class PlayScene implements Scene {
         pos: { x: avatar.pos.x, y: avatar.pos.y },
         vel: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed },
         radius: 3,
-        team: "projectile",
+        team: 'projectile',
         projectile: {
           damage: dmg,
           crit: false,
@@ -760,15 +823,19 @@ export class PlayScene implements Scene {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private triggerAxisFreeze(_sk: ActiveSkillState): void {
     // Snap all enemies to the nearest cardinal axis and stun them.
-    const cx = PLAY_W / 2, cy = PLAY_H / 2;
-    for (const [, c] of this.world.with("pos", "enemy")) {
+    const cx = PLAY_W / 2,
+      cy = PLAY_H / 2;
+    for (const [, c] of this.world.with('pos', 'enemy')) {
       if (c.pos) {
         const dx = Math.abs(c.pos.x - cx);
         const dy = Math.abs(c.pos.y - cy);
         if (dx < dy) c.pos.x = cx;
         else c.pos.y = cy;
       }
-      if (c.vel) { c.vel.x = 0; c.vel.y = 0; }
+      if (c.vel) {
+        c.vel.x = 0;
+        c.vel.y = 0;
+      }
     }
   }
 
@@ -779,7 +846,20 @@ export class PlayScene implements Scene {
 
   private createDefaultEnemyStats(): Record<EnemyKind, DeveloperEnemyStats> {
     const defaults = {} as Record<EnemyKind, DeveloperEnemyStats>;
-    const kinds: EnemyKind[] = ["circle", "square", "star", "boss", "pentagon", "hexagon", "diamond", "cross", "crescent"];
+    const kinds: EnemyKind[] = [
+      'circle',
+      'square',
+      'star',
+      'boss',
+      'pentagon',
+      'hexagon',
+      'diamond',
+      'cross',
+      'crescent',
+      'orthogon',
+      'jets',
+      'mirror',
+    ];
     for (const kind of kinds) {
       const id = spawnEnemy(this.world, kind, this.rng);
       const c = this.world.get(id);
@@ -787,7 +867,7 @@ export class PlayScene implements Scene {
         hp: c?.hp?.value ?? 1,
         attack: c?.enemy?.contactDamage ?? 1,
         speed: c?.enemy?.maxSpeed ?? 1,
-        attackFrequency: c?.enemy?.shootCooldown ?? 1,
+        attackFrequency: c?.weapon?.period ?? c?.enemy?.shootCooldown ?? 1,
       };
       this.world.remove(id);
     }
@@ -802,8 +882,10 @@ export class PlayScene implements Scene {
     c.enemy.maxHp = c.hp.value;
     c.enemy.contactDamage = Math.max(0, cfg.attack);
     c.enemy.maxSpeed = Math.max(0, cfg.speed);
-    if (c.enemy.shootCooldown !== undefined) c.enemy.shootCooldown = cfg.attackFrequency;
-    if (c.weapon && cfg.attackFrequency > 0) c.weapon.period = cfg.attackFrequency;
+    if (c.enemy.shootCooldown !== undefined)
+      c.enemy.shootCooldown = cfg.attackFrequency;
+    if (c.weapon && cfg.attackFrequency > 0)
+      c.weapon.period = cfg.attackFrequency;
     c.enemy.scaled = true;
   }
 
@@ -826,7 +908,14 @@ export class PlayScene implements Scene {
     const c = this.world.get(this.avatarId);
     const hp = c?.avatar?.hp ?? 0;
     const maxHp = c?.avatar?.maxHp ?? 0;
-    this.cb.updateHud(hp, maxHp, this.waveIdx + 1, this.totalWaves(), this.runPoints, this.draftTokens);
+    this.cb.updateHud(
+      hp,
+      maxHp,
+      this.waveIdx + 1,
+      this.totalWaves(),
+      this.runPoints,
+      this.draftTokens,
+    );
   }
 
   private onPointerDown(ev: PointerEvent): void {

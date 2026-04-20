@@ -1,33 +1,54 @@
 export type EntityId = number;
 
-export type Team = "player" | "enemy" | "projectile" | "enemy-shot";
+export type Team = 'player' | 'enemy' | 'projectile' | 'enemy-shot';
 
 export type EnemyKind =
-  | "circle" | "square" | "star" | "boss"
-  | "pentagon" | "hexagon" | "diamond" | "cross" | "crescent";
+  | 'circle'
+  | 'square'
+  | 'star'
+  | 'boss'
+  | 'pentagon'
+  | 'hexagon'
+  | 'diamond'
+  | 'cross'
+  | 'crescent'
+  | 'orthogon'
+  | 'jets'
+  | 'mirror';
 
-export interface Pos { x: number; y: number }
-export interface Vel { x: number; y: number }
+export interface Pos {
+  x: number;
+  y: number;
+}
+export interface Vel {
+  x: number;
+  y: number;
+}
 
 export type WeaponMode =
-  | "vertex" | "faceBeam" | "orbitShard"
-  | "homing" | "burst" | "fan" | "charge";
+  | 'vertex'
+  | 'faceBeam'
+  | 'orbitShard'
+  | 'homing'
+  | 'burst'
+  | 'fan'
+  | 'charge';
 
 export interface WeaponState {
   mode?: WeaponMode;
-  period: number;     // seconds between shots
+  period: number; // seconds between shots
   damage: number;
   projectileSpeed: number;
   projectiles: number; // shots fired per trigger (spread fan if > 1)
-  pierce: number;     // projectile hits before despawn (0 = one hit)
-  crit: number;       // 0..1 crit chance for 2x damage
-  cooldown: number;   // seconds remaining until next shot
+  pierce: number; // projectile hits before despawn (0 = one hit)
+  crit: number; // 0..1 crit chance for 2x damage
+  cooldown: number; // seconds remaining until next shot
   // Keyword modifiers (defaults = 0, no effect).
-  ricochet: number;   // bounces to next nearest enemy after exhausting pierce
-  chain: number;      // spawns chain bolts to additional nearby enemies on hit
-  burnDps: number;    // per-hit inflicted burn damage per second
+  ricochet: number; // bounces to next nearest enemy after exhausting pierce
+  chain: number; // spawns chain bolts to additional nearby enemies on hit
+  burnDps: number; // per-hit inflicted burn damage per second
   burnDuration: number; // seconds the burn lasts on target
-  slowPct: number;    // per-hit inflicted slow fraction (0..1)
+  slowPct: number; // per-hit inflicted slow fraction (0..1)
   slowDuration: number; // seconds the slow lasts on target
   orbitAngle?: number;
 }
@@ -88,7 +109,7 @@ export interface Enemy {
 
   // ── Boss AI state (set by BossDef.install) ──────────────────────────────
   /** Weapon pattern kind for dispatch in `bossWeapon.ts`. */
-  bossPattern?: "standard" | "orthogon" | "jets";
+  bossPattern?: 'standard' | 'orthogon' | 'jets';
   /** Current boss AI phase/move index, cycling through the pattern sequence. */
   bossPhase?: number;
   /** General-purpose boss AI timer (seconds remaining for current action). */
@@ -99,9 +120,11 @@ export interface Enemy {
   bossDashTarget?: { x: number; y: number };
   /** Boss telegraph lines for rendering (array of angles, cleared after shot). */
   bossTelegraphLines?: number[];
+  /** Waypoint index for Jets Z-sweep movement. */
+  bossWaypointIdx?: number;
 }
 
-export type SynergyId = "combustion" | "desperate" | "kinetic" | "stillness";
+export type SynergyId = 'combustion' | 'desperate' | 'kinetic' | 'stillness';
 
 export interface SynergyRuntime {
   id: SynergyId;
@@ -113,7 +136,7 @@ export interface Avatar {
   hp: number;
   maxHp: number;
   speedMul: number;
-  iframes: number;    // seconds of invulnerability remaining
+  iframes: number; // seconds of invulnerability remaining
   targetX: number;
   targetY: number;
   /** Active synergy cards the player has drafted. Evaluated at fire time. */
@@ -125,7 +148,7 @@ export interface Avatar {
   shield?: number;
   shieldMax?: number;
   shieldRegenPeriod?: number; // seconds per +1 shield while not at max
-  shieldRegenTimer?: number;  // accumulator; resets to 0 on hit
+  shieldRegenTimer?: number; // accumulator; resets to 0 on hit
   /** Revenant: one-shot revive flag. true while available, false after consumed. */
   secondChance?: boolean;
   /** Phase Shift: auto-dodge charges that regen on a cooldown. */
@@ -153,7 +176,7 @@ export interface Components {
   enemy?: Enemy;
   projectile?: Projectile;
   hp?: { value: number }; // enemies only; avatar hp lives on Avatar
-  flash?: number;         // seconds of hit flash remaining
+  flash?: number; // seconds of hit flash remaining
 }
 
 export class World {
@@ -176,7 +199,9 @@ export class World {
 
   // Iterate entities that have all requested components. The returned map is
   // the same reference as stored, so callers may mutate in place.
-  *with<K extends keyof Components>(...keys: K[]): Generator<[EntityId, Components]> {
+  *with<K extends keyof Components>(
+    ...keys: K[]
+  ): Generator<[EntityId, Components]> {
     outer: for (const [id, c] of this.entities) {
       for (const k of keys) if (c[k] === undefined) continue outer;
       yield [id, c];

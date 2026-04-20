@@ -29,7 +29,7 @@ const BASE: {
   },
   contactDamage: 1,
   maxSpeed: 50,
-  hp: 180,
+  hp: 400,
 };
 
 export interface MirrorBossSpec {

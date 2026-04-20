@@ -1100,6 +1100,9 @@ async function boot(): Promise<void> {
       'cross',
       'crescent',
       'boss',
+      'orthogon',
+      'jets',
+      'mirror',
     ];
     for (const k of kinds) play.setDeveloperEnemySpawn(k, false, 0);
     for (const entry of developerEnemyEntries) {
@@ -1170,6 +1173,9 @@ async function boot(): Promise<void> {
         'cross',
         'crescent',
         'boss',
+        'orthogon',
+        'jets',
+        'mirror',
       ];
 
       function renderList(): void {

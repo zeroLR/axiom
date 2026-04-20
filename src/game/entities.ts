@@ -13,16 +13,26 @@ import {
   WEAPON_BASE_PERIOD,
   WEAPON_BASE_PROJECTILES,
   WEAPON_BASE_PROJECTILE_SPEED,
-} from "./config";
-import { type Rng } from "./rng";
-import { type EnemyKind, type EntityId, type WeaponMode, type WeaponState, World } from "./world";
+} from './config';
+import { type Rng } from './rng';
+import {
+  type EnemyKind,
+  type EntityId,
+  type WeaponMode,
+  type WeaponState,
+  World,
+} from './world';
+import { BOSS_REGISTRY } from './bosses/registry';
 
-export function spawnAvatar(world: World, skinId: string = "triangle"): EntityId {
+export function spawnAvatar(
+  world: World,
+  skinId: string = 'triangle',
+): EntityId {
   return world.create({
     pos: { x: AVATAR_START_X, y: AVATAR_START_Y },
     vel: { x: 0, y: 0 },
     radius: AVATAR_RADIUS,
-    team: "player",
+    team: 'player',
     avatar: {
       hp: AVATAR_BASE_HP,
       maxHp: AVATAR_BASE_HP,
@@ -33,7 +43,7 @@ export function spawnAvatar(world: World, skinId: string = "triangle"): EntityId
       skinId,
     },
     weapon: {
-      mode: "vertex",
+      mode: 'vertex',
       period: WEAPON_BASE_PERIOD,
       damage: WEAPON_BASE_DAMAGE,
       projectileSpeed: WEAPON_BASE_PROJECTILE_SPEED,
@@ -59,19 +69,28 @@ export interface EnemyStats {
 }
 
 const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
-  circle:    { hp: 3,  maxSpeed: 72,  contactDamage: 1, radius: 8 },
-  square:    { hp: 5,  maxSpeed: 98,  contactDamage: 1, radius: 9 },
-  star:      { hp: 8,  maxSpeed: 88,  contactDamage: 1, radius: 11 },
-  boss:      { hp: 80, maxSpeed: 52,  contactDamage: 1, radius: 22 },
-  pentagon:  { hp: 6,  maxSpeed: 68,  contactDamage: 1, radius: 10 },
-  hexagon:   { hp: 7,  maxSpeed: 62,  contactDamage: 1, radius: 10 },
-  diamond:   { hp: 4,  maxSpeed: 112, contactDamage: 1, radius: 8 },
-  cross:     { hp: 7,  maxSpeed: 58,  contactDamage: 1, radius: 10 },
-  crescent:  { hp: 5,  maxSpeed: 78,  contactDamage: 1, radius: 9 },
+  circle: { hp: 3, maxSpeed: 72, contactDamage: 1, radius: 8 },
+  square: { hp: 5, maxSpeed: 98, contactDamage: 1, radius: 9 },
+  star: { hp: 8, maxSpeed: 88, contactDamage: 1, radius: 11 },
+  boss: { hp: 80, maxSpeed: 52, contactDamage: 1, radius: 22 },
+  pentagon: { hp: 6, maxSpeed: 68, contactDamage: 1, radius: 10 },
+  hexagon: { hp: 7, maxSpeed: 62, contactDamage: 1, radius: 10 },
+  diamond: { hp: 4, maxSpeed: 112, contactDamage: 1, radius: 8 },
+  cross: { hp: 7, maxSpeed: 58, contactDamage: 1, radius: 10 },
+  crescent: { hp: 5, maxSpeed: 78, contactDamage: 1, radius: 9 },
+  // Named bosses — stats overridden by BossDef.install after spawn.
+  orthogon: { hp: 135, maxSpeed: 45, contactDamage: 1, radius: 22 },
+  jets: { hp: 250, maxSpeed: 60, contactDamage: 1, radius: 22 },
+  mirror: { hp: 400, maxSpeed: 50, contactDamage: 1, radius: 22 },
 };
 
 /** Kinds tagged as elite at spawn. Aligns with tier-2+ KILL_POINTS. */
-const ELITE_KINDS: ReadonlySet<EnemyKind> = new Set(["star", "pentagon", "hexagon", "cross"]);
+const ELITE_KINDS: ReadonlySet<EnemyKind> = new Set([
+  'star',
+  'pentagon',
+  'hexagon',
+  'cross',
+]);
 
 /** Per-kill HP multiplier applied to elite-marked spawns. */
 const ELITE_HP_MUL = 1.5;
@@ -81,19 +100,76 @@ export function isEliteKind(kind: EnemyKind): boolean {
 }
 
 export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
+  // Named bosses spawn as `boss` EnemyKind entities, then get their pattern installed.
+  const namedBossId: Record<string, keyof typeof BOSS_REGISTRY> = {
+    orthogon: 'orthogon',
+    jets: 'jets',
+    mirror: 'mirror',
+  };
+  const namedBossKey = namedBossId[kind];
+  if (namedBossKey) {
+    const bossDef = BOSS_REGISTRY[namedBossKey];
+    const baseStats = ENEMY_STATS[kind];
+    const id = world.create({
+      pos: { x: PLAY_W / 2, y: PLAY_H * 0.15 },
+      vel: { x: 0, y: 0 },
+      radius: baseStats.radius,
+      team: 'enemy',
+      enemy: {
+        kind: 'boss',
+        maxHp: baseStats.hp,
+        contactDamage: baseStats.contactDamage,
+        maxSpeed: baseStats.maxSpeed,
+        wobblePhase: 0,
+      },
+      hp: { value: baseStats.hp },
+      weapon: {
+        period: 1.2,
+        damage: 1,
+        projectileSpeed: 200,
+        projectiles: 2,
+        pierce: 0,
+        crit: 0,
+        cooldown: 1.2,
+        ricochet: 0,
+        chain: 0,
+        burnDps: 0,
+        burnDuration: 0,
+        slowPct: 0,
+        slowDuration: 0,
+      },
+    });
+    const c = world.get(id);
+    if (c) {
+      const spec = bossDef.buildSpec([]);
+      bossDef.install(c, spec);
+      c.enemy!.maxHp = c.hp!.value;
+    }
+    return id;
+  }
+
   const stats = ENEMY_STATS[kind];
   // Bosses appear in the upper play-field, centered. Other enemies spawn on
   // the outer margin of one of the four edges.
   let x: number, y: number;
-  if (kind === "boss") {
+  if (kind === 'boss') {
     x = PLAY_W / 2;
     y = PLAY_H * 0.15;
   } else {
     const edge = Math.floor(rng() * 4);
-    if (edge === 0)        { x = rng() * PLAY_W; y = ENEMY_SPAWN_MARGIN; }
-    else if (edge === 1)   { x = PLAY_W - ENEMY_SPAWN_MARGIN; y = rng() * PLAY_H; }
-    else if (edge === 2)   { x = rng() * PLAY_W; y = PLAY_H - ENEMY_SPAWN_MARGIN; }
-    else                   { x = ENEMY_SPAWN_MARGIN; y = rng() * PLAY_H; }
+    if (edge === 0) {
+      x = rng() * PLAY_W;
+      y = ENEMY_SPAWN_MARGIN;
+    } else if (edge === 1) {
+      x = PLAY_W - ENEMY_SPAWN_MARGIN;
+      y = rng() * PLAY_H;
+    } else if (edge === 2) {
+      x = rng() * PLAY_W;
+      y = PLAY_H - ENEMY_SPAWN_MARGIN;
+    } else {
+      x = ENEMY_SPAWN_MARGIN;
+      y = rng() * PLAY_H;
+    }
   }
   const elite = isEliteKind(kind);
   const hp = elite ? Math.ceil(stats.hp * ELITE_HP_MUL) : stats.hp;
@@ -101,7 +177,7 @@ export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
     pos: { x, y },
     vel: { x: 0, y: 0 },
     radius: stats.radius,
-    team: "enemy",
+    team: 'enemy',
     enemy: {
       kind,
       maxHp: hp,
@@ -109,10 +185,10 @@ export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
       maxSpeed: stats.maxSpeed,
       wobblePhase: rng() * Math.PI * 2,
       // Kind-specific fields
-      shield: kind === "hexagon" ? 1 : undefined,
-      dashCooldown: kind === "diamond" ? 2 + rng() * 2 : undefined,
-      shootCooldown: kind === "cross" ? 1.5 + rng() : undefined,
-      orbitAngle: kind === "crescent" ? rng() * Math.PI * 2 : undefined,
+      shield: kind === 'hexagon' ? 1 : undefined,
+      dashCooldown: kind === 'diamond' ? 2 + rng() * 2 : undefined,
+      shootCooldown: kind === 'cross' ? 1.5 + rng() : undefined,
+      orbitAngle: kind === 'crescent' ? rng() * Math.PI * 2 : undefined,
       isElite: elite || undefined,
     },
     hp: { value: hp },
@@ -120,7 +196,13 @@ export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
 }
 
 /** Spawn an enemy at a specific position (for pentagon splits etc.). */
-export function spawnEnemyAt(world: World, kind: EnemyKind, rng: Rng, atX: number, atY: number): EntityId {
+export function spawnEnemyAt(
+  world: World,
+  kind: EnemyKind,
+  rng: Rng,
+  atX: number,
+  atY: number,
+): EntityId {
   const stats = ENEMY_STATS[kind];
   const spread = 12;
   const x = atX + (rng() - 0.5) * spread;
@@ -131,17 +213,17 @@ export function spawnEnemyAt(world: World, kind: EnemyKind, rng: Rng, atX: numbe
     pos: { x, y },
     vel: { x: 0, y: 0 },
     radius: stats.radius,
-    team: "enemy",
+    team: 'enemy',
     enemy: {
       kind,
       maxHp: hp,
       contactDamage: stats.contactDamage,
       maxSpeed: stats.maxSpeed,
       wobblePhase: rng() * Math.PI * 2,
-      shield: kind === "hexagon" ? 1 : undefined,
-      dashCooldown: kind === "diamond" ? 2 + rng() * 2 : undefined,
-      shootCooldown: kind === "cross" ? 1.5 + rng() : undefined,
-      orbitAngle: kind === "crescent" ? rng() * Math.PI * 2 : undefined,
+      shield: kind === 'hexagon' ? 1 : undefined,
+      dashCooldown: kind === 'diamond' ? 2 + rng() * 2 : undefined,
+      shootCooldown: kind === 'cross' ? 1.5 + rng() : undefined,
+      orbitAngle: kind === 'crescent' ? rng() * Math.PI * 2 : undefined,
       isElite: elite || undefined,
     },
     hp: { value: hp },
@@ -162,7 +244,7 @@ export function spawnProjectile(
     pos: { x, y },
     vel: { x: vx, y: vy },
     radius: PROJECTILE_RADIUS,
-    team: "projectile",
+    team: 'projectile',
     projectile: {
       damage: weapon.damage * (crit ? 2 : 1),
       crit,
@@ -197,7 +279,7 @@ export function spawnOrbitShard(
     },
     vel: { x: 0, y: 0 },
     radius: PROJECTILE_RADIUS + 1,
-    team: "projectile",
+    team: 'projectile',
     projectile: {
       damage: weapon.damage * (crit ? 2 : 1),
       crit,
@@ -243,7 +325,7 @@ export function spawnChainBolt(
     pos: { x, y },
     vel: { x: (dx / dist) * speed, y: (dy / dist) * speed },
     radius: PROJECTILE_RADIUS,
-    team: "projectile",
+    team: 'projectile',
     projectile: {
       damage,
       crit: false,
@@ -283,18 +365,37 @@ export function createWeaponForMode(mode: WeaponMode): WeaponState {
     slowDuration: 0,
   };
   switch (mode) {
-    case "faceBeam":
+    case 'faceBeam':
       return { ...base, period: 0.95, damage: 1, projectiles: 1 };
-    case "orbitShard":
+    case 'orbitShard':
       return { ...base, period: 1.6, damage: 1, projectiles: 3 };
-    case "homing":
-      return { ...base, period: 0.8, damage: 2, projectileSpeed: 320, projectiles: 1 };
-    case "burst":
-      return { ...base, period: 1.1, damage: 3, projectileSpeed: 360, projectiles: 1 };
-    case "fan":
+    case 'homing':
+      return {
+        ...base,
+        period: 0.8,
+        damage: 2,
+        projectileSpeed: 320,
+        projectiles: 1,
+      };
+    case 'burst':
+      return {
+        ...base,
+        period: 1.1,
+        damage: 3,
+        projectileSpeed: 360,
+        projectiles: 1,
+      };
+    case 'fan':
       return { ...base, period: 0.7, damage: 1, projectiles: 5 };
-    case "charge":
-      return { ...base, period: 1.6, damage: 4, projectileSpeed: 700, pierce: 99, projectiles: 1 };
+    case 'charge':
+      return {
+        ...base,
+        period: 1.6,
+        damage: 4,
+        projectileSpeed: 700,
+        pierce: 99,
+        projectiles: 1,
+      };
     default:
       return base;
   }
@@ -322,7 +423,7 @@ export function spawnBurstFragments(
       pos: { x, y },
       vel: { x: vx, y: vy },
       radius: PROJECTILE_RADIUS,
-      team: "projectile",
+      team: 'projectile',
       projectile: {
         damage: dmg,
         crit: false,
@@ -353,7 +454,7 @@ export function spawnEnemyShot(
     pos: { x, y },
     vel: { x: vx, y: vy },
     radius: PROJECTILE_RADIUS + 1,
-    team: "enemy-shot",
+    team: 'enemy-shot',
     projectile: {
       damage: crit ? damage * 2 : damage,
       crit,

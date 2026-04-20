@@ -2,20 +2,23 @@
 // Points are earned per-kill during a run and settled to persistent storage at
 // run end. Boss kills also roll for special loot (skins, skill cores, etc.).
 
-import type { EnemyKind } from "./world";
-import type { Rng } from "./rng";
+import type { EnemyKind } from './world';
+import type { Rng } from './rng';
 
 /** Points awarded per enemy kill by kind. */
 export const BASE_KILL_POINTS: Record<EnemyKind, number> = {
-  circle:   1,
-  square:   2,
-  star:     3,
+  circle: 1,
+  square: 2,
+  star: 3,
   pentagon: 3,
-  hexagon:  4,
-  diamond:  3,
-  cross:    4,
+  hexagon: 4,
+  diamond: 3,
+  cross: 4,
   crescent: 3,
-  boss:     50,
+  boss: 50,
+  orthogon: 50,
+  jets: 50,
+  mirror: 50,
 };
 
 /** Stage 1 / Stage 2 / Stage 3 normal-mode point multipliers. */
@@ -30,9 +33,13 @@ export function normalStagePointMultiplier(stageIndex: number): number {
     : 1;
 }
 
-export function killPointsForEnemy(kind: EnemyKind, mode: "normal" | "survival", stageIndex: number): number {
+export function killPointsForEnemy(
+  kind: EnemyKind,
+  mode: 'normal' | 'survival',
+  stageIndex: number,
+): number {
   const base = BASE_KILL_POINTS[kind] ?? 1;
-  if (mode !== "normal") return base;
+  if (mode !== 'normal') return base;
   return Math.max(1, Math.ceil(base * normalStagePointMultiplier(stageIndex)));
 }
 
@@ -41,7 +48,7 @@ export const BOSS_WAVE_BONUS = 5;
 
 // ── Boss loot rolls ─────────────────────────────────────────────────────────
 
-export type LootKind = "points" | "skin" | "skillPoints" | "core";
+export type LootKind = 'points' | 'skin' | 'skillPoints' | 'core';
 
 export interface LootDrop {
   kind: LootKind;
@@ -60,10 +67,10 @@ interface LootEntry {
 }
 
 const BOSS_LOOT_TABLE: LootEntry[] = [
-  { kind: "points",      label: "+100 points",     value: 100, weight: 40 },
-  { kind: "skin",        label: "Boss skin shard",  value: 0,   weight: 55 },
-  { kind: "skillPoints", label: "+30 skill pts",    value: 30,  weight: 75 },
-  { kind: "core",        label: "Primal core ✧",    value: 1,   weight: 100 },
+  { kind: 'points', label: '+100 points', value: 100, weight: 40 },
+  { kind: 'skin', label: 'Boss skin shard', value: 0, weight: 55 },
+  { kind: 'skillPoints', label: '+30 skill pts', value: 30, weight: 75 },
+  { kind: 'core', label: 'Primal core ✧', value: 1, weight: 100 },
 ];
 
 /** Roll one loot drop from the boss loot table. */
@@ -75,14 +82,14 @@ export function rollBossLoot(rng: Rng): LootDrop {
     }
   }
   // fallback
-  return { kind: "points", label: "+100 points", value: 100 };
+  return { kind: 'points', label: '+100 points', value: 100 };
 }
 
 // ── Run result ──────────────────────────────────────────────────────────────
 
 export interface RunResult {
-  mode: "normal" | "survival";
-  stageIndex: number;       // 0-based (normal only)
+  mode: 'normal' | 'survival';
+  stageIndex: number; // 0-based (normal only)
   wavesCleared: number;
   totalKills: number;
   bossKills: number;

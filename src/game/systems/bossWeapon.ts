@@ -1,7 +1,7 @@
-import { PLAY_H, PLAY_W } from "../config";
-import { spawnEnemyShot } from "../entities";
-import type { Rng } from "../rng";
-import type { Components, EntityId, World } from "../world";
+import { ENEMY_SEEK_ACCEL, PLAY_H, PLAY_W } from '../config';
+import { spawnEnemyShot } from '../entities';
+import type { Rng } from '../rng';
+import type { Components, EntityId, World } from '../world';
 
 /** Fan half-spread (radians) between adjacent projectiles. */
 export const BOSS_FAN_SPREAD = 0.22;
@@ -21,7 +21,7 @@ const ORTHO_SHOT_SPEED = 190;
 /** Number of projectiles per axis line. */
 const ORTHO_SHOTS_PER_LINE = 3;
 /** Spread between projectiles on an axis (radians). */
-const ORTHO_SHOT_SPREAD = 0.10;
+const ORTHO_SHOT_SPREAD = 0.1;
 
 // ── Jets tuning ─────────────────────────────────────────────────────────────
 /** Pause between Jets actions (seconds). */
@@ -32,6 +32,24 @@ const JETS_SCATTER_COUNT = 8;
 const JETS_SCATTER_SPEED = 150;
 /** Enrage speed multiplier (≤50% HP). */
 const JETS_ENRAGE_SPEED_MUL = 1.5;
+/** Normal glide speed when repositioning to dash-start. */
+const JETS_GLIDE_SPEED = 200;
+/** Fast dash speed across the playfield. */
+const JETS_DASH_SPEED = 650;
+/** Z-sweep glide speed between waypoints. */
+const JETS_SWEEP_SPEED = 280;
+/** Arrival distance threshold (px). */
+const JETS_ARRIVE_DIST = 8;
+/** Telegraph hold time before dash (seconds). */
+const JETS_DASH_TELEGRAPH_SECS = 0.5;
+
+/** Z-sweep waypoints traversed in order, firing one aimed shot at each. */
+const JETS_ZSWEEP_WPS: readonly { x: number; y: number }[] = [
+  { x: 40, y: 50 },
+  { x: PLAY_W - 40, y: 50 },
+  { x: 40, y: PLAY_H * 0.35 },
+  { x: PLAY_W - 40, y: PLAY_H * 0.35 },
+];
 
 // ── Main entry point ────────────────────────────────────────────────────────
 
@@ -46,16 +64,16 @@ export function updateBossWeapon(
   const ax = avatar.pos.x;
   const ay = avatar.pos.y;
 
-  for (const [, c] of world.with("enemy", "weapon", "pos", "hp")) {
-    if (c.enemy!.kind !== "boss") continue;
+  for (const [, c] of world.with('enemy', 'weapon', 'pos', 'hp')) {
+    if (c.enemy!.kind !== 'boss') continue;
     if (c.hp!.value <= 0) continue;
 
-    const pattern = c.enemy!.bossPattern ?? "standard";
+    const pattern = c.enemy!.bossPattern ?? 'standard';
     switch (pattern) {
-      case "orthogon":
+      case 'orthogon':
         updateOrthogonPattern(world, c, ax, ay, rng, dt);
         break;
-      case "jets":
+      case 'jets':
         updateJetsPattern(world, c, ax, ay, rng, dt);
         break;
       default:
@@ -68,18 +86,27 @@ export function updateBossWeapon(
 // ── Standard (Mirror / fallback) ────────────────────────────────────────────
 
 function updateStandardPattern(
-  world: World, c: Components, ax: number, ay: number, rng: Rng, dt: number,
+  world: World,
+  c: Components,
+  ax: number,
+  ay: number,
+  rng: Rng,
+  dt: number,
 ): void {
   const w = c.weapon!;
   w.cooldown -= dt;
 
   // Snapshot the aim once the lead window opens.
-  if (w.cooldown <= BOSS_TELEGRAPH_LEAD && c.enemy!.telegraphAngle === undefined) {
+  if (
+    w.cooldown <= BOSS_TELEGRAPH_LEAD &&
+    c.enemy!.telegraphAngle === undefined
+  ) {
     c.enemy!.telegraphAngle = Math.atan2(ay - c.pos!.y, ax - c.pos!.x);
   }
   if (w.cooldown > 0) return;
 
-  const baseAngle = c.enemy!.telegraphAngle ?? Math.atan2(ay - c.pos!.y, ax - c.pos!.x);
+  const baseAngle =
+    c.enemy!.telegraphAngle ?? Math.atan2(ay - c.pos!.y, ax - c.pos!.x);
   c.enemy!.telegraphAngle = undefined;
 
   fireAimedFan(world, c, baseAngle, rng);
@@ -94,7 +121,12 @@ function updateStandardPattern(
 // bossPhase: 0 = idle/pause, 1 = telegraph, 2 = fire+pause, 3 = fan
 
 function updateOrthogonPattern(
-  world: World, c: Components, ax: number, ay: number, rng: Rng, dt: number,
+  world: World,
+  c: Components,
+  ax: number,
+  ay: number,
+  rng: Rng,
+  dt: number,
 ): void {
   const e = c.enemy!;
   const hp = c.hp!;
@@ -102,7 +134,7 @@ function updateOrthogonPattern(
   if (e.bossPhase === undefined) e.bossPhase = 0;
 
   // Check enrage
-  const maxHp = 45; // from buildSpec
+  const maxHp = 135; // from orthogon buildSpec
   if (!e.bossEnraged && hp.value <= maxHp * 0.5) {
     e.bossEnraged = true;
   }
@@ -114,7 +146,12 @@ function updateOrthogonPattern(
     case 0: {
       // Idle → start telegraph
       const cardinalAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
-      const diagAngles = [Math.PI / 4, 3 * Math.PI / 4, -3 * Math.PI / 4, -Math.PI / 4];
+      const diagAngles = [
+        Math.PI / 4,
+        (3 * Math.PI) / 4,
+        (-3 * Math.PI) / 4,
+        -Math.PI / 4,
+      ];
       const angles = e.bossEnraged
         ? [...cardinalAngles, ...diagAngles]
         : cardinalAngles;
@@ -125,14 +162,28 @@ function updateOrthogonPattern(
     }
     case 1: {
       // Telegraph done → fire axis shots
-      const angles = e.bossTelegraphLines ?? [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+      const angles = e.bossTelegraphLines ?? [
+        0,
+        Math.PI / 2,
+        Math.PI,
+        -Math.PI / 2,
+      ];
       for (const baseAngle of angles) {
         for (let i = 0; i < ORTHO_SHOTS_PER_LINE; i++) {
-          const offset = (i - (ORTHO_SHOTS_PER_LINE - 1) / 2) * ORTHO_SHOT_SPREAD;
+          const offset =
+            (i - (ORTHO_SHOTS_PER_LINE - 1) / 2) * ORTHO_SHOT_SPREAD;
           const a = baseAngle + offset;
           const vx = Math.cos(a) * ORTHO_SHOT_SPEED;
           const vy = Math.sin(a) * ORTHO_SHOT_SPEED;
-          spawnEnemyShot(world, c.pos!.x, c.pos!.y, vx, vy, c.weapon!.damage, false);
+          spawnEnemyShot(
+            world,
+            c.pos!.x,
+            c.pos!.y,
+            vx,
+            vy,
+            c.weapon!.damage,
+            false,
+          );
         }
       }
       e.bossTelegraphLines = undefined;
@@ -153,87 +204,191 @@ function updateOrthogonPattern(
 
 // ── Jets AI ─────────────────────────────────────────────────────────────────
 //
-// Cycle: side-wall dash → Z-sweep → aimed fan → repeat.
-// At ≤50% HP: enrage — speed +50%, scatter burst after each action.
+// Cycle: idle → glide-to-start → telegraph(0.5s) → fast-dash → Z-sweep → fan.
+// All position changes use smooth velocity-based movement (no teleporting).
 //
-// bossPhase: 0 = pre-dash, 1 = dashing, 2 = Z-sweep, 3 = fan
+// Phases:
+//   0  idle / seek player (timer countdown before dash sequence)
+//   1  glide to dash-start wall position
+//   2  telegraph hold (bossTelegraphLines set, 0.5s)
+//   3  fast dash to opposite wall
+//   4  Z-sweep: glide through waypoints, fire at each (bossWaypointIdx tracks)
+//   5  aimed fan shot at player, then back to phase 0
+
+/** Move pos toward (tx,ty) at speed px/s. Returns true when arrived. */
+function glideToward(
+  p: { x: number; y: number },
+  v: { x: number; y: number },
+  tx: number,
+  ty: number,
+  speed: number,
+  dt: number,
+): boolean {
+  const dx = tx - p.x;
+  const dy = ty - p.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < JETS_ARRIVE_DIST) {
+    p.x = tx;
+    p.y = ty;
+    v.x = 0;
+    v.y = 0;
+    return true;
+  }
+  // Clamp step so we cannot overshoot in a single frame.
+  const s = Math.min(speed, dist / dt);
+  v.x = (dx / dist) * s;
+  v.y = (dy / dist) * s;
+  p.x += v.x * dt;
+  p.y += v.y * dt;
+  return false;
+}
 
 function updateJetsPattern(
-  world: World, c: Components, ax: number, ay: number, rng: Rng, dt: number,
+  world: World,
+  c: Components,
+  ax: number,
+  ay: number,
+  rng: Rng,
+  dt: number,
 ): void {
   const e = c.enemy!;
   const hp = c.hp!;
   const p = c.pos!;
+  const v = c.vel ?? { x: 0, y: 0 };
   if (e.bossTimer === undefined) e.bossTimer = JETS_ACTION_PAUSE;
   if (e.bossPhase === undefined) e.bossPhase = 0;
 
-  // Check enrage
-  const maxHp = 55; // from buildSpec
+  // Check enrage (≤50% of base HP).
+  const maxHp = 250;
   if (!e.bossEnraged && hp.value <= maxHp * 0.5) {
     e.bossEnraged = true;
     e.maxSpeed *= JETS_ENRAGE_SPEED_MUL;
   }
+  const enrageScale = e.bossEnraged ? JETS_ENRAGE_SPEED_MUL : 1;
+  const pauseMul = e.bossEnraged ? 0.6 : 1;
 
+  // ── Per-frame: glide toward bossDashTarget ─────────────────────────────
+  if (e.bossDashTarget !== undefined) {
+    const speed =
+      e.bossPhase === 3
+        ? JETS_DASH_SPEED * enrageScale
+        : e.bossPhase === 4
+          ? JETS_SWEEP_SPEED * enrageScale
+          : JETS_GLIDE_SPEED * enrageScale;
+
+    const arrived = glideToward(
+      p,
+      v,
+      e.bossDashTarget.x,
+      e.bossDashTarget.y,
+      speed,
+      dt,
+    );
+    if (arrived) {
+      e.bossDashTarget = undefined;
+      switch (e.bossPhase) {
+        case 1: {
+          // Arrived at dash-start → telegraph: one line toward dash end.
+          const endX = p.x < PLAY_W / 2 ? PLAY_W - 30 : 30;
+          const dashAngle = endX > p.x ? 0 : Math.PI;
+          e.bossTelegraphLines = [dashAngle];
+          e.bossPhase = 2;
+          e.bossTimer = JETS_DASH_TELEGRAPH_SECS;
+          break;
+        }
+        case 3: {
+          // Arrived at dash-end → scatter burst (if enraged), start Z-sweep.
+          if (e.bossEnraged)
+            fireScatterBurst(world, p.x, p.y, c.weapon!.damage, rng);
+          e.bossWaypointIdx = 0;
+          e.bossDashTarget = { ...JETS_ZSWEEP_WPS[0]! };
+          e.bossPhase = 4;
+          break;
+        }
+        case 4: {
+          // Arrived at a Z-sweep waypoint → fire aimed shot, advance.
+          const angle = Math.atan2(ay - p.y, ax - p.x);
+          spawnEnemyShot(
+            world,
+            p.x,
+            p.y,
+            Math.cos(angle) * c.weapon!.projectileSpeed,
+            Math.sin(angle) * c.weapon!.projectileSpeed,
+            c.weapon!.damage,
+            false,
+          );
+          const nextIdx = (e.bossWaypointIdx ?? 0) + 1;
+          e.bossWaypointIdx = nextIdx;
+          if (nextIdx < JETS_ZSWEEP_WPS.length) {
+            e.bossDashTarget = { ...JETS_ZSWEEP_WPS[nextIdx]! };
+          } else {
+            // Z-sweep complete → scatter (if enraged), then fan phase.
+            if (e.bossEnraged)
+              fireScatterBurst(world, p.x, p.y, c.weapon!.damage, rng);
+            e.bossPhase = 5;
+            e.bossTimer = JETS_ACTION_PAUSE * pauseMul;
+          }
+          break;
+        }
+      }
+    }
+    return; // skip timer logic while gliding
+  }
+
+  // ── Phase 0: idle — gently seek player ────────────────────────────────
+  if (e.bossPhase === 0) {
+    const sdx = ax - p.x;
+    const sdy = ay - p.y;
+    const sdist = Math.hypot(sdx, sdy) || 1;
+    const targetVx = (sdx / sdist) * e.maxSpeed;
+    const targetVy = (sdy / sdist) * e.maxSpeed;
+    const dvx = targetVx - v.x;
+    const dvy = targetVy - v.y;
+    const dvLen = Math.hypot(dvx, dvy);
+    const maxStep = ENEMY_SEEK_ACCEL * dt;
+    if (dvLen <= maxStep) {
+      v.x = targetVx;
+      v.y = targetVy;
+    } else {
+      v.x += (dvx / dvLen) * maxStep;
+      v.y += (dvy / dvLen) * maxStep;
+    }
+    p.x += v.x * dt;
+    p.y += v.y * dt;
+    p.x = Math.max(-30, Math.min(PLAY_W + 30, p.x));
+    p.y = Math.max(-30, Math.min(PLAY_H + 30, p.y));
+  }
+
+  // ── Timer countdown ────────────────────────────────────────────────────
   e.bossTimer -= dt;
   if (e.bossTimer > 0) return;
 
+  // ── Phase transitions (timer expired) ─────────────────────────────────
   switch (e.bossPhase) {
     case 0: {
-      // Side-wall dash: teleport to one side, then dash to the other
-      const startSide = p.x < PLAY_W / 2 ? 30 : PLAY_W - 30;
-      const targetSide = startSide === 30 ? PLAY_W - 30 : 30;
+      // Begin dash sequence — glide to the nearer wall first.
+      const startX = p.x < PLAY_W / 2 ? 30 : PLAY_W - 30;
       const dashY = Math.max(40, Math.min(PLAY_H * 0.6, ay));
-      // Show telegraph line at dash height
-      e.telegraphAngle = startSide < PLAY_W / 2 ? 0 : Math.PI;
-      // Move to start position
-      p.x = startSide;
-      p.y = dashY;
-      e.bossDashTarget = { x: targetSide, y: dashY };
+      e.bossDashTarget = { x: startX, y: dashY };
       e.bossPhase = 1;
-      e.bossTimer = BOSS_TELEGRAPH_LEAD; // telegraph before dash
-      break;
-    }
-    case 1: {
-      // Execute the dash — instant teleport to opposite wall
-      e.telegraphAngle = undefined;
-      const target = e.bossDashTarget ?? { x: PLAY_W - 30, y: PLAY_H / 2 };
-      p.x = target.x;
-      p.y = target.y;
-      if (e.bossEnraged) fireScatterBurst(world, p.x, p.y, c.weapon!.damage, rng);
-      e.bossPhase = 2;
-      e.bossTimer = JETS_ACTION_PAUSE * (e.bossEnraged ? 0.6 : 1);
       break;
     }
     case 2: {
-      // Z-sweep: rapid movement through waypoints, firing along the way
-      const waypoints = [
-        { x: 40, y: 50 },
-        { x: PLAY_W - 40, y: 50 },
-        { x: 40, y: PLAY_H * 0.35 },
-        { x: PLAY_W - 40, y: PLAY_H * 0.35 },
-      ];
-      for (const wp of waypoints) {
-        const angle = Math.atan2(ay - wp.y, ax - wp.x);
-        spawnEnemyShot(world, wp.x, wp.y,
-          Math.cos(angle) * c.weapon!.projectileSpeed,
-          Math.sin(angle) * c.weapon!.projectileSpeed,
-          c.weapon!.damage, false);
-      }
-      const last = waypoints[waypoints.length - 1]!;
-      p.x = last.x;
-      p.y = last.y;
-      if (e.bossEnraged) fireScatterBurst(world, p.x, p.y, c.weapon!.damage, rng);
+      // Telegraph done → fast dash to opposite wall.
+      e.bossTelegraphLines = undefined;
+      const endX = p.x < PLAY_W / 2 ? PLAY_W - 30 : 30;
+      e.bossDashTarget = { x: endX, y: p.y };
       e.bossPhase = 3;
-      e.bossTimer = JETS_ACTION_PAUSE * (e.bossEnraged ? 0.6 : 1);
       break;
     }
-    case 3: {
-      // Aimed fan at player
+    case 5: {
+      // Fire aimed fan, return to idle.
       const baseAngle = Math.atan2(ay - p.y, ax - p.x);
       fireAimedFan(world, c, baseAngle, rng);
-      if (e.bossEnraged) fireScatterBurst(world, p.x, p.y, c.weapon!.damage, rng);
+      if (e.bossEnraged)
+        fireScatterBurst(world, p.x, p.y, c.weapon!.damage, rng);
       e.bossPhase = 0;
-      e.bossTimer = JETS_ACTION_PAUSE * (e.bossEnraged ? 0.6 : 1);
+      e.bossTimer = JETS_ACTION_PAUSE * pauseMul;
       break;
     }
   }
@@ -241,7 +396,12 @@ function updateJetsPattern(
 
 // ── Shared helpers ──────────────────────────────────────────────────────────
 
-function fireAimedFan(world: World, c: Components, baseAngle: number, rng: Rng): void {
+function fireAimedFan(
+  world: World,
+  c: Components,
+  baseAngle: number,
+  rng: Rng,
+): void {
   const w = c.weapon!;
   const n = Math.max(1, w.projectiles);
   const startAngle = baseAngle - (BOSS_FAN_SPREAD * (n - 1)) / 2;
@@ -254,7 +414,13 @@ function fireAimedFan(world: World, c: Components, baseAngle: number, rng: Rng):
   }
 }
 
-function fireScatterBurst(world: World, x: number, y: number, damage: number, rng: Rng): void {
+function fireScatterBurst(
+  world: World,
+  x: number,
+  y: number,
+  damage: number,
+  rng: Rng,
+): void {
   const offsetAngle = rng() * Math.PI * 2;
   for (let i = 0; i < JETS_SCATTER_COUNT; i++) {
     const a = offsetAngle + (i / JETS_SCATTER_COUNT) * Math.PI * 2;

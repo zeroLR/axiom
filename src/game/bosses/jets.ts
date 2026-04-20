@@ -10,7 +10,7 @@ import type { BossDef, BossSpec } from './types';
 /** Jets baseline stats — Stage 2 difficulty. */
 function buildSpec(_picks: readonly Card[]): BossSpec {
   return {
-    hp: 165,
+    hp: 250,
     contactDamage: 1,
     maxSpeed: 60,
     weapon: {

@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from 'vitest';
 
-import { updateBossWeapon } from "../../src/game/systems/bossWeapon";
-import { createRng } from "../../src/game/rng";
-import { World, type WeaponState } from "../../src/game/world";
+import { updateBossWeapon } from '../../src/game/systems/bossWeapon';
+import { createRng } from '../../src/game/rng';
+import { World, type WeaponState } from '../../src/game/world';
 
 function makeBossWeapon(partial: Partial<WeaponState> = {}): WeaponState {
   return {
@@ -27,44 +27,51 @@ function spawnAvatarAt(world: World, x: number, y: number) {
   return world.create({
     pos: { x, y },
     radius: 10,
-    team: "player",
-    avatar: { hp: 3, maxHp: 3, speedMul: 1, iframes: 0, targetX: x, targetY: y },
+    team: 'player',
+    avatar: {
+      hp: 3,
+      maxHp: 3,
+      speedMul: 1,
+      iframes: 0,
+      targetX: x,
+      targetY: y,
+    },
   });
 }
 
 function countEnemyShots(world: World): number {
   let count = 0;
-  for (const [, c] of world.with("projectile")) {
-    if (c.team === "enemy-shot") count += 1;
+  for (const [, c] of world.with('projectile')) {
+    if (c.team === 'enemy-shot') count += 1;
   }
   return count;
 }
 
 // ── Orthogon tests ──────────────────────────────────────────────────────────
 
-describe("Orthogon boss AI", () => {
+describe('Orthogon boss AI', () => {
   function spawnOrthogonBoss(world: World) {
     return world.create({
       pos: { x: 180, y: 60 },
       vel: { x: 0, y: 0 },
       radius: 22,
-      team: "enemy",
+      team: 'enemy',
       enemy: {
-        kind: "boss",
+        kind: 'boss',
         contactDamage: 1,
         maxSpeed: 45,
         wobblePhase: 0,
-        bossPattern: "orthogon",
+        bossPattern: 'orthogon',
         bossPhase: 0,
         bossTimer: 0,
         bossEnraged: false,
       },
-      hp: { value: 45 },
+      hp: { value: 135 },
       weapon: makeBossWeapon(),
     });
   }
 
-  it("starts with telegraph lines on first tick", () => {
+  it('starts with telegraph lines on first tick', () => {
     const world = new World();
     const rng = createRng(1);
     const aId = spawnAvatarAt(world, 180, 500);
@@ -78,7 +85,7 @@ describe("Orthogon boss AI", () => {
     expect(boss.enemy!.bossPhase).toBe(1);
   });
 
-  it("fires axis shots after telegraph period", () => {
+  it('fires axis shots after telegraph period', () => {
     const world = new World();
     const rng = createRng(1);
     const aId = spawnAvatarAt(world, 180, 500);
@@ -95,7 +102,7 @@ describe("Orthogon boss AI", () => {
     expect(countEnemyShots(world)).toBe(12);
   });
 
-  it("fires 8-axis shots when enraged (≤50% HP)", () => {
+  it('fires 8-axis shots when enraged (≤50% HP)', () => {
     const world = new World();
     const rng = createRng(1);
     const aId = spawnAvatarAt(world, 180, 500);
@@ -117,7 +124,7 @@ describe("Orthogon boss AI", () => {
     expect(countEnemyShots(world)).toBe(24);
   });
 
-  it("does not fire when dead", () => {
+  it('does not fire when dead', () => {
     const world = new World();
     const rng = createRng(1);
     const aId = spawnAvatarAt(world, 180, 500);
@@ -131,108 +138,148 @@ describe("Orthogon boss AI", () => {
 
 // ── Jets tests ──────────────────────────────────────────────────────────────
 
-describe("Jets boss AI", () => {
+describe('Jets boss AI', () => {
+  const TICK = 0.016; // simulate at ~60 fps
+  const MAX_TICKS = 6000;
+
   function spawnJetsBoss(world: World) {
     return world.create({
       pos: { x: 180, y: 60 },
       vel: { x: 0, y: 0 },
       radius: 22,
-      team: "enemy",
+      team: 'enemy',
       enemy: {
-        kind: "boss",
+        kind: 'boss',
         contactDamage: 1,
         maxSpeed: 60,
         wobblePhase: 0,
-        bossPattern: "jets",
+        bossPattern: 'jets',
         bossPhase: 0,
         bossTimer: 0, // start immediately
         bossEnraged: false,
       },
-      hp: { value: 55 },
+      hp: { value: 250 },
       weapon: makeBossWeapon({ period: 1.2, projectileSpeed: 200 }),
     });
   }
 
-  it("starts side-wall dash on first tick", () => {
+  /** Advance until predicate returns true or MAX_TICKS is exhausted. */
+  function tickUntil(
+    world: World,
+    aId: ReturnType<typeof spawnAvatarAt>,
+    rng: ReturnType<typeof createRng>,
+    pred: () => boolean,
+  ): boolean {
+    for (let i = 0; i < MAX_TICKS; i++) {
+      updateBossWeapon(world, aId, rng, TICK);
+      if (pred()) return true;
+    }
+    return false;
+  }
+
+  it('starts gliding toward dash-start wall on first tick', () => {
     const world = new World();
     const rng = createRng(1);
     const aId = spawnAvatarAt(world, 180, 500);
     const bId = spawnJetsBoss(world);
 
-    updateBossWeapon(world, aId, rng, 0.01);
+    updateBossWeapon(world, aId, rng, TICK);
     const boss = world.get(bId)!;
-    // Should have moved to a side wall and set dash target
-    expect(boss.enemy!.bossPhase).toBe(1); // dashing phase
+    // Phase 0 timer expired immediately → set bossDashTarget, advance to phase 1
+    expect(boss.enemy!.bossPhase).toBe(1);
     expect(boss.enemy!.bossDashTarget).toBeDefined();
-    // Telegraph active
-    expect(boss.enemy!.telegraphAngle).toBeDefined();
+    // Telegraph not yet shown (boss is still gliding to start position)
+    expect(boss.enemy!.bossTelegraphLines).toBeUndefined();
   });
 
-  it("completes dash and moves to Z-sweep", () => {
+  it('shows telegraph line after arriving at dash-start wall', () => {
     const world = new World();
     const rng = createRng(1);
     const aId = spawnAvatarAt(world, 180, 500);
     const bId = spawnJetsBoss(world);
 
-    // Enter dash telegraph
-    updateBossWeapon(world, aId, rng, 0.01);
-    expect(world.get(bId)!.enemy!.bossPhase).toBe(1);
-
-    // Complete dash (tick past telegraph)
-    updateBossWeapon(world, aId, rng, 0.85);
-    expect(world.get(bId)!.enemy!.bossPhase).toBe(2);
-    // Telegraph cleared
-    expect(world.get(bId)!.enemy!.telegraphAngle).toBeUndefined();
+    // Tick until phase 2 (telegraph hold)
+    const reached = tickUntil(
+      world,
+      aId,
+      rng,
+      () => world.get(bId)!.enemy!.bossPhase === 2,
+    );
+    expect(reached).toBe(true);
+    const boss = world.get(bId)!;
+    expect(boss.enemy!.bossTelegraphLines).toBeDefined();
+    expect(boss.enemy!.bossTelegraphLines!.length).toBe(1); // single horizontal dash line
   });
 
-  it("Z-sweep fires shots from waypoints", () => {
-    const world = new World();
-    const rng = createRng(1);
-    const aId = spawnAvatarAt(world, 180, 500);
-    spawnJetsBoss(world);
-
-    // Advance to Z-sweep (phase 2)
-    updateBossWeapon(world, aId, rng, 0.01); // → phase 1
-    updateBossWeapon(world, aId, rng, 0.85); // → phase 2
-
-    const shotsBeforeZsweep = countEnemyShots(world);
-
-    // Complete the pause and trigger Z-sweep
-    updateBossWeapon(world, aId, rng, 1.3);
-    const shotsAfterZsweep = countEnemyShots(world);
-
-    // Z-sweep fires 4 waypoint shots
-    expect(shotsAfterZsweep - shotsBeforeZsweep).toBe(4);
-  });
-
-  it("fires scatter burst when enraged after completing dash", () => {
+  it('starts fast dash after telegraph expires', () => {
     const world = new World();
     const rng = createRng(1);
     const aId = spawnAvatarAt(world, 180, 500);
     const bId = spawnJetsBoss(world);
 
-    // Set HP below 50% before first action
-    world.get(bId)!.hp!.value = 25;
+    // Tick until phase 3 (fast dash in progress)
+    const reached = tickUntil(
+      world,
+      aId,
+      rng,
+      () => world.get(bId)!.enemy!.bossPhase === 3,
+    );
+    expect(reached).toBe(true);
+    const boss = world.get(bId)!;
+    expect(boss.enemy!.bossTelegraphLines).toBeUndefined(); // telegraph cleared
+    expect(boss.enemy!.bossDashTarget).toBeDefined(); // actively dashing
+  });
 
-    // Enter dash telegraph
-    updateBossWeapon(world, aId, rng, 0.01);
+  it('Z-sweep fires one aimed shot per waypoint (4 total)', () => {
+    const world = new World();
+    const rng = createRng(1);
+    const aId = spawnAvatarAt(world, 180, 500);
+    const bId = spawnJetsBoss(world);
+
+    // Tick until Z-sweep starts (phase 4)
+    tickUntil(world, aId, rng, () => world.get(bId)!.enemy!.bossPhase === 4);
+    const shotsBefore = countEnemyShots(world);
+
+    // Tick until Z-sweep ends (phase 5)
+    const reached = tickUntil(
+      world,
+      aId,
+      rng,
+      () => world.get(bId)!.enemy!.bossPhase === 5,
+    );
+    expect(reached).toBe(true);
+    expect(countEnemyShots(world) - shotsBefore).toBe(4);
+  });
+
+  it('fires scatter burst (8 shots) when enraged after completing dash', () => {
+    const world = new World();
+    const rng = createRng(1);
+    const aId = spawnAvatarAt(world, 180, 500);
+    const bId = spawnJetsBoss(world);
+
+    // Enrage immediately (below 50% of 250)
+    world.get(bId)!.hp!.value = 50;
+
+    // Tick until dash completes and Z-sweep begins (scatter fires at case 3 arrival)
+    const reached = tickUntil(
+      world,
+      aId,
+      rng,
+      () => world.get(bId)!.enemy!.bossPhase === 4,
+    );
+    expect(reached).toBe(true);
     expect(world.get(bId)!.enemy!.bossEnraged).toBe(true);
-
-    // Complete dash (tick past telegraph)
-    updateBossWeapon(world, aId, rng, 0.85);
-
-    // Enraged dash should fire scatter burst (8 shots) in addition to normal behavior
-    expect(countEnemyShots(world)).toBe(8); // scatter burst
+    expect(countEnemyShots(world)).toBe(8); // scatter burst on dash completion
   });
 
-  it("does not fire when dead", () => {
+  it('does not fire when dead', () => {
     const world = new World();
     const rng = createRng(1);
     const aId = spawnAvatarAt(world, 180, 500);
     const bId = spawnJetsBoss(world);
     world.get(bId)!.hp!.value = 0;
 
-    updateBossWeapon(world, aId, rng, 5);
+    for (let i = 0; i < 300; i++) updateBossWeapon(world, aId, rng, TICK);
     expect(countEnemyShots(world)).toBe(0);
   });
 });
