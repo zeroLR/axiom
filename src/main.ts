@@ -146,6 +146,10 @@ async function boot(): Promise<void> {
       btnPause.setAttribute("aria-pressed", paused ? "true" : "false");
       btnPause.setAttribute("aria-label", paused ? "Resume run" : "Pause run");
     }
+    if (hudSkills) {
+      const toggleBtn = hudSkills.querySelector<HTMLButtonElement>("[data-dev-toggle='pause']");
+      if (toggleBtn) toggleBtn.textContent = paused ? "resume" : "pause";
+    }
   }
 
   function renderPauseOverlay(): void {
@@ -387,81 +391,210 @@ async function boot(): Promise<void> {
   function showDeveloperControls(): void {
     if (!hudSkills) return;
     hudSkills.innerHTML = "";
-    const items: Array<{ label: string; onClick: () => void }> = [
-      { label: "player", onClick: openDeveloperPlayerMenu },
-      { label: "enemy", onClick: openDeveloperEnemyMenu },
-      { label: "enhance", onClick: openDeveloperEnhanceMenu },
-      { label: "skills", onClick: openDeveloperSkillsMenu },
-      { label: "start", onClick: () => setPaused(false) },
-      { label: "resume", onClick: () => setPaused(false) },
-      { label: "restart", onClick: () => startRun("survival", 0, true) },
-    ];
-    for (const item of items) {
+    const addControlButton = (label: string, onClick: () => void, attrs?: Record<string, string>): void => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "menu-btn";
-      btn.textContent = item.label;
+      btn.textContent = label;
       btn.style.flex = "1 1 0";
-      btn.addEventListener("click", item.onClick);
+      if (attrs) {
+        for (const [k, v] of Object.entries(attrs)) {
+          btn.setAttribute(k, v);
+        }
+      }
+      btn.addEventListener("click", onClick);
       hudSkills.appendChild(btn);
-    }
+    };
+    addControlButton("player", openDeveloperPlayerMenu);
+    addControlButton("enemy", openDeveloperEnemyMenu);
+    addControlButton("enhance", openDeveloperEnhanceMenu);
+    addControlButton("skills", openDeveloperSkillsMenu);
+    addControlButton("start", () => {
+      play.spawnDeveloperEnemiesNow();
+      setPaused(false);
+    });
+    addControlButton(paused ? "resume" : "pause", () => {
+      const nextPaused = !paused;
+      setPaused(nextPaused);
+      const toggleBtn = hudSkills.querySelector<HTMLButtonElement>("[data-dev-toggle='pause']");
+      if (toggleBtn) toggleBtn.textContent = nextPaused ? "resume" : "pause";
+    }, { "data-dev-toggle": "pause" });
+    addControlButton("restart", () => startRun("survival", 0, true));
   }
 
-  function openDeveloperPlayerMenu(): void {
+  interface DeveloperFormField {
+    name: string;
+    label: string;
+    type: "number" | "text" | "checkbox";
+    value: string;
+    min?: number;
+    max?: number;
+    step?: number;
+  }
+
+  function parseNumericFormValue(value: string, fallback: number): number {
+    const n = Number(value);
+    return Number.isNaN(n) ? fallback : n;
+  }
+
+  async function openDeveloperForm(
+    title: string,
+    fields: DeveloperFormField[],
+  ): Promise<Record<string, string> | null> {
+    return new Promise((resolve) => {
+      const wasPaused = paused;
+      if (!wasPaused) setPaused(true);
+
+      const dialog = document.createElement("dialog");
+      dialog.className = "developer-dialog";
+      dialog.setAttribute("aria-label", title);
+
+      const form = document.createElement("form");
+      form.className = "developer-form";
+      form.method = "dialog";
+      dialog.appendChild(form);
+
+      const heading = document.createElement("div");
+      heading.className = "overlay-title";
+      heading.textContent = title;
+      form.appendChild(heading);
+
+      const body = document.createElement("div");
+      body.className = "pause-panel";
+      form.appendChild(body);
+
+      for (const field of fields) {
+        const row = document.createElement("label");
+        row.className = "developer-form-row";
+        const label = document.createElement("span");
+        label.className = "developer-form-label";
+        label.textContent = field.label;
+
+        const input = document.createElement("input");
+        input.name = field.name;
+        input.className = "developer-form-input";
+        input.type = field.type;
+        if (field.type === "checkbox") {
+          input.checked = field.value === "1" || field.value.toLowerCase() === "true";
+          input.classList.add("developer-form-checkbox");
+        } else {
+          input.value = field.value;
+          if (field.type === "number") {
+            if (field.min !== undefined) input.min = `${field.min}`;
+            if (field.max !== undefined) input.max = `${field.max}`;
+            if (field.step !== undefined) input.step = `${field.step}`;
+          }
+        }
+
+        row.appendChild(label);
+        row.appendChild(input);
+        body.appendChild(row);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "draft-actions";
+      const saveBtn = document.createElement("button");
+      saveBtn.type = "submit";
+      saveBtn.className = "big-btn";
+      saveBtn.textContent = "save";
+      const cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "menu-btn";
+      cancelBtn.textContent = "cancel";
+      cancelBtn.addEventListener("click", () => dialog.close("cancel"));
+      actions.appendChild(saveBtn);
+      actions.appendChild(cancelBtn);
+      form.appendChild(actions);
+
+      const finalize = (result: Record<string, string> | null): void => {
+        dialog.remove();
+        if (!wasPaused) setPaused(false);
+        resolve(result);
+      };
+
+      form.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        const values: Record<string, string> = {};
+        for (const field of fields) {
+          const input = form.elements.namedItem(field.name);
+          if (input instanceof HTMLInputElement) {
+            values[field.name] = input.type === "checkbox" ? (input.checked ? "1" : "0") : input.value;
+          }
+        }
+        dialog.close("save");
+        finalize(values);
+      });
+      dialog.addEventListener("close", () => {
+        if (dialog.returnValue !== "save") finalize(null);
+      }, { once: true });
+
+      document.body.appendChild(dialog);
+      dialog.showModal();
+    });
+  }
+
+  async function openDeveloperPlayerMenu(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
     const avatar = play.world.get(play.avatarId);
     if (!avatar?.avatar || !avatar.weapon) return;
-    const current = [
-      avatar.avatar.hp,
-      avatar.avatar.maxHp,
-      avatar.avatar.speedMul.toFixed(2),
-      avatar.weapon.damage,
-      avatar.weapon.period.toFixed(2),
-      Math.round(avatar.weapon.projectileSpeed),
-      avatar.weapon.projectiles,
-      avatar.weapon.pierce,
-      Math.round(avatar.weapon.crit * 100),
-    ].join(",");
-    const raw = prompt(
-      "player stats: hp,maxHp,speedMul,damage,fireInterval,projectileSpeed,projectiles,pierce,crit%",
-      current,
-    );
-    if (!raw) return;
-    const parts = raw.split(",").map((v) => Number(v.trim()));
-    if (parts.length < 9 || parts.some((v) => Number.isNaN(v))) return;
-    play.setDeveloperPlayerStats({
-      hp: parts[0]!,
-      maxHp: parts[1]!,
-      speedMul: parts[2]!,
-      damage: parts[3]!,
-      fireInterval: parts[4]!,
-      projectileSpeed: parts[5]!,
-      projectiles: parts[6]!,
-      pierce: parts[7]!,
-      crit: parts[8]! / 100,
-    });
     const snapshot = play.getDeveloperSnapshot();
-    const invincible = confirm(`Invincible: ${snapshot.invincible ? "on" : "off"}\nOK=on / Cancel=off`);
-    play.setDeveloperInvincible(invincible);
-    const showHp = confirm(`Show enemy HP: ${snapshot.showEnemyHp ? "on" : "off"}\nOK=on / Cancel=off`);
-    play.setDeveloperShowEnemyHp(showHp);
+    const values = await openDeveloperForm("developer · player", [
+      { name: "hp", label: "hp", type: "number", value: `${avatar.avatar.hp}`, min: 1, step: 1 },
+      { name: "maxHp", label: "max hp", type: "number", value: `${avatar.avatar.maxHp}`, min: 1, step: 1 },
+      { name: "speedMul", label: "move speed", type: "number", value: avatar.avatar.speedMul.toFixed(2), min: 0.1, step: 0.01 },
+      { name: "damage", label: "damage", type: "number", value: `${avatar.weapon.damage}`, min: 1, step: 1 },
+      { name: "fireInterval", label: "fire interval", type: "number", value: avatar.weapon.period.toFixed(2), min: 0, step: 0.01 },
+      { name: "projectileSpeed", label: "projectile speed", type: "number", value: `${Math.round(avatar.weapon.projectileSpeed)}`, min: 1, step: 1 },
+      { name: "projectiles", label: "projectiles", type: "number", value: `${avatar.weapon.projectiles}`, min: 1, step: 1 },
+      { name: "pierce", label: "pierce", type: "number", value: `${avatar.weapon.pierce}`, min: 0, step: 1 },
+      { name: "crit", label: "crit %", type: "number", value: `${Math.round(avatar.weapon.crit * 100)}`, min: 0, max: 100, step: 1 },
+      { name: "invincible", label: "invincible", type: "checkbox", value: snapshot.invincible ? "1" : "0" },
+      { name: "showEnemyHp", label: "show enemy hp", type: "checkbox", value: snapshot.showEnemyHp ? "1" : "0" },
+    ]);
+    if (!values) return;
+
+    play.setDeveloperPlayerStats({
+      hp: parseNumericFormValue(values.hp, avatar.avatar.hp),
+      maxHp: parseNumericFormValue(values.maxHp, avatar.avatar.maxHp),
+      speedMul: parseNumericFormValue(values.speedMul, avatar.avatar.speedMul),
+      damage: parseNumericFormValue(values.damage, avatar.weapon.damage),
+      fireInterval: parseNumericFormValue(values.fireInterval, avatar.weapon.period),
+      projectileSpeed: parseNumericFormValue(values.projectileSpeed, avatar.weapon.projectileSpeed),
+      projectiles: parseNumericFormValue(values.projectiles, avatar.weapon.projectiles),
+      pierce: parseNumericFormValue(values.pierce, avatar.weapon.pierce),
+      crit: parseNumericFormValue(values.crit, Math.round(avatar.weapon.crit * 100)) / 100,
+    });
+    play.setDeveloperInvincible(values.invincible === "1");
+    play.setDeveloperShowEnemyHp(values.showEnemyHp === "1");
   }
 
-  function openDeveloperEnemyMenu(): void {
+  async function openDeveloperEnemyMenu(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
     const snapshot = play.getDeveloperSnapshot();
-    const intervalRaw = prompt("enemy interval seconds", snapshot.enemy.interval.toFixed(2));
-    if (!intervalRaw) return;
-    const interval = Number(intervalRaw);
-    if (!Number.isNaN(interval)) play.setDeveloperEnemyInterval(interval);
 
     const kinds: EnemyKind[] = ["circle", "square", "star", "pentagon", "hexagon", "diamond", "cross", "crescent", "boss"];
     const spawnDefault = kinds
       .filter((k) => snapshot.enemy.spawn[k].enabled)
       .map((k) => `${k}:${snapshot.enemy.spawn[k].count}`)
       .join(",");
-    const spawnRaw = prompt("spawn setup kind:count,... (empty disables all)", spawnDefault);
-    if (spawnRaw !== null) {
+    const defaultKind: EnemyKind = "circle";
+    const baseStats = snapshot.enemy.stats[defaultKind];
+
+    const values = await openDeveloperForm("developer · enemy", [
+      { name: "interval", label: "spawn interval (sec)", type: "number", value: snapshot.enemy.interval.toFixed(2), min: 0.1, step: 0.1 },
+      { name: "spawnSetup", label: "spawn setup (kind:count,...)", type: "text", value: spawnDefault },
+      { name: "statsKind", label: "stats target kind", type: "text", value: defaultKind },
+      { name: "hp", label: "hp", type: "number", value: `${baseStats.hp}`, min: 1, step: 1 },
+      { name: "attack", label: "attack", type: "number", value: `${baseStats.attack}`, min: 0, step: 0.1 },
+      { name: "speed", label: "speed", type: "number", value: `${baseStats.speed}`, min: 0, step: 0.1 },
+      { name: "attackFrequency", label: "attack frequency", type: "number", value: `${baseStats.attackFrequency}`, min: 0, step: 0.1 },
+    ]);
+    if (!values) return;
+
+    play.setDeveloperEnemyInterval(parseNumericFormValue(values.interval, snapshot.enemy.interval));
+
+    const spawnRaw = values.spawnSetup;
+    if (spawnRaw !== undefined) {
       for (const kind of kinds) play.setDeveloperEnemySpawn(kind, false, 0);
       for (const token of spawnRaw.split(",").map((s) => s.trim()).filter(Boolean)) {
         const [kindRaw, countRaw] = token.split(":");
@@ -473,23 +606,14 @@ async function boot(): Promise<void> {
       play.spawnDeveloperEnemiesNow();
     }
 
-    const kindRaw = prompt("set base stats for kind (circle/square/star/pentagon/hexagon/diamond/cross/crescent/boss)", "circle");
-    if (!kindRaw) return;
-    const kind = kindRaw.trim() as EnemyKind;
+    const kind = values.statsKind.trim() as EnemyKind;
     if (!kinds.includes(kind)) return;
     const stats = play.getDeveloperSnapshot().enemy.stats[kind];
-    const statsRaw = prompt(
-      "enemy stats: hp,attack,speed,attackFrequency",
-      `${stats.hp},${stats.attack},${stats.speed},${stats.attackFrequency}`,
-    );
-    if (!statsRaw) return;
-    const vals = statsRaw.split(",").map((v) => Number(v.trim()));
-    if (vals.length < 4 || vals.some((v) => Number.isNaN(v))) return;
     play.setDeveloperEnemyStats(kind, {
-      hp: vals[0]!,
-      attack: vals[1]!,
-      speed: vals[2]!,
-      attackFrequency: vals[3]!,
+      hp: parseNumericFormValue(values.hp, stats.hp),
+      attack: parseNumericFormValue(values.attack, stats.attack),
+      speed: parseNumericFormValue(values.speed, stats.speed),
+      attackFrequency: parseNumericFormValue(values.attackFrequency, stats.attackFrequency),
     });
   }
 
@@ -513,37 +637,39 @@ async function boot(): Promise<void> {
     renderCardHud();
   }
 
-  function openDeveloperEnhanceMenu(): void {
+  async function openDeveloperEnhanceMenu(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
-    const list = POOL.map((c) => c.id).join(", ");
-    const raw = prompt(`enhance: cardId,level\n${list}`, "damagePlus,1");
-    if (!raw) return;
-    const [cardIdRaw, levelRaw] = raw.split(",");
-    const cardId = cardIdRaw?.trim();
+    const values = await openDeveloperForm("developer · enhance", [
+      { name: "cardId", label: "card id", type: "text", value: "damagePlus" },
+      { name: "level", label: "target level", type: "number", value: "1", min: 1, step: 1 },
+    ]);
+    if (!values) return;
+    const cardId = values.cardId.trim();
     const card = cardId ? POOL_BY_ID.get(cardId) : undefined;
     if (!card) return;
-    const level = Number(levelRaw ?? "1");
-    applyDeveloperEnhance(card, Number.isNaN(level) ? 1 : level);
+    applyDeveloperEnhance(card, parseNumericFormValue(values.level, 1));
   }
 
-  function openDeveloperSkillsMenu(): void {
+  async function openDeveloperSkillsMenu(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
     const snapshot = play.getDeveloperSnapshot();
     const skillIds = Object.keys(PRIMAL_SKILLS) as PrimalSkillId[];
-    const raw = prompt(
-      `skills: id,enabled(1/0),level,duration,cooldown\n${skillIds.join(", ")}`,
-      "barrage,1,0,2,8",
-    );
-    if (!raw) return;
-    const [idRaw, enabledRaw, levelRaw, durationRaw, cooldownRaw] = raw.split(",");
-    const id = (idRaw ?? "").trim() as PrimalSkillId;
+    const values = await openDeveloperForm("developer · skills", [
+      { name: "id", label: "skill id", type: "text", value: "barrage" },
+      { name: "enabled", label: "enabled", type: "checkbox", value: "1" },
+      { name: "level", label: "level", type: "number", value: "0", min: 0, step: 1 },
+      { name: "duration", label: "duration", type: "number", value: "2", min: 0, step: 0.1 },
+      { name: "cooldown", label: "cooldown", type: "number", value: "8", min: 0, step: 0.1 },
+    ]);
+    if (!values) return;
+    const id = values.id.trim() as PrimalSkillId;
     if (!skillIds.includes(id)) return;
     const prev = snapshot.skills[id];
     play.setDeveloperSkillConfig(id, {
-      enabled: (enabledRaw ?? "").trim() === "1",
-      level: Number(levelRaw ?? prev.level),
-      duration: Number(durationRaw ?? prev.duration),
-      cooldown: Number(cooldownRaw ?? prev.cooldown),
+      enabled: values.enabled === "1",
+      level: parseNumericFormValue(values.level, prev.level),
+      duration: parseNumericFormValue(values.duration, prev.duration),
+      cooldown: parseNumericFormValue(values.cooldown, prev.cooldown),
     });
   }
 
