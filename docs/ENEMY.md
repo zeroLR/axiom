@@ -61,8 +61,3 @@
   - 以 `BOSS_TELEGRAPH_LEAD = 0.8s` 先顯示預警，再發射扇形子彈。
   - 扇形彈幕間距 `BOSS_FAN_SPREAD = 0.22` 弧度，彈數由 boss 武器 `projectiles` 決定。
   - 進場後會套用 Mirror Boss 規則：依玩家本局抽到的卡牌調整 boss 的 HP / 速度 / 射擊能力。
-
-> \* `boss` 實體 HP 初始為 80，但進場後立即由各具名首領的 `install()` 覆蓋。各具名首領基礎 HP：
-> - **Orthogon**（Stage 1）：135
-> - **Jets**（Stage 2）：165
-> - **Mirror**（Stage 3）：180（再依玩家卡牌成長）

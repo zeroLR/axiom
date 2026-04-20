@@ -52,3 +52,7 @@ axiom/
 
 More folders (`cards/`, `encounters/`, `ui/`, `systems/`) will appear as the
 game grows — see `game-systems` / `game-loop` for the patterns.
+
+## Music References
+
+- [tallbeard-music-loop-bundle](https://tallbeard.itch.io/music-loop-bundle)
