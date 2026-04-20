@@ -14,6 +14,7 @@ import {
   WEAPON_BASE_PROJECTILES,
   WEAPON_BASE_PROJECTILE_SPEED,
 } from './config';
+import type { Card } from './cards';
 import { type Rng } from './rng';
 import {
   type EnemyKind,
@@ -99,7 +100,12 @@ export function isEliteKind(kind: EnemyKind): boolean {
   return ELITE_KINDS.has(kind);
 }
 
-export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
+export function spawnEnemy(
+  world: World,
+  kind: EnemyKind,
+  rng: Rng,
+  picks: readonly Card[] = [],
+): EntityId {
   // Named bosses spawn as `boss` EnemyKind entities, then get their pattern installed.
   const namedBossId: Record<string, keyof typeof BOSS_REGISTRY> = {
     orthogon: 'orthogon',
@@ -141,7 +147,7 @@ export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
     });
     const c = world.get(id);
     if (c) {
-      const spec = bossDef.buildSpec([]);
+      const spec = bossDef.buildSpec(picks);
       bossDef.install(c, spec);
       c.enemy!.maxHp = c.hp!.value;
     }

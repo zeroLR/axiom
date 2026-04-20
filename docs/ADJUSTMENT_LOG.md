@@ -12,6 +12,7 @@
 - Added a fallback link in the Axiom Discussions modal that opens the repository’s GitHub Discussions page directly when in-widget posting fails.
 - Added 6 Weapon-class draft cards (Face Beam, Orbit Shard, Tracker, Burst, Sweep, Cannon) and the parallel-weapon slot system: each pick appends a secondary weapon (cap 3) that fires alongside the primary. Introduced 4 new firing modes (homing missile with bounded turn rate, burst-into-fragments, wide 5-shot fan, slow piercing cannon). Mirror Boss reflects weapon picks as flavour-matched stat pressure (extra projectiles / damage / fire-rate / HP).
 - Rebalanced normal-mode progression: enemy kills now use documented base points with stage multipliers (Stage 1=1x, Stage 2=2x, Stage 3=3x), draft reroll token cost now increases by +1 per reroll use within a draft, and stage wave counts are now Stage 1=8 / Stage 2=12 / Stage 3=15.
+- **Mirror Boss picks fix (v0.0.1-beta-b6db901):** `spawnEnemy` now accepts an optional `picks` parameter (defaults to `[]`). Developer-mode spawns (`spawnDeveloperEnemiesNow`, `createDefaultEnemyStats`) now pass `this.picks` so the Mirror Boss correctly mirrors the player's drafted cards in both develop and normal mode.
 - **Skill Tree / Meta expansion (SCHEMA_VERSION 1 → 2):**
   - Expanded Primal Skills from 2 → 5: added Reflect Shield (blocks damage + reflects projectiles, 3s/35s), Barrage (radial burst, 2s/25s), Lifesteal Pulse (AoE damage + heal, 4s/40s).
   - Added MAX_SKILL_LEVEL = 10 cap; upgrade button hidden at max; `upgradeCost()` returns Infinity at cap.

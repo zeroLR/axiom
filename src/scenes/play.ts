@@ -380,7 +380,7 @@ export class PlayScene implements Scene {
       const conf = this.developerEnemySpawn[kind];
       if (!conf?.enabled || conf.count <= 0) continue;
       for (let i = 0; i < conf.count; i++) {
-        const id = spawnEnemy(this.world, kind, this.rng);
+        const id = spawnEnemy(this.world, kind, this.rng, this.picks);
         this.applyDeveloperEnemyStats(id, kind);
       }
     }
@@ -861,7 +861,7 @@ export class PlayScene implements Scene {
       'mirror',
     ];
     for (const kind of kinds) {
-      const id = spawnEnemy(this.world, kind, this.rng);
+      const id = spawnEnemy(this.world, kind, this.rng, this.picks);
       const c = this.world.get(id);
       defaults[kind] = {
         hp: c?.hp?.value ?? 1,
