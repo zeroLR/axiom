@@ -1109,30 +1109,6 @@ async function boot(): Promise<void> {
         fieldsContainer.hidden = true;
         container.appendChild(fieldsContainer);
 
-        const previewCard = document.createElement("div");
-        previewCard.className = "developer-enhance-preview";
-        previewCard.hidden = true;
-        const previewGlyph = document.createElement("span");
-        previewGlyph.className = "developer-enhance-preview-glyph";
-        previewGlyph.setAttribute("aria-hidden", "true");
-        const previewBody = document.createElement("div");
-        previewBody.className = "developer-enhance-preview-body";
-        const previewName = document.createElement("div");
-        previewName.className = "developer-enhance-preview-name";
-        const previewDesc = document.createElement("div");
-        previewDesc.className = "developer-enhance-preview-desc";
-        const previewScaled = document.createElement("div");
-        previewScaled.className = "developer-enhance-preview-scaled";
-        const previewEffect = document.createElement("div");
-        previewEffect.className = "developer-enhance-preview-scaled";
-        previewBody.appendChild(previewName);
-        previewBody.appendChild(previewDesc);
-        previewBody.appendChild(previewScaled);
-        previewBody.appendChild(previewEffect);
-        previewCard.appendChild(previewGlyph);
-        previewCard.appendChild(previewBody);
-        container.appendChild(previewCard);
-
         const saveBtn = document.createElement("button");
         saveBtn.type = "button";
         saveBtn.className = "big-btn";
@@ -1840,6 +1816,30 @@ async function boot(): Promise<void> {
         fieldsContainer.className = "pause-panel";
         fieldsContainer.hidden = true;
         container.appendChild(fieldsContainer);
+
+        const previewCard = document.createElement("div");
+        previewCard.className = "developer-enhance-preview";
+        previewCard.hidden = true;
+        const previewGlyph = document.createElement("span");
+        previewGlyph.className = "developer-enhance-preview-glyph";
+        previewGlyph.setAttribute("aria-hidden", "true");
+        const previewBody = document.createElement("div");
+        previewBody.className = "developer-enhance-preview-body";
+        const previewName = document.createElement("div");
+        previewName.className = "developer-enhance-preview-name";
+        const previewDesc = document.createElement("div");
+        previewDesc.className = "developer-enhance-preview-desc";
+        const previewScaled = document.createElement("div");
+        previewScaled.className = "developer-enhance-preview-scaled";
+        const previewEffect = document.createElement("div");
+        previewEffect.className = "developer-enhance-preview-scaled";
+        previewBody.appendChild(previewName);
+        previewBody.appendChild(previewDesc);
+        previewBody.appendChild(previewScaled);
+        previewBody.appendChild(previewEffect);
+        previewCard.appendChild(previewGlyph);
+        previewCard.appendChild(previewBody);
+        container.appendChild(previewCard);
 
         const saveBtn = document.createElement("button");
         saveBtn.type = "button";
