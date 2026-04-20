@@ -4,6 +4,7 @@ import {
   MAX_CARD_LEVEL,
   levelBonusFraction,
   isLevelableEffect,
+  cardStackKey,
 } from "../src/game/cardLevels";
 import { applyCard, applyCardLevelUp, POOL, type Card } from "../src/game/cards";
 import { spawnAvatar } from "../src/game/entities";
@@ -105,6 +106,18 @@ describe("isLevelableEffect", () => {
     expect(isLevelableEffect(cardById("aegis").effect)).toBe(false);
     expect(isLevelableEffect(cardById("revenant").effect)).toBe(false);
     expect(isLevelableEffect(cardById("wpnFaceBeam").effect)).toBe(false);
+  });
+});
+
+describe("cardStackKey", () => {
+  it("matches for cards with identical levelable effect values", () => {
+    expect(cardStackKey(cardById("heavy"))).toBe(cardStackKey(cardById("axisLock")));
+    expect(cardStackKey(cardById("crit"))).toBe(cardStackKey(cardById("gridSnap")));
+  });
+
+  it("differs for cards with different effect values", () => {
+    expect(cardStackKey(cardById("sharp"))).not.toBe(cardStackKey(cardById("heavy")));
+    expect(cardStackKey(cardById("ignite"))).not.toBe(cardStackKey(cardById("contrail")));
   });
 });
 

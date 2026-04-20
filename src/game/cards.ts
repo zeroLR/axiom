@@ -114,7 +114,7 @@ export function projectedCardText(card: Card, targetLevel: number): string {
     }
     case "projectilesAdd": {
       const add = e.value * frac >= 0.5 ? Math.max(1, Math.round(e.value * frac)) : 0;
-      return `+${add} projectile`;
+      return `+${add} projectile${add === 1 ? "" : "s"}`;
     }
     case "pierceAdd": {
       const add = e.value * frac >= 0.5 ? Math.max(1, Math.round(e.value * frac)) : 0;

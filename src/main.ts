@@ -222,11 +222,14 @@ async function boot(): Promise<void> {
       const entry = runInventory.getForCard(card);
       const row = document.createElement("div");
       row.className = "pause-card-row";
-      const merged = entry != null && !entry.sourceCardIds.includes(card.id);
+      const isSharedAbility = entry != null && !entry.sourceCardIds.includes(card.id);
+      const sourceLabel = isSharedAbility && entry
+        ? ` (shared with: ${entry.sourceCardIds.map((id) => POOL_BY_ID.get(id)?.name ?? id).join(", ")})`
+        : "";
       const status = entry
-        ? (merged ? `merged · Lv${entry.level}` : `held · Lv${entry.level}`)
+        ? (isSharedAbility ? `merged · Lv${entry.level}` : `held · Lv${entry.level}`)
         : "not held";
-      row.textContent = `${card.name} · ${entry?.rarity ?? card.rarity} · ${status}`;
+      row.textContent = `${card.name} · ${entry?.rarity ?? card.rarity} · ${status}${sourceLabel}`;
       list.appendChild(row);
     }
     statusPanel.appendChild(list);

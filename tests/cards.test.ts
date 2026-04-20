@@ -163,4 +163,9 @@ describe("projectedCardText", () => {
     const card = cardById("combustion");
     expect(projectedCardText(card, 2)).toBe(card.text);
   });
+
+  it("formats projected burn values without redundant trailing zeros", () => {
+    expect(projectedCardText(cardById("ignite"), 3)).toBe("Burn 1 dps for 3s");
+    expect(projectedCardText(cardById("ignite"), 2)).toBe("Burn 1.4 dps for 3s");
+  });
 });
