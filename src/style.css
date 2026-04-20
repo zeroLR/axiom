@@ -427,6 +427,74 @@ body {
   cursor: not-allowed;
 }
 
+/* ── Developer modal form ───────────────────────────────────────────────── */
+
+.developer-dialog {
+  width: min(340px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--fg);
+}
+
+.developer-dialog::backdrop {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.developer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.developer-form .draft-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.developer-form .draft-actions .big-btn,
+.developer-form .draft-actions .menu-btn {
+  flex: 1 1 0;
+}
+
+.developer-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 32px;
+}
+
+.developer-form-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.developer-form-input {
+  width: 140px;
+  max-width: 60%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+.developer-form-input.developer-form-checkbox {
+  width: 20px;
+  max-width: 20px;
+  height: 20px;
+  padding: 0;
+}
+
 /* ── Discussions ─────────────────────────────────────────────────────────── */
 
 #comments-dialog {
