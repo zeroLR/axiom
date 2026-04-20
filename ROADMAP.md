@@ -49,11 +49,11 @@
 - [x] 裝備卡擴充 + 槽位成長曲線重新平衡
 
 ### 手感 / 視聽覺 Polish
-- [ ] 擊殺／受擊畫面震動（可關）
-- [ ] 卡牌 glyph 視覺統一（concept：「每張卡是 glyph 不是插畫」）
-- [ ] **Synergy HUD 指示器**：哪些觸發條件正在 active
-- [ ] 各 stage ambient music
-- [ ] 音訊 mix：master / sfx / music 各別音量
+- [x] 擊殺／受擊畫面震動（可關）
+- [x] 卡牌 glyph 視覺統一（concept：「每張卡是 glyph 不是插畫」）
+- [x] **Synergy HUD 指示器**：哪些觸發條件正在 active
+- [x] 各 stage ambient music
+- [x] 音訊 mix：master / sfx / music 各別音量
 
 ## P2 — 可近用性、平台、工程
 

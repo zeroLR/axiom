@@ -10,7 +10,7 @@ const SOURCES: Record<SfxName, string> = {
   death: `${import.meta.env.BASE_URL}sfx/death.wav`,
 };
 
-const VOLUMES: Record<SfxName, number> = {
+const BASE_VOLUMES: Record<SfxName, number> = {
   hit: 0.35,
   draft: 0.55,
   death: 0.7,
@@ -21,13 +21,15 @@ const lastPlayedAt: Partial<Record<SfxName, number>> = {};
 const MIN_INTERVAL_MS: Partial<Record<SfxName, number>> = { hit: 40 };
 
 let muted = false;
+let masterVolume = 1;
+let sfxVolume = 1;
 
 function get(name: SfxName): Howl {
   const cached = sounds[name];
   if (cached) return cached;
   const h = new Howl({
     src: [SOURCES[name]],
-    volume: VOLUMES[name],
+    volume: BASE_VOLUMES[name] * sfxVolume * masterVolume,
     preload: true,
   });
   sounds[name] = h;
@@ -48,7 +50,9 @@ export function playSfx(name: SfxName): void {
     lastPlayedAt[name] = now;
   }
   try {
-    get(name).play();
+    const h = get(name);
+    h.volume(BASE_VOLUMES[name] * sfxVolume * masterVolume);
+    h.play();
   } catch {
     // Ignore — browsers sometimes reject before first user gesture.
   }
@@ -62,3 +66,14 @@ export function setMuted(next: boolean): void {
 export function isMuted(): boolean {
   return muted;
 }
+
+/** Update volume levels. Call when settings change. */
+export function setVolumes(master: number, sfx: number): void {
+  masterVolume = Math.max(0, Math.min(1, master));
+  sfxVolume = Math.max(0, Math.min(1, sfx));
+}
+
+/** Get current master volume (0..1). */
+export function getMasterVolume(): number { return masterVolume; }
+/** Get current SFX volume (0..1). */
+export function getSfxVolume(): number { return sfxVolume; }

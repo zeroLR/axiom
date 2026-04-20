@@ -38,6 +38,7 @@ import { survivalWaveSpec, isMirrorBossWave, survivalHpScale, survivalSpeedScale
 import type { PrimalSkillId } from "../game/data/types";
 import type { StageTheme } from "../game/stageThemes";
 import { SYNERGY_CONFIG, explodeAt } from "../game/synergies";
+import { triggerShake, tickShake, getShakeOffset } from "../game/screenShake";
 import type { EnemyKind } from "../game/world";
 
 export type GameMode = "normal" | "survival";
@@ -545,8 +546,17 @@ export class PlayScene implements Scene {
     const events: import("../game/events").GameEvents = {
       onEnemyKilled: (eid: EntityId) => {
         playSfx("hit");
+        const ec = this.world.get(eid);
+        if (ec?.enemy?.kind === "boss") {
+          triggerShake(8, 0.25);
+        } else {
+          triggerShake(1.5, 0.08);
+        }
         this.onEnemyKilled(eid);
         this.tickCombustion(events);
+      },
+      onPlayerHit: (_amount: number) => {
+        triggerShake(5, 0.15);
       },
       onPlayerDied: () => { died = true; },
     };
@@ -554,6 +564,7 @@ export class PlayScene implements Scene {
     updateStatusEffects(this.world, enemyDt, events);
     removeDeadEnemies(this.world);
     decayHitFlash(this.world, dt);
+    tickShake(dt);
 
     if (this.developerInvincible) {
       const avatar = this.world.get(this.avatarId);
@@ -585,6 +596,8 @@ export class PlayScene implements Scene {
   }
 
   render(_alpha: number): void {
+    const shake = getShakeOffset();
+    this.root.position.set(shake.x, shake.y);
     drawWorld(this.g, this.world, this.theme, { showEnemyHp: this.developerShowEnemyHp });
   }
 

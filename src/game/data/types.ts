@@ -185,10 +185,18 @@ export function defaultShopUnlocks(): ShopUnlocks {
 export interface GameSettings {
   muted: boolean;
   developerMode: boolean;
+  /** Master volume (0..1). Scales both SFX and music. Default 1. */
+  masterVolume: number;
+  /** SFX volume (0..1). Default 1. */
+  sfxVolume: number;
+  /** Music volume (0..1). Default 0.5. */
+  musicVolume: number;
+  /** Enable screen shake on hit/kill. Default true. */
+  screenShake: boolean;
 }
 
 export function defaultGameSettings(): GameSettings {
-  return { muted: false, developerMode: false };
+  return { muted: false, developerMode: false, masterVolume: 1, sfxVolume: 1, musicVolume: 0.5, screenShake: true };
 }
 
 // ── Aggregate save blob (for export / import) ───────────────────────────────
