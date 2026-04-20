@@ -5,8 +5,8 @@ import { isMuted, playSfx, primeSfx, setMuted } from "./game/audio";
 import { PLAY_H, PLAY_W, rerollTokenCostForUse } from "./game/config";
 import { startLoop } from "./game/loop";
 import { createRng, pickSeed } from "./game/rng";
-import { applyCard, applyCardLevelUp, drawOffer, POOL, type Card } from "./game/cards";
-import { CardInventory, isLevelableEffect } from "./game/cardLevels";
+import { applyCard, applyCardLevelUp, drawOffer, POOL, projectedCardText, type Card } from "./game/cards";
+import { CardInventory, isLevelableEffect, MAX_CARD_LEVEL } from "./game/cardLevels";
 import { bossForStage } from "./game/bosses/registry";
 import { DraftScene } from "./scenes/draft";
 import { EndgameScene, type EndgameUnlocks } from "./scenes/endgame";
@@ -329,10 +329,10 @@ async function boot(): Promise<void> {
   }
 
   const skillButtonUpdaters = new WeakMap<HTMLButtonElement, () => void>();
+  let developerHudPanel: "settings" | "skills" = "settings";
 
-  function showSkillButtons(): void {
-    if (!hudSkills) return;
-    hudSkills.innerHTML = "";
+  function renderSkillButtonsInto(container: HTMLElement): void {
+    container.innerHTML = "";
     for (let i = 0; i < play.activeSkills.length; i++) {
       const sk = play.activeSkills[i]!;
       const btn = document.createElement("button");
@@ -377,8 +377,34 @@ async function boot(): Promise<void> {
       };
       updateLabel();
       skillButtonUpdaters.set(btn, updateLabel);
-      hudSkills.appendChild(btn);
+      container.appendChild(btn);
     }
+  }
+
+  function showSkillButtons(): void {
+    if (!hudSkills) return;
+    hudSkills.classList.remove("developer-hud");
+    renderSkillButtonsInto(hudSkills);
+  }
+
+  function addDeveloperControlButton(
+    container: HTMLElement,
+    label: string,
+    onClick: () => void,
+    attrs?: Record<string, string>,
+  ): void {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "menu-btn";
+    btn.textContent = label;
+    btn.style.flex = "1 1 0";
+    if (attrs) {
+      for (const [k, v] of Object.entries(attrs)) {
+        btn.setAttribute(k, v);
+      }
+    }
+    btn.addEventListener("click", onClick);
+    container.appendChild(btn);
   }
 
   function refreshSkillButtons(): void {
@@ -391,35 +417,42 @@ async function boot(): Promise<void> {
   function showDeveloperControls(): void {
     if (!hudSkills) return;
     hudSkills.innerHTML = "";
-    const addControlButton = (label: string, onClick: () => void, attrs?: Record<string, string>): void => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "menu-btn";
-      btn.textContent = label;
-      btn.style.flex = "1 1 0";
-      if (attrs) {
-        for (const [k, v] of Object.entries(attrs)) {
-          btn.setAttribute(k, v);
-        }
-      }
-      btn.addEventListener("click", onClick);
-      hudSkills.appendChild(btn);
-    };
-    addControlButton("player", openDeveloperPlayerMenu);
-    addControlButton("enemy", openDeveloperEnemyMenu);
-    addControlButton("enhance", openDeveloperEnhanceMenu);
-    addControlButton("skills", openDeveloperSkillsMenu);
-    addControlButton("start", () => {
-      play.spawnDeveloperEnemiesNow();
-      setPaused(false);
+    hudSkills.classList.add("developer-hud");
+
+    const panelToggle = document.createElement("button");
+    panelToggle.type = "button";
+    panelToggle.className = "menu-btn developer-hud-toggle";
+    panelToggle.textContent = developerHudPanel === "settings" ? "skills" : "develop";
+    panelToggle.addEventListener("click", () => {
+      developerHudPanel = developerHudPanel === "settings" ? "skills" : "settings";
+      showDeveloperControls();
     });
-    addControlButton(paused ? "resume" : "pause", () => {
-      const nextPaused = !paused;
-      setPaused(nextPaused);
-      const toggleBtn = hudSkills.querySelector<HTMLButtonElement>("[data-dev-toggle='pause']");
-      if (toggleBtn) toggleBtn.textContent = nextPaused ? "resume" : "pause";
-    }, { "data-dev-toggle": "pause" });
-    addControlButton("restart", () => startRun("survival", 0, true));
+
+    const panel = document.createElement("div");
+    panel.className = "developer-hud-group";
+
+    if (developerHudPanel === "settings") {
+      addDeveloperControlButton(panel, "player", openDeveloperPlayerMenu);
+      addDeveloperControlButton(panel, "enemy", openDeveloperEnemyMenu);
+      addDeveloperControlButton(panel, "enhance", openDeveloperEnhanceMenu);
+      addDeveloperControlButton(panel, "skills", openDeveloperSkillsMenu);
+      addDeveloperControlButton(panel, "start", () => {
+        play.spawnDeveloperEnemiesNow();
+        setPaused(false);
+      });
+      addDeveloperControlButton(panel, paused ? "resume" : "pause", () => {
+        const nextPaused = !paused;
+        setPaused(nextPaused);
+        const toggleBtn = hudSkills.querySelector<HTMLButtonElement>("[data-dev-toggle='pause']");
+        if (toggleBtn) toggleBtn.textContent = nextPaused ? "resume" : "pause";
+      }, { "data-dev-toggle": "pause" });
+      addDeveloperControlButton(panel, "restart", () => startRun("survival", 0, true));
+    } else {
+      renderSkillButtonsInto(panel);
+    }
+
+    hudSkills.appendChild(panelToggle);
+    hudSkills.appendChild(panel);
   }
 
   interface DeveloperFormField {
@@ -1050,11 +1083,23 @@ async function boot(): Promise<void> {
         input.type = "number";
         input.className = "developer-form-input developer-form-input--slim";
         input.min = "1";
-        input.max = "5";
+        input.max = `${MAX_CARD_LEVEL}`;
         input.step = "1";
         input.value = range.value;
-        range.addEventListener("input", () => { input.value = range.value; });
-        input.addEventListener("input", () => { range.value = input.value; });
+        range.max = `${MAX_CARD_LEVEL}`;
+        range.addEventListener("input", () => {
+          input.value = range.value;
+          input.dispatchEvent(new Event("change"));
+        });
+        input.addEventListener("input", () => {
+          const n = Math.max(1, Math.min(MAX_CARD_LEVEL, Math.round(parseNumericFormValue(input.value, 1))));
+          range.value = `${n}`;
+        });
+        input.addEventListener("change", () => {
+          const n = Math.max(1, Math.min(MAX_CARD_LEVEL, Math.round(parseNumericFormValue(input.value, 1))));
+          input.value = `${n}`;
+          range.value = `${n}`;
+        });
         wrapper.appendChild(range);
         wrapper.appendChild(input);
         row.appendChild(label);
@@ -1177,6 +1222,27 @@ async function boot(): Promise<void> {
         fieldsContainer.hidden = true;
         container.appendChild(fieldsContainer);
 
+        const previewCard = document.createElement("div");
+        previewCard.className = "developer-enhance-preview";
+        previewCard.hidden = true;
+        const previewGlyph = document.createElement("span");
+        previewGlyph.className = "developer-enhance-preview-glyph";
+        previewGlyph.setAttribute("aria-hidden", "true");
+        const previewBody = document.createElement("div");
+        previewBody.className = "developer-enhance-preview-body";
+        const previewName = document.createElement("div");
+        previewName.className = "developer-enhance-preview-name";
+        const previewDesc = document.createElement("div");
+        previewDesc.className = "developer-enhance-preview-desc";
+        const previewScaled = document.createElement("div");
+        previewScaled.className = "developer-enhance-preview-scaled";
+        previewBody.appendChild(previewName);
+        previewBody.appendChild(previewDesc);
+        previewBody.appendChild(previewScaled);
+        previewCard.appendChild(previewGlyph);
+        previewCard.appendChild(previewBody);
+        container.appendChild(previewCard);
+
         const saveBtn = document.createElement("button");
         saveBtn.type = "button";
         saveBtn.className = "big-btn";
@@ -1193,14 +1259,32 @@ async function boot(): Promise<void> {
 
         let levelInput: HTMLInputElement | null = null;
 
+        const updateEnhancePreview = (card: Card, level: number): void => {
+          previewCard.hidden = false;
+          previewGlyph.innerHTML = "";
+          const svgGlyph = CARD_GLYPHS[card.id];
+          if (svgGlyph) setIconHtml(previewGlyph, svgGlyph);
+          else previewGlyph.textContent = card.glyph;
+          const safeLevel = Math.max(1, Math.min(MAX_CARD_LEVEL, Math.floor(level)));
+          previewName.textContent = card.name;
+          previewDesc.textContent = card.text;
+          previewScaled.textContent = `Lv${safeLevel}: ${projectedCardText(card, safeLevel)}`;
+        };
+
         cardSelect.addEventListener("change", () => {
           const cardId = cardSelect.value as Card["id"];
           if (!cardId || !POOL_BY_ID.has(cardId)) return;
+          const card = POOL_BY_ID.get(cardId);
+          if (!card) return;
           const existing = developerEnhanceEntries.find((entry) => entry.cardId === cardId);
           fieldsContainer.innerHTML = "";
           fieldsContainer.hidden = false;
           saveBtn.hidden = false;
           levelInput = buildLevelField(fieldsContainer, existing?.level ?? 1);
+          updateEnhancePreview(card, parseNumericFormValue(levelInput.value, 1));
+          levelInput.addEventListener("change", () => {
+            updateEnhancePreview(card, parseNumericFormValue(levelInput?.value ?? "1", 1));
+          });
         });
 
         saveBtn.addEventListener("click", () => {
@@ -1238,6 +1322,41 @@ async function boot(): Promise<void> {
         container.appendChild(fieldsContainer);
         const levelInput = buildLevelField(fieldsContainer, entry.level);
 
+        if (card) {
+          const previewCard = document.createElement("div");
+          previewCard.className = "developer-enhance-preview";
+          const previewGlyph = document.createElement("span");
+          previewGlyph.className = "developer-enhance-preview-glyph";
+          previewGlyph.setAttribute("aria-hidden", "true");
+          const svgGlyph = CARD_GLYPHS[card.id];
+          if (svgGlyph) setIconHtml(previewGlyph, svgGlyph);
+          else previewGlyph.textContent = card.glyph;
+
+          const previewBody = document.createElement("div");
+          previewBody.className = "developer-enhance-preview-body";
+          const previewName = document.createElement("div");
+          previewName.className = "developer-enhance-preview-name";
+          previewName.textContent = card.name;
+          const previewDesc = document.createElement("div");
+          previewDesc.className = "developer-enhance-preview-desc";
+          previewDesc.textContent = card.text;
+          const previewScaled = document.createElement("div");
+          previewScaled.className = "developer-enhance-preview-scaled";
+          const syncScaled = (): void => {
+            const level = Math.max(1, Math.min(MAX_CARD_LEVEL, Math.floor(parseNumericFormValue(levelInput.value, entry.level))));
+            previewScaled.textContent = `Lv${level}: ${projectedCardText(card, level)}`;
+          };
+          syncScaled();
+          levelInput.addEventListener("change", syncScaled);
+
+          previewBody.appendChild(previewName);
+          previewBody.appendChild(previewDesc);
+          previewBody.appendChild(previewScaled);
+          previewCard.appendChild(previewGlyph);
+          previewCard.appendChild(previewBody);
+          container.appendChild(previewCard);
+        }
+
         const actions = document.createElement("div");
         actions.className = "draft-actions";
         const saveBtn = document.createElement("button");
@@ -1274,14 +1393,22 @@ async function boot(): Promise<void> {
     const snapshot = play.getDeveloperSnapshot();
     const skillIds = Object.keys(PRIMAL_SKILLS) as PrimalSkillId[];
     if (developerSkillEntries.length === 0) {
-      developerSkillEntries = skillIds
-        .filter((id) => snapshot.skills[id].enabled)
-        .map((id) => ({
+      developerSkillEntries = skillIds.map((id) => ({
+        id,
+        level: snapshot.skills[id].level,
+        duration: snapshot.skills[id].duration,
+        cooldown: snapshot.skills[id].cooldown,
+      }));
+    } else {
+      for (const id of skillIds) {
+        if (developerSkillEntries.some((entry) => entry.id === id)) continue;
+        developerSkillEntries.push({
           id,
           level: snapshot.skills[id].level,
           duration: snapshot.skills[id].duration,
           cooldown: snapshot.skills[id].cooldown,
-        }));
+        });
+      }
     }
 
     return new Promise<void>((resolve) => {
@@ -1582,7 +1709,7 @@ async function boot(): Promise<void> {
       container.appendChild(chip);
     }
 
-    const unmappedEquipment = listUnmappedEquipmentCards(equipment.equipped);
+    const unmappedEquipment = currentRun?.developMode ? [] : listUnmappedEquipmentCards(equipment.equipped);
     for (const eqCard of unmappedEquipment) {
       const chip = document.createElement("span");
       chip.className = "card-chip";
@@ -1739,6 +1866,7 @@ async function boot(): Promise<void> {
     app.stage.addChild(play.root);
     stack.push(play);
     if (developMode) {
+      developerHudPanel = "settings";
       showDeveloperControls();
     } else {
       showSkillButtons();
@@ -1878,7 +2006,10 @@ async function boot(): Promise<void> {
     currentRun = null;
     setPaused(false);
     setTheme(DEFAULT_THEME);
-    if (hudSkills) hudSkills.innerHTML = "";
+    if (hudSkills) {
+      hudSkills.innerHTML = "";
+      hudSkills.classList.remove("developer-hud");
+    }
     clearCardHud();
 
     const menu = new MainMenuScene(
