@@ -28,7 +28,7 @@ export class SettingsScene implements Scene {
 
     const title = document.createElement("div");
     title.className = "overlay-title";
-    title.textContent = "settings";
+    title.textContent = "Settings";
     inner.appendChild(title);
 
     // ── Sound toggle ────────────────────────────────────────────────────────
