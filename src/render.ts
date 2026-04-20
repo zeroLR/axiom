@@ -62,12 +62,12 @@ export function drawWorld(
   for (const [, c] of world.with('enemy', 'weapon', 'pos')) {
     if (c.enemy!.kind !== 'boss') continue;
 
-    // Standard fan telegraph (Mirror / Jets dash / generic aimed shots)
+    // Standard fan telegraph (Jets dash / generic aimed shots) — skipped for Mirror boss
     const ang = c.enemy!.telegraphAngle;
-    if (ang !== undefined) {
+    if (ang !== undefined && c.enemy!.bossPattern !== undefined) {
       const remaining = c.weapon!.cooldown;
       const t = 1 - Math.max(0, Math.min(1, remaining / BOSS_TELEGRAPH_LEAD));
-      const alpha = 0.2 + 0.55 * t;
+      const alpha = 0.08 + 0.22 * t;
       const n = Math.max(1, c.weapon!.projectiles);
       const startAngle = ang - (BOSS_FAN_SPREAD * (n - 1)) / 2;
       for (let i = 0; i < n; i++) {
@@ -86,7 +86,7 @@ export function drawWorld(
     if (axisLines && axisLines.length > 0) {
       const bossTimer = c.enemy!.bossTimer ?? 0;
       const t = 1 - Math.max(0, Math.min(1, bossTimer / 0.8));
-      const alpha = 0.15 + 0.6 * t;
+      const alpha = 0.08 + 0.22 * t;
       for (const a of axisLines) {
         g.moveTo(c.pos!.x, c.pos!.y);
         g.lineTo(
