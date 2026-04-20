@@ -675,16 +675,24 @@ async function boot(): Promise<void> {
     step?: number;
   }
 
+  /** Parses a numeric form value and falls back when input is NaN/invalid. */
   function parseNumericFormValue(value: string, fallback: number): number {
     const n = Number(value);
     return Number.isNaN(n) ? fallback : n;
   }
 
+  /**
+   * Formats a finite numeric value for UI labels while preserving sign.
+   * Keeps up to `digits` decimals and strips insignificant trailing zeros.
+   */
   function formatNumeric(value: number, digits = 2): string {
     const text = value.toFixed(digits);
     return text.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
   }
 
+  const UI_META_SEPARATOR = " · ";
+
+  /** Returns a short human-readable effect summary line for a skill at `level`. */
   function skillEffectSummary(id: PrimalSkillId, level: number): string {
     switch (id) {
       case "timeStop":
@@ -1867,7 +1875,7 @@ async function boot(): Promise<void> {
           const cooldown = Math.max(0, parseNumericFormValue(inputs.cooldown.value, 0));
           previewName.textContent = PRIMAL_SKILLS[id].name;
           previewDesc.textContent = PRIMAL_SKILLS[id].description;
-          previewScaled.textContent = `Lv${level} · duration ${formatNumeric(duration)}s · cooldown ${formatNumeric(cooldown)}s`;
+          previewScaled.textContent = `Lv${level}${UI_META_SEPARATOR}duration ${formatNumeric(duration)}s${UI_META_SEPARATOR}cooldown ${formatNumeric(cooldown)}s`;
           previewEffect.textContent = skillEffectSummary(id, level);
         };
 
@@ -1946,7 +1954,7 @@ async function boot(): Promise<void> {
           const level = Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, entry.level)));
           const duration = Math.max(0, parseNumericFormValue(inputs.duration.value, entry.duration));
           const cooldown = Math.max(0, parseNumericFormValue(inputs.cooldown.value, entry.cooldown));
-          previewScaled.textContent = `Lv${level} · duration ${formatNumeric(duration)}s · cooldown ${formatNumeric(cooldown)}s`;
+          previewScaled.textContent = `Lv${level}${UI_META_SEPARATOR}duration ${formatNumeric(duration)}s${UI_META_SEPARATOR}cooldown ${formatNumeric(cooldown)}s`;
           previewEffect.textContent = skillEffectSummary(entry.id, level);
         };
         syncSkillEditPreview();
