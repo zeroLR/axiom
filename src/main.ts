@@ -1281,9 +1281,10 @@ async function boot(): Promise<void> {
           fieldsContainer.hidden = false;
           saveBtn.hidden = false;
           levelInput = buildLevelField(fieldsContainer, existing?.level ?? 1);
-          updateEnhancePreview(card, parseNumericFormValue(levelInput.value, 1));
-          levelInput.addEventListener("change", () => {
-            updateEnhancePreview(card, parseNumericFormValue(levelInput?.value ?? "1", 1));
+          const activeLevelInput = levelInput;
+          updateEnhancePreview(card, parseNumericFormValue(activeLevelInput.value, 1));
+          activeLevelInput.addEventListener("change", () => {
+            updateEnhancePreview(card, parseNumericFormValue(activeLevelInput.value, 1));
           });
         });
 
