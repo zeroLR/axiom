@@ -2,14 +2,14 @@
 // Cross-shaped boss. Pattern: 4-axis fan sweep with telegraph cross-laser.
 // At ≤50% HP adds diagonal axes (8-way).
 
-import type { Card } from "../cards";
-import type { Components } from "../world";
-import type { BossDef, BossSpec } from "./types";
+import type { Card } from '../cards';
+import type { Components } from '../world';
+import type { BossDef, BossSpec } from './types';
 
 /** Orthogon baseline stats — Stage 1 difficulty. */
 function buildSpec(_picks: readonly Card[]): BossSpec {
   return {
-    hp: 45,
+    hp: 135,
     contactDamage: 1,
     maxSpeed: 45,
     weapon: {
@@ -27,7 +27,7 @@ function buildSpec(_picks: readonly Card[]): BossSpec {
       slowPct: 0,
       slowDuration: 0,
     },
-    patternKind: "orthogon",
+    patternKind: 'orthogon',
   };
 }
 
@@ -38,17 +38,17 @@ function install(entity: Components, spec: BossSpec): void {
   entity.hp.value = spec.hp;
   entity.weapon = { ...spec.weapon };
   // Initialize boss AI state
-  entity.enemy.bossPattern = "orthogon";
+  entity.enemy.bossPattern = 'orthogon';
   entity.enemy.bossPhase = 0;
   entity.enemy.bossTimer = 0;
   entity.enemy.bossEnraged = false;
 }
 
 export const orthogonBossDef: BossDef = {
-  id: "orthogon",
-  displayName: "ORTHOGON",
+  id: 'orthogon',
+  displayName: 'ORTHOGON',
   theoremLine: '"lines converge"',
-  glyph: "✛",
+  glyph: '✛',
   buildSpec,
   install,
 };
