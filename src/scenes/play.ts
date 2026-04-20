@@ -3,7 +3,7 @@ import { Container, Graphics } from "pixi.js";
 import { playSfx } from "../game/audio";
 import type { Card } from "../game/cards";
 import { PLAY_H, PLAY_W, STARTING_DRAFT_TOKENS } from "../game/config";
-import { spawnAvatar } from "../game/entities";
+import { spawnAvatar, spawnEnemy } from "../game/entities";
 import { bossForStage } from "../game/bosses/registry";
 import type { BossSpec } from "../game/bosses/types";
 import type { Rng } from "../game/rng";
@@ -21,8 +21,11 @@ import type { Scene } from "./scene";
 import { BOSS_WAVE_BONUS, killPointsForEnemy, rollBossLoot, type LootDrop, type RunResult } from "../game/rewards";
 import {
   type ActiveSkillState,
+  PRIMAL_SKILLS,
   activateSkill,
   tickSkillState,
+  skillCooldown,
+  skillDuration,
   timeStopSpeedMul,
   cloneInheritRatio,
   barrageProjectiles,
@@ -32,8 +35,10 @@ import {
   lifestealHeal,
 } from "../game/skills";
 import { survivalWaveSpec, isMirrorBossWave, survivalHpScale, survivalSpeedScale } from "../game/survivalWaves";
+import type { PrimalSkillId } from "../game/data/types";
 import type { StageTheme } from "../game/stageThemes";
 import { SYNERGY_CONFIG, explodeAt } from "../game/synergies";
+import type { EnemyKind } from "../game/world";
 
 export type GameMode = "normal" | "survival";
 
@@ -60,6 +65,52 @@ export interface PointerMapper {
   target: HTMLElement;
 }
 
+interface DeveloperEnemySpawn {
+  enabled: boolean;
+  count: number;
+}
+
+interface DeveloperEnemyStats {
+  hp: number;
+  attack: number;
+  speed: number;
+  attackFrequency: number;
+}
+
+interface DeveloperEnemyConfig {
+  interval: number;
+  spawn: Record<EnemyKind, DeveloperEnemySpawn>;
+  stats: Record<EnemyKind, DeveloperEnemyStats>;
+}
+
+function defaultEnemySpawnConfig(): Record<EnemyKind, DeveloperEnemySpawn> {
+  return {
+    circle: { enabled: true, count: 3 },
+    square: { enabled: false, count: 1 },
+    star: { enabled: false, count: 1 },
+    boss: { enabled: false, count: 1 },
+    pentagon: { enabled: false, count: 1 },
+    hexagon: { enabled: false, count: 1 },
+    diamond: { enabled: false, count: 1 },
+    cross: { enabled: false, count: 1 },
+    crescent: { enabled: false, count: 1 },
+  };
+}
+
+export interface DeveloperSkillConfig {
+  enabled: boolean;
+  level: number;
+  duration: number;
+  cooldown: number;
+}
+
+export interface DeveloperControlsSnapshot {
+  enemy: DeveloperEnemyConfig;
+  invincible: boolean;
+  showEnemyHp: boolean;
+  skills: Record<PrimalSkillId, DeveloperSkillConfig>;
+}
+
 export class PlayScene implements Scene {
   readonly root: Container;
   readonly world: World;
@@ -82,6 +133,13 @@ export class PlayScene implements Scene {
   private bossApplied = false;
   private readonly gridColor: number;
   private readonly theme: StageTheme | undefined;
+  private readonly developerMode: boolean;
+  private developerEnemyInterval = 2;
+  private developerEnemyTimer = 0;
+  private developerEnemySpawn = defaultEnemySpawnConfig();
+  private readonly developerEnemyStats: Record<EnemyKind, DeveloperEnemyStats>;
+  private developerInvincible = false;
+  private developerShowEnemyHp = false;
 
   // Points & stats
   private runPoints = 0;
@@ -114,6 +172,7 @@ export class PlayScene implements Scene {
       activeSkills?: ActiveSkillState[];
       theme?: StageTheme;
       activeSkin?: string;
+      developerMode?: boolean;
     },
   ) {
     this.root = new Container();
@@ -132,6 +191,7 @@ export class PlayScene implements Scene {
     this.stageIndex = opts.stageIndex ?? 0;
     this.activeSkills = opts.activeSkills ?? [];
     this.theme = opts.theme;
+    this.developerMode = opts.developerMode ?? false;
     this.avatarId = spawnAvatar(this.world, opts.activeSkin ?? "triangle");
     this.waveIdx = 0;
     this.wave = newWaveState(this.waves[this.waveIdx]!);
@@ -140,6 +200,10 @@ export class PlayScene implements Scene {
     this.boundOnDown = (ev) => this.onPointerDown(ev);
     this.boundOnMove = (ev) => this.onPointerMove(ev);
     this.boundOnUp = (ev) => this.onPointerUp(ev);
+    this.developerEnemyStats = this.createDefaultEnemyStats();
+    if (this.developerMode) {
+      this.ensureAllSkillsPresent();
+    }
     this.updateHud();
   }
 
@@ -189,6 +253,126 @@ export class PlayScene implements Scene {
     return this.mode === "survival" ? this.waveIdx + 1 : this.waves.length;
   }
 
+  isDeveloperMode(): boolean {
+    return this.developerMode;
+  }
+
+  setDeveloperPlayerStats(next: {
+    hp: number;
+    maxHp: number;
+    speedMul: number;
+    damage: number;
+    fireInterval: number;
+    projectileSpeed: number;
+    projectiles: number;
+    pierce: number;
+    crit: number;
+  }): void {
+    const avatar = this.world.get(this.avatarId);
+    if (!avatar?.avatar || !avatar.weapon) return;
+    avatar.avatar.maxHp = Math.max(1, Math.round(next.maxHp));
+    avatar.avatar.hp = Math.max(1, Math.min(avatar.avatar.maxHp, Math.round(next.hp)));
+    avatar.avatar.speedMul = Math.max(0.1, next.speedMul);
+    avatar.weapon.damage = Math.max(1, Math.round(next.damage));
+    avatar.weapon.period = Math.max(0, next.fireInterval);
+    avatar.weapon.projectileSpeed = Math.max(1, next.projectileSpeed);
+    avatar.weapon.projectiles = Math.max(1, Math.round(next.projectiles));
+    avatar.weapon.pierce = Math.max(0, Math.round(next.pierce));
+    avatar.weapon.crit = Math.max(0, Math.min(1, next.crit));
+    this.updateHud();
+  }
+
+  setDeveloperInvincible(enabled: boolean): void {
+    this.developerInvincible = enabled;
+  }
+
+  setDeveloperShowEnemyHp(enabled: boolean): void {
+    this.developerShowEnemyHp = enabled;
+  }
+
+  setDeveloperEnemyInterval(seconds: number): void {
+    this.developerEnemyInterval = Math.max(0.1, seconds);
+    this.developerEnemyTimer = 0;
+  }
+
+  setDeveloperEnemySpawn(kind: EnemyKind, enabled: boolean, count: number): void {
+    this.developerEnemySpawn[kind] = {
+      enabled,
+      count: Math.max(0, Math.round(count)),
+    };
+  }
+
+  setDeveloperEnemyStats(kind: EnemyKind, stats: DeveloperEnemyStats): void {
+    this.developerEnemyStats[kind] = {
+      hp: Math.max(1, Math.round(stats.hp)),
+      attack: Math.max(0, stats.attack),
+      speed: Math.max(0, stats.speed),
+      attackFrequency: Math.max(0, stats.attackFrequency),
+    };
+  }
+
+  setDeveloperSkillConfig(skillId: PrimalSkillId, cfg: DeveloperSkillConfig): void {
+    const idx = this.activeSkills.findIndex((s) => s.id === skillId);
+    if (!cfg.enabled) {
+      if (idx >= 0) this.activeSkills.splice(idx, 1);
+      return;
+    }
+    const def = PRIMAL_SKILLS[skillId];
+    const level = Math.max(0, Math.floor(cfg.level));
+    const duration = Math.max(0, cfg.duration);
+    const cooldown = Math.max(0, cfg.cooldown);
+    const target: ActiveSkillState = idx >= 0
+      ? this.activeSkills[idx]!
+      : {
+        id: skillId,
+        level,
+        cooldown: 0,
+        active: 0,
+        duration: skillDuration(def, level),
+        maxCooldown: skillCooldown(def, level),
+      };
+    target.level = level;
+    target.duration = duration;
+    target.maxCooldown = cooldown;
+    target.cooldown = Math.min(target.cooldown, cooldown);
+    if (idx < 0) this.activeSkills.push(target);
+  }
+
+  spawnDeveloperEnemiesNow(): void {
+    for (const kind of Object.keys(this.developerEnemySpawn) as EnemyKind[]) {
+      const conf = this.developerEnemySpawn[kind];
+      if (!conf?.enabled || conf.count <= 0) continue;
+      for (let i = 0; i < conf.count; i++) {
+        const id = spawnEnemy(this.world, kind, this.rng);
+        this.applyDeveloperEnemyStats(id, kind);
+      }
+    }
+  }
+
+  getDeveloperSnapshot(): DeveloperControlsSnapshot {
+    const skills = {} as Record<PrimalSkillId, DeveloperSkillConfig>;
+    for (const id of Object.keys(PRIMAL_SKILLS) as PrimalSkillId[]) {
+      const current = this.activeSkills.find((s) => s.id === id);
+      const def = PRIMAL_SKILLS[id];
+      skills[id] = {
+        enabled: current !== undefined,
+        level: current?.level ?? 0,
+        duration: current?.duration ?? skillDuration(def, 0),
+        cooldown: current?.maxCooldown ?? skillCooldown(def, 0),
+      };
+    }
+    return {
+      enemy: {
+        interval: this.developerEnemyInterval,
+        spawn: structuredClone(this.developerEnemySpawn),
+        stats: structuredClone(this.developerEnemyStats),
+      },
+      invincible: this.developerInvincible,
+      showEnemyHp: this.developerShowEnemyHp,
+      skills,
+    };
+  }
+
   /** Activate a primal skill by index. */
   activateSkill(index: number): void {
     const sk = this.activeSkills[index];
@@ -230,23 +414,31 @@ export class PlayScene implements Scene {
     // Effective dt for enemies when time-stop is active.
     const enemyDt = dt * slowMul;
 
-    updateWave(this.wave, this.world, this.rng, dt);
-
-    // Boss application (normal mode last wave, or survival mirror waves).
-    const wave1 = this.waveIdx + 1;
-    const shouldApplyBoss =
-      this.mode === "normal"
-        ? wave1 === this.waves.length
-        : isMirrorBossWave(wave1);
-    if (shouldApplyBoss && !this.bossApplied) {
-      this.applyBossOnce();
-    }
-
-    // Apply mode-specific scaling to newly spawned enemies after mirror stats.
-    if (this.mode === "survival") {
-      this.applySurvivalScaling();
+    if (this.developerMode) {
+      this.developerEnemyTimer += dt;
+      if (this.developerEnemyTimer >= this.developerEnemyInterval) {
+        this.developerEnemyTimer = 0;
+        this.spawnDeveloperEnemiesNow();
+      }
     } else {
-      this.applyNormalStageScaling();
+      updateWave(this.wave, this.world, this.rng, dt);
+
+      // Boss application (normal mode last wave, or survival mirror waves).
+      const wave1 = this.waveIdx + 1;
+      const shouldApplyBoss =
+        this.mode === "normal"
+          ? wave1 === this.waves.length
+          : isMirrorBossWave(wave1);
+      if (shouldApplyBoss && !this.bossApplied) {
+        this.applyBossOnce();
+      }
+
+      // Apply mode-specific scaling to newly spawned enemies after mirror stats.
+      if (this.mode === "survival") {
+        this.applySurvivalScaling();
+      } else {
+        this.applyNormalStageScaling();
+      }
     }
 
     updateAvatarMotion(this.world, dt);
@@ -363,6 +555,11 @@ export class PlayScene implements Scene {
     removeDeadEnemies(this.world);
     decayHitFlash(this.world, dt);
 
+    if (this.developerInvincible) {
+      const avatar = this.world.get(this.avatarId);
+      if (avatar?.avatar) avatar.avatar.iframes = Math.max(avatar.avatar.iframes, 0.2);
+    }
+
     this.updateHud();
 
     if (died) {
@@ -372,7 +569,7 @@ export class PlayScene implements Scene {
       return;
     }
 
-    if (this.wave.cleared) {
+    if (!this.developerMode && this.wave.cleared) {
       const cleared = this.waveIdx + 1;
       if (this.mode === "normal" && cleared >= this.waves.length) {
         this.ended = true;
@@ -388,7 +585,7 @@ export class PlayScene implements Scene {
   }
 
   render(_alpha: number): void {
-    drawWorld(this.g, this.world, this.theme);
+    drawWorld(this.g, this.world, this.theme, { showEnemyHp: this.developerShowEnemyHp });
   }
 
   // ── Private ─────────────────────────────────────────────────────────────
@@ -457,6 +654,7 @@ export class PlayScene implements Scene {
       if (c.enemy!.kind === "boss") continue;
       if (c.enemy!.scaled) continue;
       c.hp!.value = Math.ceil(c.hp!.value * hpMul);
+      c.enemy!.maxHp = c.hp!.value;
       c.enemy!.maxSpeed *= spdMul;
       c.enemy!.scaled = true;
     }
@@ -472,6 +670,7 @@ export class PlayScene implements Scene {
       // Boss stats are set by BossDef.install — skip stage scaling for bosses.
       if (c.enemy!.kind === "boss") { c.enemy!.scaled = true; continue; }
       c.hp!.value = Math.max(1, Math.ceil(c.hp!.value * stageMul));
+      c.enemy!.maxHp = c.hp!.value;
       c.enemy!.maxSpeed *= stageMul;
       c.enemy!.contactDamage = Math.max(1, Math.ceil(c.enemy!.contactDamage * stageMul));
       if (c.weapon) c.weapon.damage = Math.max(1, Math.ceil(c.weapon.damage * stageMul));
@@ -563,6 +762,51 @@ export class PlayScene implements Scene {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private triggerOverload(_sk: ActiveSkillState): void {
     // Overload fire-rate boost is applied in the main update loop on activation.
+  }
+
+  private createDefaultEnemyStats(): Record<EnemyKind, DeveloperEnemyStats> {
+    const defaults = {} as Record<EnemyKind, DeveloperEnemyStats>;
+    const kinds: EnemyKind[] = ["circle", "square", "star", "boss", "pentagon", "hexagon", "diamond", "cross", "crescent"];
+    for (const kind of kinds) {
+      const id = spawnEnemy(this.world, kind, this.rng);
+      const c = this.world.get(id);
+      defaults[kind] = {
+        hp: c?.hp?.value ?? 1,
+        attack: c?.enemy?.contactDamage ?? 1,
+        speed: c?.enemy?.maxSpeed ?? 1,
+        attackFrequency: c?.enemy?.shootCooldown ?? 1,
+      };
+      this.world.remove(id);
+    }
+    return defaults;
+  }
+
+  private applyDeveloperEnemyStats(id: EntityId, kind: EnemyKind): void {
+    const c = this.world.get(id);
+    const cfg = this.developerEnemyStats[kind];
+    if (!c || !cfg || !c.enemy || !c.hp) return;
+    c.hp.value = Math.max(1, Math.round(cfg.hp));
+    c.enemy.maxHp = c.hp.value;
+    c.enemy.contactDamage = Math.max(0, cfg.attack);
+    c.enemy.maxSpeed = Math.max(0, cfg.speed);
+    if (c.enemy.shootCooldown !== undefined) c.enemy.shootCooldown = cfg.attackFrequency;
+    if (c.weapon && cfg.attackFrequency > 0) c.weapon.period = cfg.attackFrequency;
+    c.enemy.scaled = true;
+  }
+
+  private ensureAllSkillsPresent(): void {
+    for (const id of Object.keys(PRIMAL_SKILLS) as PrimalSkillId[]) {
+      if (this.activeSkills.some((s) => s.id === id)) continue;
+      const def = PRIMAL_SKILLS[id];
+      this.activeSkills.push({
+        id,
+        level: 0,
+        cooldown: 0,
+        active: 0,
+        duration: skillDuration(def, 0),
+        maxCooldown: skillCooldown(def, 0),
+      });
+    }
   }
 
   private updateHud(): void {

@@ -96,6 +96,7 @@ export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
     else                   { x = ENEMY_SPAWN_MARGIN; y = rng() * PLAY_H; }
   }
   const elite = isEliteKind(kind);
+  const hp = elite ? Math.ceil(stats.hp * ELITE_HP_MUL) : stats.hp;
   return world.create({
     pos: { x, y },
     vel: { x: 0, y: 0 },
@@ -103,6 +104,7 @@ export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
     team: "enemy",
     enemy: {
       kind,
+      maxHp: hp,
       contactDamage: stats.contactDamage,
       maxSpeed: stats.maxSpeed,
       wobblePhase: rng() * Math.PI * 2,
@@ -113,7 +115,7 @@ export function spawnEnemy(world: World, kind: EnemyKind, rng: Rng): EntityId {
       orbitAngle: kind === "crescent" ? rng() * Math.PI * 2 : undefined,
       isElite: elite || undefined,
     },
-    hp: { value: elite ? Math.ceil(stats.hp * ELITE_HP_MUL) : stats.hp },
+    hp: { value: hp },
   });
 }
 
@@ -124,6 +126,7 @@ export function spawnEnemyAt(world: World, kind: EnemyKind, rng: Rng, atX: numbe
   const x = atX + (rng() - 0.5) * spread;
   const y = atY + (rng() - 0.5) * spread;
   const elite = isEliteKind(kind);
+  const hp = elite ? Math.ceil(stats.hp * ELITE_HP_MUL) : stats.hp;
   return world.create({
     pos: { x, y },
     vel: { x: 0, y: 0 },
@@ -131,6 +134,7 @@ export function spawnEnemyAt(world: World, kind: EnemyKind, rng: Rng, atX: numbe
     team: "enemy",
     enemy: {
       kind,
+      maxHp: hp,
       contactDamage: stats.contactDamage,
       maxSpeed: stats.maxSpeed,
       wobblePhase: rng() * Math.PI * 2,
@@ -140,7 +144,7 @@ export function spawnEnemyAt(world: World, kind: EnemyKind, rng: Rng, atX: numbe
       orbitAngle: kind === "crescent" ? rng() * Math.PI * 2 : undefined,
       isElite: elite || undefined,
     },
-    hp: { value: elite ? Math.ceil(stats.hp * ELITE_HP_MUL) : stats.hp },
+    hp: { value: hp },
   });
 }
 

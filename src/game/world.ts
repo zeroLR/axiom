@@ -59,6 +59,7 @@ export interface Projectile {
 
 export interface Enemy {
   kind: EnemyKind;
+  maxHp?: number;
   contactDamage: number;
   maxSpeed: number;
   wobblePhase: number;

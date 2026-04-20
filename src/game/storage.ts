@@ -137,7 +137,13 @@ export async function saveShopUnlocks(s: ShopUnlocks): Promise<void> {
 }
 
 export async function loadSettings(): Promise<GameSettings> {
-  return getStore("settings", defaultGameSettings());
+  const raw = await getStore("settings", defaultGameSettings());
+  const base = defaultGameSettings();
+  return {
+    ...base,
+    ...raw,
+    developerMode: raw.developerMode ?? base.developerMode,
+  };
 }
 export async function saveSettings(s: GameSettings): Promise<void> {
   return putStore("settings", s);
