@@ -156,6 +156,85 @@ async function boot(): Promise<void> {
     title.textContent = "paused";
     inner.appendChild(title);
 
+    const avatar = play ? play.world.get(play.avatarId) : undefined;
+    if (avatar?.avatar && avatar.weapon) {
+      const bonusPanel = document.createElement("div");
+      bonusPanel.className = "pause-panel";
+
+      const panelTitle = document.createElement("div");
+      panelTitle.className = "pause-panel-title";
+      panelTitle.textContent = "current bonuses";
+      bonusPanel.appendChild(panelTitle);
+
+      const rows = document.createElement("div");
+      rows.className = "pause-bonus-grid";
+      const bonusRows: Array<[string, string]> = [
+        ["damage", `${avatar.weapon.damage}`],
+        ["fire interval", `${avatar.weapon.period.toFixed(2)}s`],
+        ["projectile speed", `${Math.round(avatar.weapon.projectileSpeed)}`],
+        ["projectiles", `${avatar.weapon.projectiles}`],
+        ["pierce", `${avatar.weapon.pierce}`],
+        ["crit", `${Math.round(avatar.weapon.crit * 100)}%`],
+        ["move speed", `${Math.round(avatar.avatar.speedMul * 100)}%`],
+        ["max hp", `${avatar.avatar.maxHp}`],
+        ["ricochet", `${avatar.weapon.ricochet}`],
+        ["chain", `${avatar.weapon.chain}`],
+      ];
+      if (avatar.weapon.burnDps > 0) {
+        bonusRows.push(["burn", `${avatar.weapon.burnDps.toFixed(2)} dps / ${avatar.weapon.burnDuration.toFixed(1)}s`]);
+      }
+      if (avatar.weapon.slowPct > 0) {
+        bonusRows.push(["slow", `${Math.round(avatar.weapon.slowPct * 100)}% / ${avatar.weapon.slowDuration.toFixed(1)}s`]);
+      }
+      for (const [k, v] of bonusRows) {
+        const row = document.createElement("div");
+        row.className = "pause-bonus-row";
+        const key = document.createElement("span");
+        key.className = "pause-bonus-key";
+        key.textContent = k;
+        const value = document.createElement("span");
+        value.className = "pause-bonus-value";
+        value.textContent = v;
+        row.appendChild(key);
+        row.appendChild(value);
+        rows.appendChild(row);
+      }
+      bonusPanel.appendChild(rows);
+      inner.appendChild(bonusPanel);
+    }
+
+    const statusPanel = document.createElement("div");
+    statusPanel.className = "pause-panel";
+    const statusTitle = document.createElement("div");
+    statusTitle.className = "pause-panel-title";
+    statusTitle.textContent = "card holdings";
+    statusPanel.appendChild(statusTitle);
+
+    const list = document.createElement("div");
+    list.className = "pause-card-list";
+    const rarityRank: Record<Card["rarity"], number> = { common: 0, uncommon: 1, rare: 2 };
+    const sortedPool = [...POOL].sort((a, b) => {
+      const rankDelta = rarityRank[a.rarity] - rarityRank[b.rarity];
+      if (rankDelta !== 0) return rankDelta;
+      return a.name.localeCompare(b.name);
+    });
+    for (const card of sortedPool) {
+      const entry = runInventory.getForCard(card);
+      const row = document.createElement("div");
+      row.className = "pause-card-row";
+      const isSharedAbility = entry != null && !entry.sourceCardIds.includes(card.id);
+      const sourceLabel = isSharedAbility && entry
+        ? ` (shared with: ${entry.sourceCardIds.map((id) => POOL_BY_ID.get(id)?.name ?? id).join(", ")})`
+        : "";
+      const status = entry
+        ? (isSharedAbility ? `merged · Lv${entry.level}` : `held · Lv${entry.level}`)
+        : "not held";
+      row.textContent = `${card.name} · ${entry?.rarity ?? card.rarity} · ${status}${sourceLabel}`;
+      list.appendChild(row);
+    }
+    statusPanel.appendChild(list);
+    inner.appendChild(statusPanel);
+
     const resumeBtn = document.createElement("button");
     resumeBtn.type = "button";
     resumeBtn.className = "big-btn";
@@ -496,9 +575,9 @@ async function boot(): Promise<void> {
   }
 
   function onPickCard(card: Card): void {
-    if (runInventory.has(card.id) && isLevelableEffect(card.effect)) {
+    if (runInventory.hasForCard(card) && isLevelableEffect(card.effect)) {
       // Duplicate pick — level up instead of stacking another copy.
-      const newLevel = runInventory.levelUp(card.id);
+      const newLevel = runInventory.levelUpForCard(card);
       if (newLevel > 0) {
         applyCardLevelUp(play.world, play.avatarId, card, newLevel);
       }

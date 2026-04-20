@@ -309,6 +309,63 @@ body {
   cursor: not-allowed;
 }
 
+/* ── Pause overlay details ──────────────────────────────────────────────── */
+
+.pause-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.pause-panel-title {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pause-bonus-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pause-bonus-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pause-bonus-key {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pause-bonus-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.pause-card-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pause-card-row {
+  font-size: 11px;
+  color: var(--fg);
+  border-bottom: 1px dashed #eee;
+  padding-bottom: 2px;
+}
+
 #footer-hint {
   flex: 0 0 auto;
   padding: 6px 12px calc(6px + env(safe-area-inset-bottom)) 12px;

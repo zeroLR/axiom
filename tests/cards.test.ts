@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyCard, drawOffer, POOL, type Card } from "../src/game/cards";
+import { applyCard, drawOffer, POOL, projectedCardText, type Card } from "../src/game/cards";
 import { spawnAvatar } from "../src/game/entities";
 import { createRng } from "../src/game/rng";
 import { World } from "../src/game/world";
@@ -144,5 +144,28 @@ describe("applyCard", () => {
     expect(avatar.synergies?.[0]?.killCounter).toBe(0);
     expect(world.get(id)!.weapon).toEqual(weaponBefore);
     expect(avatar.maxHp).toBe(maxHpBefore);
+  });
+});
+
+describe("projectedCardText", () => {
+  const cardById = (id: string): Card => {
+    const found = POOL.find((c) => c.id === id);
+    if (!found) throw new Error(`no card '${id}'`);
+    return found;
+  };
+
+  it("shows reduced projected value for higher-level upgrades", () => {
+    const text = projectedCardText(cardById("heavy"), 2);
+    expect(text).toBe("+1 damage");
+  });
+
+  it("keeps base text for non-levelable cards", () => {
+    const card = cardById("combustion");
+    expect(projectedCardText(card, 2)).toBe(card.text);
+  });
+
+  it("formats projected burn values without redundant trailing zeros", () => {
+    expect(projectedCardText(cardById("ignite"), 3)).toBe("Burn 1 dps for 3s");
+    expect(projectedCardText(cardById("ignite"), 2)).toBe("Burn 1.4 dps for 3s");
   });
 });
