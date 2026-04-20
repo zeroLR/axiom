@@ -1,12 +1,11 @@
 import { Container } from 'pixi.js';
 import type { Scene } from './scene';
 import { iconBack, iconSpan } from '../icons';
-import { isMuted, setMuted, setVolumes, getSfxVolume } from '../game/audio';
+import { isMuted, setMuted } from '../game/audio';
 import {
   isScreenShakeEnabled,
   setScreenShakeEnabled,
 } from '../game/screenShake';
-import { setMusicVolume } from '../game/music';
 
 // ── Settings scene (DOM overlay) ────────────────────────────────────────────
 
