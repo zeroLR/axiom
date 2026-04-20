@@ -610,8 +610,24 @@ async function boot(): Promise<void> {
     attackFrequency: number;
   }
 
+  interface DeveloperEnhanceEntry {
+    cardId: Card["id"];
+    level: number;
+  }
+
+  interface DeveloperSkillEntry {
+    id: PrimalSkillId;
+    level: number;
+    duration: number;
+    cooldown: number;
+  }
+
   /** Persistent enemy list for develop mode (reset on run restart). */
   let developerEnemyEntries: DeveloperEnemyEntry[] = [];
+  /** Persistent enhance list for develop mode (reset on run restart). */
+  let developerEnhanceEntries: DeveloperEnhanceEntry[] = [];
+  /** Persistent skill list for develop mode (reset on run restart). */
+  let developerSkillEntries: DeveloperSkillEntry[] = [];
 
   /** Apply current enemy entries to the PlayScene. */
   function applyDeveloperEnemyEntries(): void {
@@ -625,6 +641,31 @@ async function boot(): Promise<void> {
         attack: entry.attack,
         speed: entry.speed,
         attackFrequency: entry.attackFrequency,
+      });
+    }
+  }
+
+  function applyDeveloperEnhanceEntries(): void {
+    if (!play?.isDeveloperMode()) return;
+    for (const entry of developerEnhanceEntries) {
+      const card = POOL_BY_ID.get(entry.cardId);
+      if (!card) continue;
+      applyDeveloperEnhance(card, entry.level);
+    }
+  }
+
+  function applyDeveloperSkillEntries(): void {
+    if (!play?.isDeveloperMode()) return;
+    const skillIds = Object.keys(PRIMAL_SKILLS) as PrimalSkillId[];
+    for (const id of skillIds) {
+      play.setDeveloperSkillConfig(id, { enabled: false, level: 0, duration: 0, cooldown: 0 });
+    }
+    for (const entry of developerSkillEntries) {
+      play.setDeveloperSkillConfig(entry.id, {
+        enabled: true,
+        level: Math.max(0, Math.floor(entry.level)),
+        duration: Math.max(0, entry.duration),
+        cooldown: Math.max(0, entry.cooldown),
       });
     }
   }
@@ -975,37 +1016,538 @@ async function boot(): Promise<void> {
 
   async function openDeveloperEnhanceMenu(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
-    const values = await openDeveloperForm("developer · enhance", [
-      { name: "cardId", label: "card id", type: "text", value: "damagePlus" },
-      { name: "level", label: "target level", type: "number", value: "1", min: 1, max: 5, step: 1 },
-    ]);
-    if (!values) return;
-    const cardId = values.cardId.trim();
-    const card = cardId ? POOL_BY_ID.get(cardId) : undefined;
-    if (!card) return;
-    applyDeveloperEnhance(card, parseNumericFormValue(values.level, 1));
+    return new Promise<void>((resolve) => {
+      const wasPaused = paused;
+      if (!wasPaused) setPaused(true);
+
+      const dialog = document.createElement("dialog");
+      dialog.className = "developer-dialog";
+      dialog.setAttribute("aria-label", "developer · enhance");
+
+      const finalize = (): void => {
+        dialog.remove();
+        if (!wasPaused) setPaused(false);
+        resolve();
+      };
+
+      function buildLevelField(parent: HTMLElement, defaultLevel: number): HTMLInputElement {
+        const row = document.createElement("label");
+        row.className = "developer-form-row";
+        const label = document.createElement("span");
+        label.className = "developer-form-label";
+        label.textContent = "target level";
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "developer-form-slider-group";
+        const range = document.createElement("input");
+        range.type = "range";
+        range.className = "developer-form-range";
+        range.min = "1";
+        range.max = "5";
+        range.step = "1";
+        range.value = `${Math.max(1, Math.min(5, Math.round(defaultLevel)))}`;
+        const input = document.createElement("input");
+        input.type = "number";
+        input.className = "developer-form-input developer-form-input--slim";
+        input.min = "1";
+        input.max = "5";
+        input.step = "1";
+        input.value = range.value;
+        range.addEventListener("input", () => { input.value = range.value; });
+        input.addEventListener("input", () => { range.value = input.value; });
+        wrapper.appendChild(range);
+        wrapper.appendChild(input);
+        row.appendChild(label);
+        row.appendChild(wrapper);
+        parent.appendChild(row);
+        return input;
+      }
+
+      function renderList(): void {
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = "developer · enhance";
+        container.appendChild(heading);
+
+        const list = document.createElement("div");
+        list.className = "developer-enemy-list";
+        for (let i = 0; i < developerEnhanceEntries.length; i++) {
+          const entry = developerEnhanceEntries[i]!;
+          const card = POOL_BY_ID.get(entry.cardId);
+          const cardLabel = card?.name ?? entry.cardId;
+          const cardStats = `id:${entry.cardId}  target Lv${Math.max(1, Math.floor(entry.level))}`;
+
+          const cardEl = document.createElement("div");
+          cardEl.className = "developer-enemy-card";
+
+          const info = document.createElement("div");
+          info.className = "developer-enemy-card-info";
+          const kindLabel = document.createElement("div");
+          kindLabel.className = "developer-enemy-card-kind";
+          kindLabel.textContent = cardLabel;
+          const statsLabel = document.createElement("div");
+          statsLabel.className = "developer-enemy-card-stats";
+          statsLabel.textContent = cardStats;
+          info.appendChild(kindLabel);
+          info.appendChild(statsLabel);
+
+          const actions = document.createElement("div");
+          actions.className = "developer-enemy-card-actions";
+          const editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.className = "secondary-btn";
+          editBtn.textContent = "edit";
+          editBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px";
+          const idx = i;
+          editBtn.addEventListener("click", () => renderEdit(idx));
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "secondary-btn";
+          delBtn.textContent = "delete";
+          delBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)";
+          delBtn.addEventListener("click", () => {
+            developerEnhanceEntries.splice(idx, 1);
+            renderList();
+          });
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+
+          cardEl.appendChild(info);
+          cardEl.appendChild(actions);
+          list.appendChild(cardEl);
+        }
+        container.appendChild(list);
+
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "menu-btn";
+        addBtn.textContent = "+ add enhance";
+        addBtn.addEventListener("click", () => renderAdd());
+        container.appendChild(addBtn);
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "menu-btn";
+        closeBtn.textContent = "close";
+        closeBtn.addEventListener("click", () => { dialog.close(); finalize(); });
+        container.appendChild(closeBtn);
+
+        dialog.appendChild(container);
+      }
+
+      function renderAdd(): void {
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = "add enhance";
+        container.appendChild(heading);
+
+        const cardRow = document.createElement("div");
+        cardRow.className = "developer-form-row";
+        const cardLabel = document.createElement("span");
+        cardLabel.className = "developer-form-label";
+        cardLabel.textContent = "card";
+        const cardSelect = document.createElement("select");
+        cardSelect.className = "developer-form-input";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "select...";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        cardSelect.appendChild(placeholder);
+        for (const card of POOL) {
+          const opt = document.createElement("option");
+          opt.value = card.id;
+          opt.textContent = `${card.name} (${card.id})`;
+          cardSelect.appendChild(opt);
+        }
+        cardRow.appendChild(cardLabel);
+        cardRow.appendChild(cardSelect);
+        container.appendChild(cardRow);
+
+        const fieldsContainer = document.createElement("div");
+        fieldsContainer.className = "pause-panel";
+        fieldsContainer.hidden = true;
+        container.appendChild(fieldsContainer);
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "big-btn";
+        saveBtn.textContent = "save";
+        saveBtn.hidden = true;
+        container.appendChild(saveBtn);
+
+        const backBtn = document.createElement("button");
+        backBtn.type = "button";
+        backBtn.className = "menu-btn";
+        backBtn.textContent = "back";
+        backBtn.addEventListener("click", () => renderList());
+        container.appendChild(backBtn);
+
+        let levelInput: HTMLInputElement | null = null;
+
+        cardSelect.addEventListener("change", () => {
+          const cardId = cardSelect.value as Card["id"];
+          if (!cardId || !POOL_BY_ID.has(cardId)) return;
+          const existing = developerEnhanceEntries.find((entry) => entry.cardId === cardId);
+          fieldsContainer.innerHTML = "";
+          fieldsContainer.hidden = false;
+          saveBtn.hidden = false;
+          levelInput = buildLevelField(fieldsContainer, existing?.level ?? 1);
+        });
+
+        saveBtn.addEventListener("click", () => {
+          const cardId = cardSelect.value as Card["id"];
+          if (!cardId || !POOL_BY_ID.has(cardId) || !levelInput) return;
+          const level = Math.max(1, Math.floor(parseNumericFormValue(levelInput.value, 1)));
+          const existingIndex = developerEnhanceEntries.findIndex((entry) => entry.cardId === cardId);
+          if (existingIndex >= 0) {
+            developerEnhanceEntries[existingIndex]!.level = level;
+          } else {
+            developerEnhanceEntries.push({ cardId, level });
+          }
+          applyDeveloperEnhanceEntries();
+          renderList();
+        });
+
+        dialog.appendChild(container);
+      }
+
+      function renderEdit(index: number): void {
+        const entry = developerEnhanceEntries[index];
+        if (!entry) { renderList(); return; }
+        const card = POOL_BY_ID.get(entry.cardId);
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = `edit · ${card?.name ?? entry.cardId}`;
+        container.appendChild(heading);
+
+        const fieldsContainer = document.createElement("div");
+        fieldsContainer.className = "pause-panel";
+        container.appendChild(fieldsContainer);
+        const levelInput = buildLevelField(fieldsContainer, entry.level);
+
+        const actions = document.createElement("div");
+        actions.className = "draft-actions";
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "big-btn";
+        saveBtn.textContent = "save";
+        saveBtn.addEventListener("click", () => {
+          entry.level = Math.max(1, Math.floor(parseNumericFormValue(levelInput.value, entry.level)));
+          applyDeveloperEnhanceEntries();
+          renderList();
+        });
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "menu-btn";
+        cancelBtn.textContent = "back";
+        cancelBtn.addEventListener("click", () => renderList());
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+        container.appendChild(actions);
+
+        dialog.appendChild(container);
+      }
+
+      renderList();
+      document.body.appendChild(dialog);
+      dialog.showModal();
+
+      dialog.addEventListener("close", () => finalize(), { once: true });
+    });
   }
 
   async function openDeveloperSkillsMenu(): Promise<void> {
     if (!play?.isDeveloperMode()) return;
     const snapshot = play.getDeveloperSnapshot();
     const skillIds = Object.keys(PRIMAL_SKILLS) as PrimalSkillId[];
-    const values = await openDeveloperForm("developer · skills", [
-      { name: "id", label: "skill id", type: "text", value: "barrage" },
-      { name: "enabled", label: "enabled", type: "checkbox", value: "1" },
-      { name: "level", label: "level", type: "number", value: "0", min: 0, max: 10, step: 1 },
-      { name: "duration", label: "duration", type: "number", value: "2", min: 0, max: 30, step: 0.1 },
-      { name: "cooldown", label: "cooldown", type: "number", value: "8", min: 0, max: 60, step: 0.1 },
-    ]);
-    if (!values) return;
-    const id = values.id.trim() as PrimalSkillId;
-    if (!skillIds.includes(id)) return;
-    const prev = snapshot.skills[id];
-    play.setDeveloperSkillConfig(id, {
-      enabled: values.enabled === "1",
-      level: parseNumericFormValue(values.level, prev.level),
-      duration: parseNumericFormValue(values.duration, prev.duration),
-      cooldown: parseNumericFormValue(values.cooldown, prev.cooldown),
+    if (developerSkillEntries.length === 0) {
+      developerSkillEntries = skillIds
+        .filter((id) => snapshot.skills[id].enabled)
+        .map((id) => ({
+          id,
+          level: snapshot.skills[id].level,
+          duration: snapshot.skills[id].duration,
+          cooldown: snapshot.skills[id].cooldown,
+        }));
+    }
+
+    return new Promise<void>((resolve) => {
+      const wasPaused = paused;
+      if (!wasPaused) setPaused(true);
+
+      const dialog = document.createElement("dialog");
+      dialog.className = "developer-dialog";
+      dialog.setAttribute("aria-label", "developer · skills");
+
+      const finalize = (): void => {
+        dialog.remove();
+        if (!wasPaused) setPaused(false);
+        resolve();
+      };
+
+      function buildSkillFields(
+        parent: HTMLElement,
+        defaults: { level: number; duration: number; cooldown: number },
+      ): { level: HTMLInputElement; duration: HTMLInputElement; cooldown: HTMLInputElement } {
+        const fieldDefs: { name: "level" | "duration" | "cooldown"; label: string; value: number; min: number; max: number; step: number }[] = [
+          { name: "level", label: "level", value: defaults.level, min: 0, max: 10, step: 1 },
+          { name: "duration", label: "duration", value: defaults.duration, min: 0, max: 30, step: 0.1 },
+          { name: "cooldown", label: "cooldown", value: defaults.cooldown, min: 0, max: 60, step: 0.1 },
+        ];
+        const inputs: Record<string, HTMLInputElement> = {};
+        for (const fd of fieldDefs) {
+          const row = document.createElement("label");
+          row.className = "developer-form-row";
+          const label = document.createElement("span");
+          label.className = "developer-form-label";
+          label.textContent = fd.label;
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "developer-form-slider-group";
+          const range = document.createElement("input");
+          range.type = "range";
+          range.className = "developer-form-range";
+          range.min = `${fd.min}`;
+          range.max = `${fd.max}`;
+          range.step = `${fd.step}`;
+          range.value = `${fd.value}`;
+          const input = document.createElement("input");
+          input.type = "number";
+          input.className = "developer-form-input developer-form-input--slim";
+          input.min = `${fd.min}`;
+          input.max = `${fd.max}`;
+          input.step = `${fd.step}`;
+          input.value = `${fd.value}`;
+          range.addEventListener("input", () => { input.value = range.value; });
+          input.addEventListener("input", () => { range.value = input.value; });
+          wrapper.appendChild(range);
+          wrapper.appendChild(input);
+
+          row.appendChild(label);
+          row.appendChild(wrapper);
+          parent.appendChild(row);
+          inputs[fd.name] = input;
+        }
+        return inputs as { level: HTMLInputElement; duration: HTMLInputElement; cooldown: HTMLInputElement };
+      }
+
+      function renderList(): void {
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = "developer · skills";
+        container.appendChild(heading);
+
+        const list = document.createElement("div");
+        list.className = "developer-enemy-list";
+        for (let i = 0; i < developerSkillEntries.length; i++) {
+          const entry = developerSkillEntries[i]!;
+          const cardEl = document.createElement("div");
+          cardEl.className = "developer-enemy-card";
+
+          const info = document.createElement("div");
+          info.className = "developer-enemy-card-info";
+          const kindLabel = document.createElement("div");
+          kindLabel.className = "developer-enemy-card-kind";
+          kindLabel.textContent = entry.id;
+          const statsLabel = document.createElement("div");
+          statsLabel.className = "developer-enemy-card-stats";
+          statsLabel.textContent = `Lv${Math.max(0, Math.floor(entry.level))}  dur:${entry.duration.toFixed(1)}  cd:${entry.cooldown.toFixed(1)}`;
+          info.appendChild(kindLabel);
+          info.appendChild(statsLabel);
+
+          const actions = document.createElement("div");
+          actions.className = "developer-enemy-card-actions";
+          const editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.className = "secondary-btn";
+          editBtn.textContent = "edit";
+          editBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px";
+          const idx = i;
+          editBtn.addEventListener("click", () => renderEdit(idx));
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "secondary-btn";
+          delBtn.textContent = "delete";
+          delBtn.style.cssText = "flex:0 0 auto;padding:4px 10px;min-height:28px;font-size:11px;color:var(--accent)";
+          delBtn.addEventListener("click", () => {
+            developerSkillEntries.splice(idx, 1);
+            applyDeveloperSkillEntries();
+            renderList();
+          });
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+
+          cardEl.appendChild(info);
+          cardEl.appendChild(actions);
+          list.appendChild(cardEl);
+        }
+        container.appendChild(list);
+
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "menu-btn";
+        addBtn.textContent = "+ add skill";
+        addBtn.addEventListener("click", () => renderAdd());
+        container.appendChild(addBtn);
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "menu-btn";
+        closeBtn.textContent = "close";
+        closeBtn.addEventListener("click", () => { dialog.close(); finalize(); });
+        container.appendChild(closeBtn);
+
+        dialog.appendChild(container);
+      }
+
+      function renderAdd(): void {
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = "add skill";
+        container.appendChild(heading);
+
+        const idRow = document.createElement("div");
+        idRow.className = "developer-form-row";
+        const idLabel = document.createElement("span");
+        idLabel.className = "developer-form-label";
+        idLabel.textContent = "skill";
+        const idSelect = document.createElement("select");
+        idSelect.className = "developer-form-input";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "select...";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        idSelect.appendChild(placeholder);
+        for (const id of skillIds) {
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = id;
+          idSelect.appendChild(opt);
+        }
+        idRow.appendChild(idLabel);
+        idRow.appendChild(idSelect);
+        container.appendChild(idRow);
+
+        const fieldsContainer = document.createElement("div");
+        fieldsContainer.className = "pause-panel";
+        fieldsContainer.hidden = true;
+        container.appendChild(fieldsContainer);
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "big-btn";
+        saveBtn.textContent = "save";
+        saveBtn.hidden = true;
+        container.appendChild(saveBtn);
+
+        const backBtn = document.createElement("button");
+        backBtn.type = "button";
+        backBtn.className = "menu-btn";
+        backBtn.textContent = "back";
+        backBtn.addEventListener("click", () => renderList());
+        container.appendChild(backBtn);
+
+        let inputs: { level: HTMLInputElement; duration: HTMLInputElement; cooldown: HTMLInputElement } | null = null;
+
+        idSelect.addEventListener("change", () => {
+          const id = idSelect.value as PrimalSkillId;
+          if (!skillIds.includes(id)) return;
+          const existing = developerSkillEntries.find((entry) => entry.id === id);
+          const defaults = existing ?? snapshot.skills[id];
+          fieldsContainer.innerHTML = "";
+          fieldsContainer.hidden = false;
+          saveBtn.hidden = false;
+          inputs = buildSkillFields(fieldsContainer, defaults);
+        });
+
+        saveBtn.addEventListener("click", () => {
+          const id = idSelect.value as PrimalSkillId;
+          if (!skillIds.includes(id) || !inputs) return;
+          const nextEntry: DeveloperSkillEntry = {
+            id,
+            level: Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, 0))),
+            duration: Math.max(0, parseNumericFormValue(inputs.duration.value, snapshot.skills[id].duration)),
+            cooldown: Math.max(0, parseNumericFormValue(inputs.cooldown.value, snapshot.skills[id].cooldown)),
+          };
+          const existingIndex = developerSkillEntries.findIndex((entry) => entry.id === id);
+          if (existingIndex >= 0) developerSkillEntries[existingIndex] = nextEntry;
+          else developerSkillEntries.push(nextEntry);
+          applyDeveloperSkillEntries();
+          renderList();
+        });
+
+        dialog.appendChild(container);
+      }
+
+      function renderEdit(index: number): void {
+        const entry = developerSkillEntries[index];
+        if (!entry) { renderList(); return; }
+        dialog.innerHTML = "";
+        const container = document.createElement("div");
+        container.className = "developer-form";
+
+        const heading = document.createElement("div");
+        heading.className = "overlay-title";
+        heading.textContent = `edit · ${entry.id}`;
+        container.appendChild(heading);
+
+        const fieldsContainer = document.createElement("div");
+        fieldsContainer.className = "pause-panel";
+        container.appendChild(fieldsContainer);
+        const inputs = buildSkillFields(fieldsContainer, entry);
+
+        const actions = document.createElement("div");
+        actions.className = "draft-actions";
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "big-btn";
+        saveBtn.textContent = "save";
+        saveBtn.addEventListener("click", () => {
+          entry.level = Math.max(0, Math.floor(parseNumericFormValue(inputs.level.value, entry.level)));
+          entry.duration = Math.max(0, parseNumericFormValue(inputs.duration.value, entry.duration));
+          entry.cooldown = Math.max(0, parseNumericFormValue(inputs.cooldown.value, entry.cooldown));
+          applyDeveloperSkillEntries();
+          renderList();
+        });
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "menu-btn";
+        cancelBtn.textContent = "back";
+        cancelBtn.addEventListener("click", () => renderList());
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+        container.appendChild(actions);
+
+        dialog.appendChild(container);
+      }
+
+      renderList();
+      document.body.appendChild(dialog);
+      dialog.showModal();
+
+      dialog.addEventListener("close", () => finalize(), { once: true });
     });
   }
 
@@ -1109,8 +1651,12 @@ async function boot(): Promise<void> {
 
     // Reset card inventory for this run.
     runInventory = new CardInventory();
-    // Reset developer enemy entries on new run.
-    if (developMode) developerEnemyEntries = [];
+    // Reset developer entries on new run.
+    if (developMode) {
+      developerEnemyEntries = [];
+      developerEnhanceEntries = [];
+      developerSkillEntries = [];
+    }
 
     play = new PlayScene(
       rng,
