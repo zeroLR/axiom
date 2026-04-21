@@ -67,13 +67,6 @@ import {
   runSkinForStartingShape,
 } from './game/startingShapes';
 import {
-  iconTimeStop,
-  iconClone,
-  iconReflect,
-  iconBarrage,
-  iconLifesteal,
-  iconAxisFreeze,
-  iconOverload,
   setIconHtml,
   CARD_GLYPHS,
   SHOP_GLYPHS,
@@ -115,6 +108,9 @@ import { setScreenShakeEnabled } from './game/screenShake';
 import { playMusic, setMusicVolume } from './game/music';
 import type { RunContext } from './app/runContext';
 import { checkRunAchievements } from './app/achievementChecker';
+import { renderPauseOverlay } from './scenes/pause';
+import { closeOverlay } from './scenes/ui';
+import { createSkillButton } from './scenes/components/skillButton';
 
 /** O(1) lookup for pool cards by ID. */
 const POOL_BY_ID = new Map(POOL.map((c) => [c.id, c]));
@@ -214,262 +210,25 @@ async function boot(): Promise<void> {
     }
   }
 
-  function renderPauseOverlay(): void {
-    const overlay = document.getElementById('overlay');
-    const inner = document.getElementById('overlay-inner');
-    if (!overlay || !inner || !paused) return;
-    inner.innerHTML = '';
-
-    const openPauseCardDetails = (entry: {
-      card: Card;
-      rarity: Card['rarity'];
-      level: number;
-      sourceCardIds: string[];
-    }): void => {
-      const dialog = document.createElement('dialog');
-      dialog.className = 'developer-dialog pause-detail-dialog';
-      dialog.setAttribute('aria-label', `${entry.card.name} details`);
-
-      const container = document.createElement('div');
-      container.className = 'developer-form';
-
-      const heading = document.createElement('div');
-      heading.className = 'overlay-title';
-      heading.textContent = `${entry.card.name} · Lv${entry.level}`;
-      container.appendChild(heading);
-
-      const previewCard = document.createElement('div');
-      previewCard.className = 'developer-enhance-preview';
-      const previewGlyph = document.createElement('span');
-      previewGlyph.className = 'developer-enhance-preview-glyph';
-      previewGlyph.setAttribute('aria-hidden', 'true');
-      const svgGlyph = CARD_GLYPHS[entry.card.id];
-      if (svgGlyph) setIconHtml(previewGlyph, svgGlyph);
-      else previewGlyph.textContent = entry.card.glyph;
-      const previewBody = document.createElement('div');
-      previewBody.className = 'developer-enhance-preview-body';
-      const previewName = document.createElement('div');
-      previewName.className = 'developer-enhance-preview-name';
-      previewName.textContent = `${entry.card.name} · ${entry.rarity}`;
-      const previewDesc = document.createElement('div');
-      previewDesc.className = 'developer-enhance-preview-desc';
-      previewDesc.textContent = entry.card.text;
-      const previewScaled = document.createElement('div');
-      previewScaled.className = 'developer-enhance-preview-scaled';
-      previewScaled.textContent = `Lv${entry.level}: ${projectedCardText(entry.card, entry.level)}`;
-      previewBody.appendChild(previewName);
-      previewBody.appendChild(previewDesc);
-      previewBody.appendChild(previewScaled);
-      previewCard.appendChild(previewGlyph);
-      previewCard.appendChild(previewBody);
-      container.appendChild(previewCard);
-
-      const detailPanel = document.createElement('div');
-      detailPanel.className = 'pause-panel';
-      const panelTitle = document.createElement('div');
-      panelTitle.className = 'pause-panel-title';
-      panelTitle.textContent = 'ability values';
-      detailPanel.appendChild(panelTitle);
-      const rows = document.createElement('div');
-      rows.className = 'pause-bonus-grid';
-      const statusLabel =
-        entry.sourceCardIds.length > 1
-          ? `merged (${entry.sourceCardIds.length} cards)`
-          : 'held';
-      const details: Array<[string, string]> = [
-        ['status', statusLabel],
-        ['rarity', entry.rarity],
-        ['level', `${entry.level}`],
-        ['scaled', projectedCardText(entry.card, entry.level)],
-      ];
-      for (const [k, v] of details) {
-        const row = document.createElement('div');
-        row.className = 'pause-bonus-row';
-        const key = document.createElement('span');
-        key.className = 'pause-bonus-key';
-        key.textContent = k;
-        const value = document.createElement('span');
-        value.className = 'pause-bonus-value';
-        value.textContent = v;
-        row.appendChild(key);
-        row.appendChild(value);
-        rows.appendChild(row);
-      }
-      detailPanel.appendChild(rows);
-      container.appendChild(detailPanel);
-
-      if (entry.sourceCardIds.length > 1) {
-        const sourceText = document.createElement('div');
-        sourceText.className = 'card-text';
-        sourceText.textContent = `shared with: ${entry.sourceCardIds.map((id) => POOL_BY_ID.get(id)?.name ?? id).join(', ')}`;
-        container.appendChild(sourceText);
-      }
-
-      const closeBtn = document.createElement('button');
-      closeBtn.type = 'button';
-      closeBtn.className = 'menu-btn';
-      closeBtn.textContent = 'close';
-      closeBtn.addEventListener('click', () => dialog.close());
-      container.appendChild(closeBtn);
-
-      dialog.appendChild(container);
-      dialog.addEventListener('close', () => dialog.remove(), { once: true });
-      document.body.appendChild(dialog);
-      dialog.showModal();
-    };
-
-    const title = document.createElement('div');
-    title.className = 'overlay-title';
-    title.textContent = 'paused';
-    inner.appendChild(title);
-
-    const avatar = play ? play.world.get(play.avatarId) : undefined;
-    if (avatar?.avatar && avatar.weapon) {
-      const bonusPanel = document.createElement('div');
-      bonusPanel.className = 'pause-panel';
-
-      const panelTitle = document.createElement('div');
-      panelTitle.className = 'pause-panel-title';
-      panelTitle.textContent = 'current bonuses';
-      bonusPanel.appendChild(panelTitle);
-
-      const rows = document.createElement('div');
-      rows.className = 'pause-bonus-grid';
-      const bonusRows: Array<[string, string]> = [
-        ['damage', `${avatar.weapon.damage}`],
-        ['fire interval', `${avatar.weapon.period.toFixed(2)}s`],
-        ['projectile speed', `${Math.round(avatar.weapon.projectileSpeed)}`],
-        ['projectiles', `${avatar.weapon.projectiles}`],
-        ['pierce', `${avatar.weapon.pierce}`],
-        ['crit', `${Math.round(avatar.weapon.crit * 100)}%`],
-        ['move speed', `${Math.round(avatar.avatar.speedMul * 100)}%`],
-        ['max hp', `${avatar.avatar.maxHp}`],
-        ['ricochet', `${avatar.weapon.ricochet}`],
-        ['chain', `${avatar.weapon.chain}`],
-      ];
-      if (avatar.weapon.burnDps > 0) {
-        bonusRows.push([
-          'burn',
-          `${avatar.weapon.burnDps.toFixed(2)} dps / ${avatar.weapon.burnDuration.toFixed(1)}s`,
-        ]);
-      }
-      if (avatar.weapon.slowPct > 0) {
-        bonusRows.push([
-          'slow',
-          `${Math.round(avatar.weapon.slowPct * 100)}% / ${avatar.weapon.slowDuration.toFixed(1)}s`,
-        ]);
-      }
-      for (const [k, v] of bonusRows) {
-        const row = document.createElement('div');
-        row.className = 'pause-bonus-row';
-        const key = document.createElement('span');
-        key.className = 'pause-bonus-key';
-        key.textContent = k;
-        const value = document.createElement('span');
-        value.className = 'pause-bonus-value';
-        value.textContent = v;
-        row.appendChild(key);
-        row.appendChild(value);
-        rows.appendChild(row);
-      }
-      bonusPanel.appendChild(rows);
-      inner.appendChild(bonusPanel);
-    }
-
-    const statusPanel = document.createElement('div');
-    statusPanel.className = 'pause-panel';
-    const statusTitle = document.createElement('div');
-    statusTitle.className = 'pause-panel-title';
-    statusTitle.textContent = 'card abilities';
-    statusPanel.appendChild(statusTitle);
-
-    const list = document.createElement('div');
-    list.className = 'pause-card-tag-list';
-    const rarityRank: Record<Card['rarity'], number> = {
-      common: 0,
-      uncommon: 1,
-      rare: 2,
-    };
-    const activeEntries = [...runInventory.all().values()].sort((a, b) => {
-      const rankDelta = rarityRank[a.rarity] - rarityRank[b.rarity];
-      if (rankDelta !== 0) return rankDelta;
-      return a.card.name.localeCompare(b.card.name);
-    });
-    if (activeEntries.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'card-text';
-      empty.textContent = 'no card abilities yet';
-      list.appendChild(empty);
-    }
-    for (const entry of activeEntries) {
-      const tag = document.createElement('button');
-      tag.type = 'button';
-      tag.className = 'pause-card-tag';
-      tag.title = `${entry.card.name} · Lv${entry.level}`;
-      tag.addEventListener('click', () => openPauseCardDetails(entry));
-
-      const glyph = document.createElement('span');
-      glyph.className = 'pause-card-tag-glyph';
-      glyph.setAttribute('aria-hidden', 'true');
-      const svgGlyph = CARD_GLYPHS[entry.card.id];
-      if (svgGlyph) setIconHtml(glyph, svgGlyph);
-      else glyph.textContent = entry.card.glyph;
-
-      const lv = document.createElement('span');
-      lv.className = 'pause-card-tag-lv';
-      lv.textContent = `Lv${entry.level}`;
-
-      tag.appendChild(glyph);
-      tag.appendChild(lv);
-      list.appendChild(tag);
-    }
-    statusPanel.appendChild(list);
-    if (activeEntries.length > 0) {
-      const hint = document.createElement('div');
-      hint.className = 'card-text';
-      hint.textContent = 'tap a tag for full details';
-      statusPanel.appendChild(hint);
-    }
-    inner.appendChild(statusPanel);
-
-    const resumeBtn = document.createElement('button');
-    resumeBtn.type = 'button';
-    resumeBtn.className = 'big-btn';
-    resumeBtn.textContent = 'resume';
-    resumeBtn.addEventListener('click', () => setPaused(false));
-    inner.appendChild(resumeBtn);
-
-    const restartBtn = document.createElement('button');
-    restartBtn.type = 'button';
-    restartBtn.className = 'menu-btn';
-    restartBtn.textContent = 'restart';
-    restartBtn.addEventListener('click', () => {
-      if (!currentRun) return;
-      startRun(currentRun.mode, currentRun.stageIndex, currentRun.developMode);
-    });
-    inner.appendChild(restartBtn);
-
-    const menuBtn = document.createElement('button');
-    menuBtn.type = 'button';
-    menuBtn.className = 'menu-btn';
-    menuBtn.textContent = 'main menu';
-    menuBtn.addEventListener('click', () => showMainMenu());
-    inner.appendChild(menuBtn);
-
-    overlay.hidden = false;
-  }
-
   function setPaused(next: boolean): void {
     paused = next;
     syncRunControlButtons();
-    const overlay = document.getElementById('overlay');
-    const inner = document.getElementById('overlay-inner');
     if (!paused) {
-      if (overlay) overlay.hidden = true;
-      if (inner) inner.innerHTML = '';
+      closeOverlay();
       return;
     }
-    renderPauseOverlay();
+    renderPauseOverlay({
+      play,
+      avatarId: play.avatarId,
+      runInventory,
+      resolveCardName: (id) => POOL_BY_ID.get(id)?.name ?? id,
+      onResume: () => setPaused(false),
+      onRestart: () => {
+        if (!currentRun) return;
+        startRun(currentRun.mode, currentRun.stageIndex, currentRun.developMode);
+      },
+      onMainMenu: () => showMainMenu(),
+    });
   }
 
   function setTheme(theme: StageTheme): void {
@@ -603,49 +362,11 @@ async function boot(): Promise<void> {
     container.innerHTML = '';
     for (let i = 0; i < play.activeSkills.length; i++) {
       const sk = play.activeSkills[i]!;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'skill-btn';
-      btn.addEventListener('click', () => play.activateSkill(i));
-
-      const SKILL_ICONS: Record<string, string> = {
-        timeStop: iconTimeStop,
-        shadowClone: iconClone,
-        reflectShield: iconReflect,
-        barrage: iconBarrage,
-        lifestealPulse: iconLifesteal,
-        axisFreeze: iconAxisFreeze,
-        overload: iconOverload,
-      };
-      const SKILL_LABELS: Record<string, string> = {
-        timeStop: 'Time Stop',
-        shadowClone: 'Clone',
-        reflectShield: 'Shield',
-        barrage: 'Barrage',
-        lifestealPulse: 'Lifesteal',
-        axisFreeze: 'Freeze',
-        overload: 'Overload',
-      };
-
-      const updateLabel = (): void => {
-        const icon = SKILL_ICONS[sk.id] ?? iconTimeStop;
-        if (sk.active > 0) {
-          setIconHtml(btn, icon);
-          btn.append(` ${sk.active.toFixed(1)}s`);
-          btn.disabled = true;
-        } else if (sk.cooldown > 0) {
-          setIconHtml(btn, icon);
-          btn.append(` ${Math.ceil(sk.cooldown)}s`);
-          btn.disabled = true;
-        } else {
-          setIconHtml(btn, icon);
-          btn.append(` ${SKILL_LABELS[sk.id] ?? sk.id}`);
-          btn.disabled = false;
-        }
-      };
-      updateLabel();
-      skillButtonUpdaters.set(btn, updateLabel);
-      container.appendChild(btn);
+      const { button, update } = createSkillButton(sk, () =>
+        play.activateSkill(i),
+      );
+      skillButtonUpdaters.set(button, update);
+      container.appendChild(button);
     }
   }
 

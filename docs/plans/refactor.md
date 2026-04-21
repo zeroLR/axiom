@@ -123,8 +123,8 @@ Axiom 的整體架構具備模組化基礎（boss registry、unlocks、synergies
 
 - [ ] Scene 只保留「畫面狀態與事件」邏輯，不直接寫 DOM
 - [ ] DOM 組裝全部透過 `src/scenes/ui.ts` helpers 或更細粒度元件
-- [ ] 建立 `src/scenes/components/` — 可複用的 UI 片段（CardTag、BonusGrid、SkillButton 等）
-- [ ] Pause overlay（目前在 `main.ts`）提取為 `src/scenes/pause.ts`
+- [x] 建立 `src/scenes/components/` — 可複用的 UI 片段（CardTag、BonusGrid、SkillButton 等）
+- [x] Pause overlay（目前在 `main.ts`）提取為 `src/scenes/pause.ts`
 
 ---
 

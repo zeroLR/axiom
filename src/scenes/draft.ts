@@ -3,6 +3,7 @@ import { projectedCardText, type Card } from "../game/cards";
 import { isLevelableEffect, lowerRarity, MAX_CARD_LEVEL, type CardInventory } from "../game/cardLevels";
 import type { Scene } from "./scene";
 import { CARD_GLYPHS, setIconHtml } from "../icons";
+import { closeOverlay, createCardList, createOverlayTitle, openOverlay } from "./ui";
 
 // Overlay-based scene — no Pixi drawing. Renders into `#overlay-inner` and
 // waits for a tap on one of the offered cards.
@@ -43,18 +44,12 @@ export class DraftScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById("overlay");
-    if (!overlay) return;
     this.selected = null;
     this.renderDom();
-    overlay.hidden = false;
   }
 
   exit(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (inner) inner.innerHTML = "";
-    if (overlay) overlay.hidden = true;
+    closeOverlay();
   }
 
   update(_dt: number): void {}
@@ -62,25 +57,20 @@ export class DraftScene implements Scene {
   render(_alpha: number): void {}
 
   private renderDom(): void {
-    const inner = document.getElementById("overlay-inner");
-    if (!inner) return;
-    inner.innerHTML = "";
+    const { content } = openOverlay();
 
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = `wave ${this.clearedWaveLabel} cleared — pick a rune`;
-    inner.appendChild(title);
+    const title = createOverlayTitle(`wave ${this.clearedWaveLabel} cleared — pick a rune`);
+    content.appendChild(title);
 
     const tokens = this.handlers.getTokens();
     const tokenRow = document.createElement("div");
     tokenRow.className = "draft-tokens";
     tokenRow.textContent = `tokens: ${tokens}`;
-    inner.appendChild(tokenRow);
+    content.appendChild(tokenRow);
 
     const inventory = this.handlers.getInventory();
 
-    const list = document.createElement("div");
-    list.className = "card-list";
+    const list = createCardList();
     const btnByCard = new Map<string, HTMLButtonElement>();
     for (const card of this.offer) {
       const btn = document.createElement("button");
@@ -147,7 +137,7 @@ export class DraftScene implements Scene {
       btnByCard.set(card.id, btn);
       list.appendChild(btn);
     }
-    inner.appendChild(list);
+    content.appendChild(list);
 
     // Two-step commit: user selects a card, then confirms. Prevents an
     // accidental tap (carried over from gameplay drag) from locking in a pick
@@ -160,7 +150,7 @@ export class DraftScene implements Scene {
     confirmBtn.addEventListener("click", () => {
       if (this.selected) this.handlers.onPick(this.selected);
     });
-    inner.appendChild(confirmBtn);
+    content.appendChild(confirmBtn);
 
     const actionRow = document.createElement("div");
     actionRow.className = "draft-actions";
@@ -185,6 +175,6 @@ export class DraftScene implements Scene {
 
     actionRow.appendChild(rerollBtn);
     actionRow.appendChild(skipBtn);
-    inner.appendChild(actionRow);
+    content.appendChild(actionRow);
   }
 }
