@@ -130,14 +130,14 @@ Axiom 的整體架構具備模組化基礎（boss registry、unlocks、synergies
 
 ### Phase 4 — 內容 Schema 化 + 測試分層補強
 
-- [ ] 敵人、技能、卡牌、關卡資料改為 schema-first（資料物件 / 型別與業務邏輯分離）
-- [ ] 補測試：
-  - [ ] `tests/achievementChecker.test.ts`（Phase 1-C 新增）
-  - [ ] `tests/effectEngine.test.ts`（Phase 2-A 新增）
-  - [ ] `tests/enemies/registry.test.ts`（Phase 2-B 新增）
-  - [ ] `tests/bosses/orthogon.test.ts`（Phase 2-C 新增）
-  - [ ] `tests/bosses/jets.test.ts`（Phase 2-C 新增）
-- [ ] 建立「新增內容 SOP」（`docs/CONTRIBUTING.md` §新增敵人 / 技能 / Boss / 關卡）
+- [x] 敵人、技能、卡牌、關卡資料改為 schema-first（資料物件 / 型別與業務邏輯分離）
+- [x] 補測試：
+  - [x] `tests/achievementChecker.test.ts`（Phase 1-C 新增）
+  - [x] `tests/effectEngine.test.ts`（Phase 2-A 新增）
+  - [x] `tests/enemies/registry.test.ts`（Phase 2-B 新增）
+  - [x] `tests/bosses/orthogon.test.ts`（Phase 2-C 新增）
+  - [x] `tests/bosses/jets.test.ts`（Phase 2-C 新增）
+- [x] 建立「新增內容 SOP」（`docs/CONTRIBUTING.md` §新增敵人 / 技能 / Boss / 關卡）
 
 ---
 

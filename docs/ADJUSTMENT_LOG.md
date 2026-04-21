@@ -1,5 +1,7 @@
 # Axiom Adjustment Log
 
+- **Phase 4 Schema-first + SOP (v0.0.1-beta-b794ce5):** 將遊戲內容資料與業務邏輯分離：新增 `src/game/content/{cards,skills,stageThemes,enemies}.ts` 作為 schema-first 內容來源，並讓 `src/game/cards.ts`、`src/game/skills.ts`、`src/game/stageThemes.ts`、`src/game/enemies/registry.ts` 改為引用內容 schema，維持原本 API 與玩法行為不變。新增 `docs/CONTRIBUTING.md` 並補上「新增敵人 / 技能 / Boss / 關卡」SOP。同步更新 `docs/plans/refactor.md` 的 Phase 4 勾選狀態。驗證結果：`npm test`、`npm run build` 通過。
+
 - **Phase 3 UI 職責拆分（部分）(v0.0.1-beta-aca7ba9):** 將暫停畫面 DOM 組裝自 `src/main.ts` 抽離至 `src/scenes/pause.ts`，`main.ts` 改為只保留 pause 狀態與事件控制；新增 `src/scenes/components/{bonusGrid,cardTag,skillButton}.ts` 作為可複用 UI 片段，並讓 HUD 技能按鈕改由 `SkillButton` 元件生成；`DraftScene` 改用 `src/scenes/ui.ts` 的 overlay helpers（`openOverlay` / `closeOverlay` / `createOverlayTitle` / `createCardList`）。驗證結果：`npm test` 241/241 通過，`npm run build` 成功。
 
 - **Phase 2 領域抽象重構 (v0.0.1-beta-e3c4f2b):** 完成 Phase 2 三個子任務。(2-A) 新增 `src/game/effectEngine.ts`，定義 `EquipEffectKind`，以 `applyEffectToWorld()` 統一卡牌與裝備效果套用，並讓 `mirrorBoss.ts` 改透過同一核心 `applyEffectToMirrorSpec()` 套用鏡像效果；新增 `tests/effectEngine.test.ts`。(2-B) 新增 `src/game/enemies/registry.ts` 作為敵人 stats/elite/spawnBehavior canonical 來源，`entities.ts` 改為透過 registry 生成敵人與初始化行為；更新 `docs/ENEMY.md`，並新增 `tests/enemies/registry.test.ts`。(2-C) 新增 `src/game/bosses/runtime/{orthogon,jets,mirror,index}.ts`，將 Boss AI runtime 自 `bossWeapon.ts` 拆分，`bossWeapon.ts` 縮減為純 re-export 入口；新增隔離測試 `tests/bosses/orthogon.test.ts` 與 `tests/bosses/jets.test.ts`。驗證結果：`npm test` 241/241 通過，`npm run build` 成功。
