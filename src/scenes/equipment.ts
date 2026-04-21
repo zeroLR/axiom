@@ -3,7 +3,8 @@ import type { Scene } from "./scene";
 import type { EquipmentLoadout, PlayerProfile } from "../game/data/types";
 import { SHOP_ITEMS, EQUIP_EFFECTS } from "../game/data/shop";
 import { canEquip, MAX_SAME_CARD } from "../game/equipment";
-import { iconSkins, iconEnhance, iconBack, iconSpan, SHOP_GLYPHS, glyphTriangle, setIconHtml } from "../icons";
+import { iconSkins, iconEnhance, iconSpan, SHOP_GLYPHS, glyphTriangle, setIconHtml } from "../icons";
+import { openOverlay, closeOverlay, createOverlayTitle, createBodyScroll, createBackButton } from "./ui";
 
 // ── Equipment management scene (DOM overlay) ────────────────────────────────
 
@@ -29,19 +30,9 @@ export class EquipmentScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (!overlay || !inner) return;
-    inner.innerHTML = "";
-    inner.classList.add("overlay-constrained");
-    const content = document.createElement("div");
-    content.className = "overlay-scroll";
-    inner.appendChild(content);
+    const { inner, content } = openOverlay({ constrained: true });
 
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = "equipment";
-    content.appendChild(title);
+    content.appendChild(createOverlayTitle("equipment"));
 
     // Tab row
     const tabRow = document.createElement("div");
@@ -52,8 +43,7 @@ export class EquipmentScene implements Scene {
     else enhTab.classList.add("tab-active");
     content.appendChild(tabRow);
 
-    const body = document.createElement("div");
-    body.className = "overlay-body-scroll";
+    const body = createBodyScroll();
     content.appendChild(body);
 
     if (this.activeTab === "skin") {
@@ -62,26 +52,11 @@ export class EquipmentScene implements Scene {
       this.renderEnhanceTab(body);
     }
 
-    const back = document.createElement("button");
-    back.type = "button";
-    back.className = "big-btn";
-    back.appendChild(iconSpan(iconBack));
-    back.append(" back");
-    back.style.marginTop = "8px";
-    back.addEventListener("click", () => this.cb.onBack());
-    inner.appendChild(back);
-
-    overlay.hidden = false;
+    inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
 
   exit(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (inner) {
-      inner.classList.remove("overlay-constrained");
-      inner.innerHTML = "";
-    }
-    if (overlay) overlay.hidden = true;
+    closeOverlay({ constrained: true });
   }
 
   update(_dt: number): void {}

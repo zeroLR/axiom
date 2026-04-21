@@ -43,41 +43,46 @@ Axiom 的整體架構具備模組化基礎（boss registry、unlocks、synergies
 
 #### 1-A：抽出敵人種類常數
 
-- [ ] 建立 `src/game/enemies/kinds.ts`
+- [x] 建立 `src/game/enemies/kinds.ts`
   - 匯出 `ALL_ENEMY_KINDS` as const tuple（取代三處重複陣列）
-  - 匯出 `EnemyKindAll` 型別
-- [ ] 更新 `src/scenes/play.ts`（`createDefaultEnemyStats`）import from kinds.ts
-- [ ] 更新 `src/main.ts`（`applyDeveloperEnemyEntries`、`openDeveloperEnemyMenu`）import from kinds.ts
+- [x] 更新 `src/scenes/play.ts`（`createDefaultEnemyStats`）import from kinds.ts
+- [x] 更新 `src/main.ts`（`applyDeveloperEnemyEntries`、`openDeveloperEnemyMenu`）import from kinds.ts
 
 #### 1-B：Scene 共用 UI 函式庫
 
-- [ ] 建立 `src/scenes/ui.ts`
-  - `openOverlay(title)` — 初始化 overlay，回傳 `{ overlay, inner, content }`
-  - `closeOverlay()` — 清空並隱藏
-  - `createBackButton(label, onClick)` — 標準返回按鈕
+- [x] 建立 `src/scenes/ui.ts`
+  - `openOverlay(opts?)` — 初始化 overlay-scroll，回傳 `{ overlay, inner, content }`
+  - `initOverlay()` — 無 scroll 容器版（供 endgame / settings / mainMenu）
+  - `closeOverlay(opts?)` — 清空並隱藏
+  - `createBackButton(onClick, label?)` — 標準返回按鈕
   - `createCardList()` — `div.card-list` 容器
-  - `createCardButton(opts)` — `button.card-btn`（含 glyph + name + desc）
+  - `createBodyScroll()` — `div.overlay-body-scroll`
   - `createOverlayTitle(text)` — `div.overlay-title`
   - `createOverlaySub(text)` — `div.overlay-sub`
-- [ ] 以 `src/scenes/achievements.ts` 為示範，切換為 ui.ts helpers
-- [ ] 以 `src/scenes/endgame.ts` 為示範，切換為 ui.ts helpers
-- [ ] 其餘 Scene 逐一切換（shop / equipment / skillTree / draft / settings / stageSelect / mainMenu / startShapeSelect）
+- [x] 以 `src/scenes/achievements.ts` 切換為 ui.ts helpers
+- [x] 以 `src/scenes/endgame.ts` 切換為 ui.ts helpers
+- [x] `src/scenes/shop.ts` 切換為 ui.ts helpers
+- [x] `src/scenes/equipment.ts` 切換為 ui.ts helpers
+- [x] `src/scenes/skillTree.ts` 切換為 ui.ts helpers
+- [x] `src/scenes/stageSelect.ts` 切換為 ui.ts helpers
+- [x] `src/scenes/startShapeSelect.ts` 切換為 ui.ts helpers
+- [x] `src/scenes/settings.ts` 切換為 ui.ts helpers
+- [x] `src/scenes/mainMenu.ts` 切換為 ui.ts helpers
 
 #### 1-C：抽出成就檢查為純函式
 
-- [ ] 建立 `src/app/achievementChecker.ts`
-  - 輸入：`RunResult`、`PlayerStats`、`EquipmentLoadout`、`AchievementState`、`ownedSkins`
-  - 輸出：`string[]`（本次新解鎖的 achievementId 列表）
+- [x] 建立 `src/app/achievementChecker.ts`
+  - 輸入：`RunResult`、`PlayerStats`、`EquipmentLoadout`、`ownedSkins`、`normalStageWaveTarget`
+  - 輸出：`AchievementId[]`（本次應解鎖的 ID 列表）
   - 零副作用，可獨立測試
-- [ ] `src/main.ts` 的 `settleRun` 改為呼叫 `checkRunAchievements()`
-- [ ] 新增 `tests/achievementChecker.test.ts`
+- [x] `src/main.ts` 的 `settleRun` 改為呼叫 `checkRunAchievements()`
+- [x] 新增 `tests/achievementChecker.test.ts`（25 個測試案例）
 
 #### 1-D：抽出 Run Coordinator 介面定義
 
-- [ ] 建立 `src/app/runContext.ts`
+- [x] 建立 `src/app/runContext.ts`
   - `RunContext` interface（mode / stageIndex / developMode）
-  - `RunCoordinatorCallbacks` interface（onRunStart / onRunSettled / onNavigate）
-- [ ] `src/main.ts` 中的 `currentRun` 型別改用 `RunContext`
+- [x] `src/main.ts` 中的 `currentRun` 型別改用 `RunContext`
 
 ---
 

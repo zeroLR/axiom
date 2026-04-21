@@ -1,11 +1,11 @@
 import { Container } from 'pixi.js';
 import type { Scene } from './scene';
-import { iconBack, iconSpan } from '../icons';
 import { isMuted, setMuted } from '../game/audio';
 import {
   isScreenShakeEnabled,
   setScreenShakeEnabled,
 } from '../game/screenShake';
+import { initOverlay, closeOverlay, createOverlayTitle, createBackButton } from './ui';
 
 // ── Settings scene (DOM overlay) ────────────────────────────────────────────
 
@@ -28,15 +28,9 @@ export class SettingsScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById('overlay');
-    const inner = document.getElementById('overlay-inner');
-    if (!overlay || !inner) return;
-    inner.innerHTML = '';
+    const { inner } = initOverlay();
 
-    const title = document.createElement('div');
-    title.className = 'overlay-title';
-    title.textContent = 'Settings';
-    inner.appendChild(title);
+    inner.appendChild(createOverlayTitle('Settings'));
 
     // ── Sound toggle ────────────────────────────────────────────────────────
     const soundRow = this.createToggleRow('Sound effects', !isMuted(), (on) => {
@@ -87,23 +81,11 @@ export class SettingsScene implements Scene {
     inner.appendChild(shakeRow);
 
     // ── Back button ─────────────────────────────────────────────────────────
-    const back = document.createElement('button');
-    back.type = 'button';
-    back.className = 'big-btn';
-    back.style.marginTop = '8px';
-    back.appendChild(iconSpan(iconBack));
-    back.append(' back');
-    back.addEventListener('click', () => this.cb.onBack());
-    inner.appendChild(back);
-
-    overlay.hidden = false;
+    inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
 
   exit(): void {
-    const overlay = document.getElementById('overlay');
-    const inner = document.getElementById('overlay-inner');
-    if (inner) inner.innerHTML = '';
-    if (overlay) overlay.hidden = true;
+    closeOverlay();
   }
 
   update(_dt: number): void {}

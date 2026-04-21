@@ -2,7 +2,16 @@ import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import type { AchievementState, AchievementId } from "../game/data/types";
 import { ACHIEVEMENTS, type AchievementDef } from "../game/achievements";
-import { iconBack, iconSpan, ACHIEVEMENT_GLYPHS, setIconHtml } from "../icons";
+import { ACHIEVEMENT_GLYPHS, setIconHtml } from "../icons";
+import {
+  openOverlay,
+  closeOverlay,
+  createOverlayTitle,
+  createOverlaySub,
+  createBodyScroll,
+  createCardList,
+  createBackButton,
+} from "./ui";
 
 // ── Achievement category grouping ──────────────────────────────────────────
 
@@ -32,45 +41,29 @@ export class AchievementsScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (!overlay || !inner) return;
-    inner.innerHTML = "";
-    const content = document.createElement("div");
-    content.className = "overlay-scroll";
-    inner.appendChild(content);
+    const { inner, content } = openOverlay();
 
     const state = this.getState();
 
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = "achievements";
-    content.appendChild(title);
+    content.appendChild(createOverlayTitle("achievements"));
 
     const unlocked = Object.values(state).filter((e) => e.unlocked).length;
     const total = ACHIEVEMENTS.length;
-    const sub = document.createElement("div");
-    sub.className = "overlay-sub";
-    sub.textContent = `${unlocked}/${total} unlocked`;
-    content.appendChild(sub);
+    content.appendChild(createOverlaySub(`${unlocked}/${total} unlocked`));
 
-    const body = document.createElement("div");
-    body.className = "overlay-body-scroll";
+    const body = createBodyScroll();
     content.appendChild(body);
 
     const achMap = new Map<string, AchievementDef>();
     for (const def of ACHIEVEMENTS) achMap.set(def.id, def);
 
     for (const cat of CATEGORIES) {
-      const catLabel = document.createElement("div");
-      catLabel.className = "overlay-sub";
+      const catLabel = createOverlaySub(cat.label);
       catLabel.style.marginTop = "12px";
       catLabel.style.fontWeight = "bold";
-      catLabel.textContent = cat.label;
       body.appendChild(catLabel);
 
-      const list = document.createElement("div");
-      list.className = "card-list";
+      const list = createCardList();
 
       for (const id of cat.ids) {
         const def = achMap.get(id);
@@ -91,47 +84,35 @@ export class AchievementsScene implements Scene {
         }
         btn.appendChild(glyph);
 
-        const body = document.createElement("span");
-        body.className = "card-body";
+        const cardBody = document.createElement("span");
+        cardBody.className = "card-body";
         const name = document.createElement("span");
         name.className = "card-name";
         name.textContent = def.name;
         const desc = document.createElement("span");
         desc.className = "card-text";
         desc.textContent = entry.unlocked ? def.description : "???";
-        body.appendChild(name);
-        body.appendChild(desc);
+        cardBody.appendChild(name);
+        cardBody.appendChild(desc);
 
         if (entry.unlocked && entry.unlockedAt) {
           const date = document.createElement("span");
           date.className = "card-rarity";
           date.textContent = new Date(entry.unlockedAt).toLocaleDateString();
-          body.appendChild(date);
+          cardBody.appendChild(date);
         }
 
-        btn.appendChild(body);
+        btn.appendChild(cardBody);
         list.appendChild(btn);
       }
       body.appendChild(list);
     }
 
-    const back = document.createElement("button");
-    back.type = "button";
-    back.className = "big-btn";
-    back.appendChild(iconSpan(iconBack));
-    back.append(" back");
-    back.style.marginTop = "8px";
-    back.addEventListener("click", () => this.onBack());
-    inner.appendChild(back);
-
-    overlay.hidden = false;
+    inner.appendChild(createBackButton(() => this.onBack()));
   }
 
   exit(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (inner) inner.innerHTML = "";
-    if (overlay) overlay.hidden = true;
+    closeOverlay();
   }
 
   update(_dt: number): void {}

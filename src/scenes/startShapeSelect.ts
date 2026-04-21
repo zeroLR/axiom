@@ -2,7 +2,8 @@ import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import type { PlayerProfile, StartingShapeId } from "../game/data/types";
 import { STARTING_SHAPES, isStartingShapeUnlocked, resolveSelectedStartingShape, unlockProgress } from "../game/startingShapes";
-import { glyphTriangle, iconBack, iconSkins, iconSpan, SHOP_GLYPHS, setIconHtml } from "../icons";
+import { glyphTriangle, iconSkins, iconSpan, SHOP_GLYPHS, setIconHtml } from "../icons";
+import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, createBodyScroll, createCardList, createBackButton } from "./ui";
 
 export interface StartShapeCallbacks {
   getProfile: () => PlayerProfile;
@@ -20,34 +21,22 @@ export class StartShapeSelectScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (!overlay || !inner) return;
-    inner.innerHTML = "";
-    const content = document.createElement("div");
-    content.className = "overlay-scroll";
-    inner.appendChild(content);
+    const { inner, content } = openOverlay();
 
     const profile = this.cb.getProfile();
     const selected = resolveSelectedStartingShape(profile);
 
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = "starting shape";
-    content.appendChild(title);
+    content.appendChild(createOverlayTitle("starting shape"));
 
-    const sub = document.createElement("div");
-    sub.className = "overlay-sub";
+    const sub = createOverlaySub("");
     sub.appendChild(iconSpan(iconSkins));
     sub.append(` total points: ${profile.stats.totalPointsEarned}`);
     content.appendChild(sub);
 
-    const body = document.createElement("div");
-    body.className = "overlay-body-scroll";
+    const body = createBodyScroll();
     content.appendChild(body);
 
-    const list = document.createElement("div");
-    list.className = "card-list";
+    const list = createCardList();
 
     for (const shape of STARTING_SHAPES) {
       const unlocked = isStartingShapeUnlocked(profile, shape.id);
@@ -98,22 +87,11 @@ export class StartShapeSelectScene implements Scene {
 
     body.appendChild(list);
 
-    const back = document.createElement("button");
-    back.type = "button";
-    back.className = "big-btn";
-    back.appendChild(iconSpan(iconBack));
-    back.append(" back");
-    back.addEventListener("click", () => this.cb.onBack());
-    inner.appendChild(back);
-
-    overlay.hidden = false;
+    inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
 
   exit(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (inner) inner.innerHTML = "";
-    if (overlay) overlay.hidden = true;
+    closeOverlay();
   }
 
   update(_dt: number): void {}

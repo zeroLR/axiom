@@ -2,7 +2,8 @@ import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import { SHOP_ITEMS, type ShopItem } from "../game/data/shop";
 import type { PlayerProfile, EquipmentLoadout, ShopUnlocks } from "../game/data/types";
-import { iconSkins, iconEnhance, iconBack, iconSpan, SHOP_GLYPHS, setIconHtml } from "../icons";
+import { iconSkins, iconEnhance, iconSpan, SHOP_GLYPHS, setIconHtml } from "../icons";
+import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, createBodyScroll, createCardList, createBackButton } from "./ui";
 
 // ── Shop scene (DOM overlay) ────────────────────────────────────────────────
 
@@ -27,22 +28,11 @@ export class ShopScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (!overlay || !inner) return;
-    inner.innerHTML = "";
-    inner.classList.add("overlay-constrained");
-    const content = document.createElement("div");
-    content.className = "overlay-scroll";
-    inner.appendChild(content);
+    const { inner, content } = openOverlay({ constrained: true });
 
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = "shop";
-    content.appendChild(title);
+    content.appendChild(createOverlayTitle("shop"));
 
-    const pointsEl = document.createElement("div");
-    pointsEl.className = "overlay-sub";
+    const pointsEl = createOverlaySub("");
     pointsEl.id = "shop-points";
     this.refreshPoints(pointsEl);
     content.appendChild(pointsEl);
@@ -56,13 +46,11 @@ export class ShopScene implements Scene {
     else enhTab.classList.add("tab-active");
     content.appendChild(tabRow);
 
-    const body = document.createElement("div");
-    body.className = "overlay-body-scroll";
+    const body = createBodyScroll();
     content.appendChild(body);
 
     // Item list (filtered by tab)
-    const list = document.createElement("div");
-    list.className = "card-list";
+    const list = createCardList();
 
     const filteredItems = SHOP_ITEMS.filter((item) => {
       if (this.activeTab === "skin") return item.category === "skin";
@@ -112,26 +100,11 @@ export class ShopScene implements Scene {
     }
     body.appendChild(list);
 
-    const back = document.createElement("button");
-    back.type = "button";
-    back.className = "big-btn";
-    back.appendChild(iconSpan(iconBack));
-    back.append(" back");
-    back.style.marginTop = "8px";
-    back.addEventListener("click", () => this.cb.onBack());
-    inner.appendChild(back);
-
-    overlay.hidden = false;
+    inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
 
   exit(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (inner) {
-      inner.classList.remove("overlay-constrained");
-      inner.innerHTML = "";
-    }
-    if (overlay) overlay.hidden = true;
+    closeOverlay({ constrained: true });
   }
 
   update(_dt: number): void {}
