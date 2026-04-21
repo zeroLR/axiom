@@ -1181,12 +1181,15 @@ async function boot(): Promise<void> {
     return new Promise<void>((resolve) => {
       const wasPaused = paused;
       if (!wasPaused) setPaused(true);
+      let finalized = false;
 
       const dialog = document.createElement('dialog');
       dialog.className = 'developer-dialog';
       dialog.setAttribute('aria-label', 'developer · enemy');
 
       const finalize = (): void => {
+        if (finalized) return;
+        finalized = true;
         dialog.remove();
         if (!wasPaused) setPaused(false);
         resolve();
@@ -2808,11 +2811,12 @@ async function boot(): Promise<void> {
           loadBtn.addEventListener('click', () => {
             const config = normalizeDevelopModeConfig(slot.config);
             if (!config) {
-              alert('Invalid slot data.');
+              alert('Invalid slot data: configuration failed validation.');
               return;
             }
             pendingDevelopModeConfig = config;
             dialog.close();
+            finalize();
             startRun('survival', 0, true);
           });
 
@@ -2824,7 +2828,7 @@ async function boot(): Promise<void> {
           exportBtn.addEventListener('click', () => {
             const config = normalizeDevelopModeConfig(slot.config);
             if (!config) {
-              alert('Invalid slot data.');
+              alert('Invalid slot data: configuration failed validation.');
               return;
             }
             downloadDevelopConfigJson(i, slot.name, config);
@@ -2845,13 +2849,15 @@ async function boot(): Promise<void> {
               let parsed: unknown;
               try {
                 parsed = JSON.parse(text);
-              } catch {
-                alert('Invalid JSON file.');
+              } catch (error) {
+                const detail =
+                  error instanceof Error ? error.message : 'unknown parse error';
+                alert(`Invalid JSON file: ${detail}`);
                 return;
               }
               const config = normalizeDevelopModeConfig(parsed);
               if (!config) {
-                alert('Invalid develop config.');
+                alert('Invalid develop config: validation failed.');
                 return;
               }
               slot.config = config;
