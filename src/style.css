@@ -624,6 +624,28 @@ body {
   flex: 0 0 auto;
 }
 
+.developer-slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.developer-slot-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.developer-slot-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
 .developer-enhance-preview {
   display: flex;
   align-items: center;

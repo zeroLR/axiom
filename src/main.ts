@@ -96,6 +96,9 @@ import {
   downloadSaveData,
   parseSaveData,
   importSaveData,
+  loadDevelopModeSlots,
+  saveDevelopModeSlots,
+  type DevelopModeSaveSlot,
 } from './game/storage';
 import type {
   PlayerProfile,
@@ -706,6 +709,7 @@ async function boot(): Promise<void> {
       addDeveloperControlButton(panel, 'enemy', openDeveloperEnemyMenu);
       addDeveloperControlButton(panel, 'enhance', openDeveloperEnhanceMenu);
       addDeveloperControlButton(panel, 'skills', openDeveloperSkillsMenu);
+      addDeveloperControlButton(panel, 'save/load', openDeveloperSaveLoadMenu);
       addDeveloperControlButton(panel, 'start', () => {
         play.spawnDeveloperEnemiesNow();
         setPaused(false);
@@ -1080,12 +1084,37 @@ async function boot(): Promise<void> {
     cooldown: number;
   }
 
+  interface DeveloperPlayerConfig {
+    hp: number;
+    maxHp: number;
+    speedMul: number;
+    damage: number;
+    fireInterval: number;
+    projectileSpeed: number;
+    projectiles: number;
+    pierce: number;
+    crit: number;
+    invincible: boolean;
+    showEnemyHp: boolean;
+  }
+
+  interface DevelopModeConfig {
+    version: number;
+    player: DeveloperPlayerConfig;
+    enemyInterval: number;
+    enemies: DeveloperEnemyEntry[];
+    enhances: DeveloperEnhanceEntry[];
+    skills: DeveloperSkillEntry[];
+  }
+
   /** Persistent enemy list for develop mode (reset on run restart). */
   let developerEnemyEntries: DeveloperEnemyEntry[] = [];
   /** Persistent enhance list for develop mode (reset on run restart). */
   let developerEnhanceEntries: DeveloperEnhanceEntry[] = [];
   /** Persistent skill list for develop mode (reset on run restart). */
   let developerSkillEntries: DeveloperSkillEntry[] = [];
+  /** Pending config loaded from slot, applied when the next develop run starts. */
+  let pendingDevelopModeConfig: DevelopModeConfig | null = null;
 
   /** Apply current enemy entries to the PlayScene. */
   function applyDeveloperEnemyEntries(): void {
@@ -1294,7 +1323,6 @@ async function boot(): Promise<void> {
         closeBtn.textContent = 'close';
         closeBtn.addEventListener('click', () => {
           dialog.close();
-          finalize();
         });
         container.appendChild(closeBtn);
 
@@ -2490,6 +2518,379 @@ async function boot(): Promise<void> {
     });
   }
 
+  function copyDeveloperEnemyEntries(
+    entries: DeveloperEnemyEntry[],
+  ): DeveloperEnemyEntry[] {
+    return entries.map((entry) => ({ ...entry }));
+  }
+
+  function copyDeveloperEnhanceEntries(
+    entries: DeveloperEnhanceEntry[],
+  ): DeveloperEnhanceEntry[] {
+    return entries.map((entry) => ({ ...entry }));
+  }
+
+  function copyDeveloperSkillEntries(
+    entries: DeveloperSkillEntry[],
+  ): DeveloperSkillEntry[] {
+    return entries.map((entry) => ({ ...entry }));
+  }
+
+  function readCurrentDevelopModeConfig(): DevelopModeConfig | null {
+    if (!play?.isDeveloperMode()) return null;
+    const avatar = play.world.get(play.avatarId);
+    if (!avatar?.avatar || !avatar.weapon) return null;
+    const snapshot = play.getDeveloperSnapshot();
+    return {
+      version: 1,
+      player: {
+        hp: avatar.avatar.hp,
+        maxHp: avatar.avatar.maxHp,
+        speedMul: avatar.avatar.speedMul,
+        damage: avatar.weapon.damage,
+        fireInterval: avatar.weapon.period,
+        projectileSpeed: avatar.weapon.projectileSpeed,
+        projectiles: avatar.weapon.projectiles,
+        pierce: avatar.weapon.pierce,
+        crit: avatar.weapon.crit,
+        invincible: snapshot.invincible,
+        showEnemyHp: snapshot.showEnemyHp,
+      },
+      enemyInterval: snapshot.enemy.interval,
+      enemies: copyDeveloperEnemyEntries(developerEnemyEntries),
+      enhances: copyDeveloperEnhanceEntries(developerEnhanceEntries),
+      skills: copyDeveloperSkillEntries(developerSkillEntries),
+    };
+  }
+
+  function normalizeDevelopModeConfig(input: unknown): DevelopModeConfig | null {
+    if (!input || typeof input !== 'object') return null;
+    const raw = input as Record<string, unknown>;
+    const playerRaw = raw.player;
+    if (!playerRaw || typeof playerRaw !== 'object') return null;
+    const player = playerRaw as Record<string, unknown>;
+
+    const enemyRaw = Array.isArray(raw.enemies) ? raw.enemies : null;
+    const enhanceRaw = Array.isArray(raw.enhances) ? raw.enhances : null;
+    const skillsRaw = Array.isArray(raw.skills) ? raw.skills : null;
+    if (!enemyRaw || !enhanceRaw || !skillsRaw) return null;
+
+    const normalizedEnemies: DeveloperEnemyEntry[] = [];
+    for (const row of enemyRaw) {
+      if (!row || typeof row !== 'object') return null;
+      const item = row as Record<string, unknown>;
+      if (typeof item.kind !== 'string') return null;
+      const count = Number(item.count);
+      const hp = Number(item.hp);
+      const attack = Number(item.attack);
+      const speed = Number(item.speed);
+      const attackFrequency = Number(item.attackFrequency);
+      if (
+        !Number.isFinite(count) ||
+        !Number.isFinite(hp) ||
+        !Number.isFinite(attack) ||
+        !Number.isFinite(speed) ||
+        !Number.isFinite(attackFrequency)
+      ) {
+        return null;
+      }
+      normalizedEnemies.push({
+        kind: item.kind as EnemyKind,
+        count: Math.max(1, Math.round(count)),
+        hp: Math.max(1, Math.round(hp)),
+        attack: Math.max(0, attack),
+        speed: Math.max(0, speed),
+        attackFrequency: Math.max(0, attackFrequency),
+      });
+    }
+
+    const normalizedEnhances: DeveloperEnhanceEntry[] = [];
+    for (const row of enhanceRaw) {
+      if (!row || typeof row !== 'object') return null;
+      const item = row as Record<string, unknown>;
+      if (typeof item.cardId !== 'string') return null;
+      const card = POOL_BY_ID.get(item.cardId);
+      if (!card) return null;
+      const level = Number(item.level);
+      if (!Number.isFinite(level)) return null;
+      normalizedEnhances.push({
+        cardId: item.cardId as Card['id'],
+        level: Math.max(1, Math.floor(level)),
+      });
+    }
+
+    const skillIds = new Set(Object.keys(PRIMAL_SKILLS) as PrimalSkillId[]);
+    const normalizedSkills: DeveloperSkillEntry[] = [];
+    for (const row of skillsRaw) {
+      if (!row || typeof row !== 'object') return null;
+      const item = row as Record<string, unknown>;
+      if (typeof item.id !== 'string' || !skillIds.has(item.id as PrimalSkillId))
+        return null;
+      const level = Number(item.level);
+      const duration = Number(item.duration);
+      const cooldown = Number(item.cooldown);
+      if (
+        !Number.isFinite(level) ||
+        !Number.isFinite(duration) ||
+        !Number.isFinite(cooldown)
+      ) {
+        return null;
+      }
+      normalizedSkills.push({
+        id: item.id as PrimalSkillId,
+        level: Math.max(0, Math.floor(level)),
+        duration: Math.max(0, duration),
+        cooldown: Math.max(0, cooldown),
+      });
+    }
+
+    const hp = Number(player.hp);
+    const maxHp = Number(player.maxHp);
+    const speedMul = Number(player.speedMul);
+    const damage = Number(player.damage);
+    const fireInterval = Number(player.fireInterval);
+    const projectileSpeed = Number(player.projectileSpeed);
+    const projectiles = Number(player.projectiles);
+    const pierce = Number(player.pierce);
+    const crit = Number(player.crit);
+    const enemyInterval = Number(raw.enemyInterval);
+    if (
+      !Number.isFinite(hp) ||
+      !Number.isFinite(maxHp) ||
+      !Number.isFinite(speedMul) ||
+      !Number.isFinite(damage) ||
+      !Number.isFinite(fireInterval) ||
+      !Number.isFinite(projectileSpeed) ||
+      !Number.isFinite(projectiles) ||
+      !Number.isFinite(pierce) ||
+      !Number.isFinite(crit) ||
+      !Number.isFinite(enemyInterval)
+    ) {
+      return null;
+    }
+
+    return {
+      version: typeof raw.version === 'number' ? raw.version : 1,
+      player: {
+        hp: Math.max(1, Math.round(hp)),
+        maxHp: Math.max(1, Math.round(maxHp)),
+        speedMul: Math.max(0.1, speedMul),
+        damage: Math.max(1, Math.round(damage)),
+        fireInterval: Math.max(0, fireInterval),
+        projectileSpeed: Math.max(1, projectileSpeed),
+        projectiles: Math.max(1, Math.round(projectiles)),
+        pierce: Math.max(0, Math.round(pierce)),
+        crit: Math.max(0, Math.min(1, crit)),
+        invincible: !!player.invincible,
+        showEnemyHp: !!player.showEnemyHp,
+      },
+      enemyInterval: Math.max(0.1, enemyInterval),
+      enemies: normalizedEnemies,
+      enhances: normalizedEnhances,
+      skills: normalizedSkills,
+    };
+  }
+
+  function toSlotFilename(index: number, name: string): string {
+    const safeName = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-_]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    const suffix = safeName.length > 0 ? `-${safeName}` : '';
+    return `axiom-develop-slot-${index + 1}${suffix}.json`;
+  }
+
+  function downloadDevelopConfigJson(
+    slotIndex: number,
+    slotName: string,
+    config: DevelopModeConfig,
+  ): void {
+    const json = JSON.stringify(config, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = toSlotFilename(slotIndex, slotName);
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function openDeveloperSaveLoadMenu(): Promise<void> {
+    if (!play?.isDeveloperMode()) return;
+    const slots = await loadDevelopModeSlots();
+
+    return new Promise<void>((resolve) => {
+      const wasPaused = paused;
+      if (!wasPaused) setPaused(true);
+
+      const dialog = document.createElement('dialog');
+      dialog.className = 'developer-dialog';
+      dialog.setAttribute('aria-label', 'developer · save/load');
+
+      const finalize = (): void => {
+        dialog.remove();
+        if (!wasPaused) setPaused(false);
+        resolve();
+      };
+
+      const saveSlots = async (): Promise<void> => {
+        await saveDevelopModeSlots(slots);
+      };
+
+      function slotUpdatedLabel(savedAt: number | null): string {
+        return savedAt ? new Date(savedAt).toLocaleString() : 'empty';
+      }
+
+      function renderList(): void {
+        dialog.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'developer-form';
+
+        const heading = document.createElement('div');
+        heading.className = 'overlay-title';
+        heading.textContent = 'developer · save/load';
+        container.appendChild(heading);
+
+        const list = document.createElement('div');
+        list.className = 'developer-enemy-list';
+
+        for (let i = 0; i < slots.length; i++) {
+          const slot = slots[i] as DevelopModeSaveSlot;
+          const row = document.createElement('div');
+          row.className = 'developer-slot-card';
+
+          const top = document.createElement('div');
+          top.className = 'developer-slot-head';
+          const nameInput = document.createElement('input');
+          nameInput.type = 'text';
+          nameInput.className = 'developer-form-input';
+          nameInput.style.maxWidth = '100%';
+          nameInput.style.width = '100%';
+          nameInput.value = slot.name;
+          nameInput.maxLength = 40;
+          const updated = document.createElement('div');
+          updated.className = 'developer-enemy-card-stats';
+          updated.textContent = `#${i + 1} · ${slotUpdatedLabel(slot.savedAt)}`;
+          top.appendChild(nameInput);
+          top.appendChild(updated);
+          row.appendChild(top);
+
+          nameInput.addEventListener('change', async () => {
+            const value = nameInput.value.trim();
+            slot.name = value.length > 0 ? value : `slot ${i + 1}`;
+            nameInput.value = slot.name;
+            await saveSlots();
+          });
+
+          const actions = document.createElement('div');
+          actions.className = 'developer-slot-actions';
+
+          const saveBtn = document.createElement('button');
+          saveBtn.type = 'button';
+          saveBtn.className = 'secondary-btn';
+          saveBtn.textContent = 'save';
+          saveBtn.addEventListener('click', async () => {
+            const config = readCurrentDevelopModeConfig();
+            if (!config) return;
+            slot.config = config;
+            slot.savedAt = Date.now();
+            await saveSlots();
+            renderList();
+          });
+
+          const loadBtn = document.createElement('button');
+          loadBtn.type = 'button';
+          loadBtn.className = 'secondary-btn';
+          loadBtn.textContent = 'load';
+          loadBtn.disabled = slot.config === null;
+          loadBtn.addEventListener('click', () => {
+            const config = normalizeDevelopModeConfig(slot.config);
+            if (!config) {
+              alert('Invalid slot data.');
+              return;
+            }
+            pendingDevelopModeConfig = config;
+            dialog.close();
+            startRun('survival', 0, true);
+          });
+
+          const exportBtn = document.createElement('button');
+          exportBtn.type = 'button';
+          exportBtn.className = 'secondary-btn';
+          exportBtn.textContent = 'export';
+          exportBtn.disabled = slot.config === null;
+          exportBtn.addEventListener('click', () => {
+            const config = normalizeDevelopModeConfig(slot.config);
+            if (!config) {
+              alert('Invalid slot data.');
+              return;
+            }
+            downloadDevelopConfigJson(i, slot.name, config);
+          });
+
+          const importBtn = document.createElement('button');
+          importBtn.type = 'button';
+          importBtn.className = 'secondary-btn';
+          importBtn.textContent = 'import';
+          importBtn.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            input.addEventListener('change', async () => {
+              const file = input.files?.[0];
+              if (!file) return;
+              const text = await file.text();
+              let parsed: unknown;
+              try {
+                parsed = JSON.parse(text);
+              } catch {
+                alert('Invalid JSON file.');
+                return;
+              }
+              const config = normalizeDevelopModeConfig(parsed);
+              if (!config) {
+                alert('Invalid develop config.');
+                return;
+              }
+              slot.config = config;
+              slot.savedAt = Date.now();
+              await saveSlots();
+              renderList();
+            });
+            input.click();
+          });
+
+          actions.appendChild(saveBtn);
+          actions.appendChild(loadBtn);
+          actions.appendChild(exportBtn);
+          actions.appendChild(importBtn);
+          row.appendChild(actions);
+          list.appendChild(row);
+        }
+
+        container.appendChild(list);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'menu-btn';
+        closeBtn.textContent = 'close';
+        closeBtn.addEventListener('click', () => {
+          dialog.close();
+          finalize();
+        });
+        container.appendChild(closeBtn);
+        dialog.appendChild(container);
+      }
+
+      renderList();
+      document.body.appendChild(dialog);
+      dialog.showModal();
+      dialog.addEventListener('close', () => finalize(), { once: true });
+    });
+  }
+
   // ── Card HUD (top-left overlay) ─────────────────────────────────────────
 
   function renderCardHud(): void {
@@ -2563,6 +2964,9 @@ async function boot(): Promise<void> {
     stageIndex: number,
     developMode = false,
   ): void {
+    const loadedDevelopConfig = developMode ? pendingDevelopModeConfig : null;
+    pendingDevelopModeConfig = null;
+
     while (stack.top()) stack.pop();
     app.stage.removeChildren();
     currentRun = { mode, stageIndex, developMode };
@@ -2610,9 +3014,21 @@ async function boot(): Promise<void> {
     runInventory = new CardInventory();
     // Reset developer entries on new run.
     if (developMode) {
-      developerEnemyEntries = [];
-      developerEnhanceEntries = [];
-      developerSkillEntries = [];
+      if (loadedDevelopConfig) {
+        developerEnemyEntries = copyDeveloperEnemyEntries(
+          loadedDevelopConfig.enemies,
+        );
+        developerEnhanceEntries = copyDeveloperEnhanceEntries(
+          loadedDevelopConfig.enhances,
+        );
+        developerSkillEntries = copyDeveloperSkillEntries(
+          loadedDevelopConfig.skills,
+        );
+      } else {
+        developerEnemyEntries = [];
+        developerEnhanceEntries = [];
+        developerSkillEntries = [];
+      }
     }
 
     play = new PlayScene(
@@ -2725,6 +3141,15 @@ async function boot(): Promise<void> {
     app.stage.addChild(play.root);
     stack.push(play);
     if (developMode) {
+      if (loadedDevelopConfig) {
+        play.setDeveloperPlayerStats(loadedDevelopConfig.player);
+        play.setDeveloperInvincible(loadedDevelopConfig.player.invincible);
+        play.setDeveloperShowEnemyHp(loadedDevelopConfig.player.showEnemyHp);
+        play.setDeveloperEnemyInterval(loadedDevelopConfig.enemyInterval);
+        applyDeveloperEnemyEntries();
+        applyDeveloperEnhanceEntries();
+        applyDeveloperSkillEntries();
+      }
       developerHudPanel = 'settings';
       showDeveloperControls();
     } else {

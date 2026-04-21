@@ -21,7 +21,7 @@ import {
 } from "./data/types";
 
 const DB_NAME = "axiom";
-const DB_VERSION = 1; // IndexedDB schema version (bump to trigger onupgradeneeded)
+const DB_VERSION = 2; // IndexedDB schema version (bump to trigger onupgradeneeded)
 const STORES = [
   "profile",
   "equipment",
@@ -29,6 +29,7 @@ const STORES = [
   "achievements",
   "shop",
   "settings",
+  "developSlots",
 ] as const;
 type StoreName = (typeof STORES)[number];
 
@@ -147,6 +148,61 @@ export async function loadSettings(): Promise<GameSettings> {
 }
 export async function saveSettings(s: GameSettings): Promise<void> {
   return putStore("settings", s);
+}
+
+export interface DevelopModeSaveSlot {
+  name: string;
+  savedAt: number | null;
+  config: unknown | null;
+}
+
+export const DEVELOP_MODE_SLOT_COUNT = 10;
+
+export function defaultDevelopModeSlots(): DevelopModeSaveSlot[] {
+  return Array.from({ length: DEVELOP_MODE_SLOT_COUNT }, (_, index) => ({
+    name: `slot ${index + 1}`,
+    savedAt: null,
+    config: null,
+  }));
+}
+
+export async function loadDevelopModeSlots(): Promise<DevelopModeSaveSlot[]> {
+  const raw = await getStore<unknown[]>("developSlots", []);
+  const base = defaultDevelopModeSlots();
+  if (!Array.isArray(raw)) return base;
+  return base.map((slot, index) => {
+    const row = raw[index];
+    if (!row || typeof row !== "object") return slot;
+    const candidate = row as Record<string, unknown>;
+    return {
+      name:
+        typeof candidate.name === "string" && candidate.name.trim().length > 0
+          ? candidate.name.slice(0, 40)
+          : slot.name,
+      savedAt:
+        typeof candidate.savedAt === "number" && Number.isFinite(candidate.savedAt)
+          ? candidate.savedAt
+          : null,
+      config: candidate.config ?? null,
+    };
+  });
+}
+
+export async function saveDevelopModeSlots(slots: DevelopModeSaveSlot[]): Promise<void> {
+  const base = defaultDevelopModeSlots();
+  const normalized = base.map((slot, index) => {
+    const row = slots[index];
+    if (!row) return slot;
+    return {
+      name: (row.name?.trim() || slot.name).slice(0, 40),
+      savedAt:
+        typeof row.savedAt === "number" && Number.isFinite(row.savedAt)
+          ? row.savedAt
+          : null,
+      config: row.config ?? null,
+    };
+  });
+  return putStore("developSlots", normalized);
 }
 
 // ── Export / Import ─────────────────────────────────────────────────────────
