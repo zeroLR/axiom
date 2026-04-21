@@ -1,11 +1,10 @@
 import type { BossId } from "./bosses/types";
 import { isLevelableEffect, levelBonusFraction } from "./cardLevels";
-import { createWeaponForMode } from "./entities";
+import { applyEffectToWorld, MAX_EXTRA_WEAPONS } from "./effectEngine";
 import { type Rng, shuffle } from "./rng";
 import type { EntityId, SynergyId, WeaponMode, World } from "./world";
 
-/** Soft cap on simultaneous Weapon-class picks per run. Prevents runaway DPS / FPS. */
-export const MAX_EXTRA_WEAPONS = 3;
+export { MAX_EXTRA_WEAPONS };
 
 export type Rarity = "common" | "uncommon" | "rare";
 
@@ -146,69 +145,7 @@ export function projectedCardText(card: Card, targetLevel: number): string {
 }
 
 export function applyCard(world: World, avatarId: EntityId, card: Card): void {
-  const c = world.get(avatarId);
-  if (!c || !c.avatar || !c.weapon) return;
-  const e = card.effect;
-  switch (e.kind) {
-    case "damageAdd":          c.weapon.damage += e.value; break;
-    case "periodMul":          c.weapon.period = Math.max(0.05, c.weapon.period * e.value); break;
-    case "projectileSpeedMul": c.weapon.projectileSpeed *= e.value; break;
-    case "projectilesAdd":     c.weapon.projectiles += e.value; break;
-    case "pierceAdd":          c.weapon.pierce += e.value; break;
-    case "critAdd":            c.weapon.crit = Math.min(1, c.weapon.crit + e.value); break;
-    case "maxHpAdd":
-      c.avatar.maxHp += e.value;
-      c.avatar.hp = Math.min(c.avatar.maxHp, c.avatar.hp + e.value);
-      break;
-    case "speedMul":           c.avatar.speedMul *= e.value; break;
-    case "ricochetAdd":        c.weapon.ricochet += e.value; break;
-    case "chainAdd":           c.weapon.chain += e.value; break;
-    case "burnAdd":
-      // Stack burn DPS additively; extend duration to the longer of the two.
-      c.weapon.burnDps += e.dps;
-      c.weapon.burnDuration = Math.max(c.weapon.burnDuration, e.duration);
-      break;
-    case "slowAdd":
-      c.weapon.slowPct = Math.min(0.9, c.weapon.slowPct + e.pct);
-      c.weapon.slowDuration = Math.max(c.weapon.slowDuration, e.duration);
-      break;
-    case "synergy":
-      if (!c.avatar.synergies) c.avatar.synergies = [];
-      // Combustion starts at 0 kills; others carry no per-instance state.
-      c.avatar.synergies.push(
-        e.id === "combustion" ? { id: e.id, killCounter: 0 } : { id: e.id },
-      );
-      break;
-    case "shieldRegen":
-      c.avatar.shieldMax = (c.avatar.shieldMax ?? 0) + e.max;
-      c.avatar.shield = (c.avatar.shield ?? 0) + e.max;
-      // Stacking copies use the shortest regen window so picks compound.
-      c.avatar.shieldRegenPeriod = Math.min(c.avatar.shieldRegenPeriod ?? Infinity, e.period);
-      c.avatar.shieldRegenTimer = 0;
-      break;
-    case "secondChance":
-      // Only the first pick matters; later copies are dead picks rather than
-      // stacking lives (keeps the card from trivialising late-run runs).
-      if (c.avatar.secondChance === undefined) c.avatar.secondChance = true;
-      break;
-    case "hitboxMul":
-      if (c.radius !== undefined) c.radius = Math.max(2, c.radius * e.value);
-      break;
-    case "dodgeCD":
-      c.avatar.dodgeMax = (c.avatar.dodgeMax ?? 0) + 1;
-      c.avatar.dodgeCharges = (c.avatar.dodgeCharges ?? 0) + 1;
-      c.avatar.dodgePeriod = Math.min(c.avatar.dodgePeriod ?? Infinity, e.cooldown);
-      c.avatar.dodgeCooldown = 0;
-      break;
-    case "addWeapon":
-      // Soft-cap parallel weapons. Past the cap, the pick is a dead draft —
-      // simpler than rerolling at draw time and still drives the cap visually.
-      if (!c.avatar.extraWeapons) c.avatar.extraWeapons = [];
-      if (c.avatar.extraWeapons.length < MAX_EXTRA_WEAPONS) {
-        c.avatar.extraWeapons.push(createWeaponForMode(e.mode));
-      }
-      break;
-  }
+  applyEffectToWorld(card.effect, world, avatarId);
 }
 
 /**

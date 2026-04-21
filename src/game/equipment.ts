@@ -4,6 +4,7 @@
 
 import type { EquipmentLoadout } from "./data/types";
 import { EQUIP_EFFECTS, SHOP_ITEMS } from "./data/shop";
+import { applyEffectToWorld, toRuntimeEquipEffect } from "./effectEngine";
 import type { World, EntityId } from "./world";
 
 /** Maximum copies of the same card that can be equipped simultaneously. */
@@ -68,47 +69,9 @@ export function unequipCard(loadout: EquipmentLoadout, cardId: string): void {
 
 /** Apply all equipped cards to the avatar at run start. */
 export function applyEquipment(loadout: EquipmentLoadout, world: World, avatarId: EntityId): void {
-  const c = world.get(avatarId);
-  if (!c || !c.avatar || !c.weapon) return;
-
   for (const cardId of loadout.equipped) {
     const eff = EQUIP_EFFECTS[cardId];
     if (!eff) continue;
-
-    switch (eff.effectKind) {
-      case "damageAdd":
-        c.weapon.damage += eff.effectValue;
-        break;
-      case "periodMul":
-        c.weapon.period = Math.max(0.05, c.weapon.period * eff.effectValue);
-        break;
-      case "projectileSpeedMul":
-        c.weapon.projectileSpeed *= eff.effectValue;
-        break;
-      case "pierceAdd":
-        c.weapon.pierce += eff.effectValue;
-        break;
-      case "critAdd":
-        c.weapon.crit = Math.min(1, c.weapon.crit + eff.effectValue);
-        break;
-      case "maxHpAdd":
-        c.avatar.maxHp += eff.effectValue;
-        c.avatar.hp = Math.min(c.avatar.maxHp, c.avatar.hp + eff.effectValue);
-        break;
-      case "speedMul":
-        c.avatar.speedMul *= eff.effectValue;
-        break;
-      case "projectilesAdd":
-        c.weapon.projectiles += eff.effectValue;
-        break;
-      case "iframeAdd":
-        // Stored on avatar; consumed by collision system.
-        c.avatar.iframeBonus = (c.avatar.iframeBonus ?? 0) + eff.effectValue;
-        break;
-      case "pickupRadiusMul":
-        // Stored on avatar; consumed by pickup system if present.
-        c.avatar.pickupRadiusMul = (c.avatar.pickupRadiusMul ?? 1) * eff.effectValue;
-        break;
-    }
+    applyEffectToWorld(toRuntimeEquipEffect(eff), world, avatarId);
   }
 }

@@ -1,3 +1,5 @@
+import type { EquipEffect } from "../effectEngine";
+
 // ── Shop item catalogue ─────────────────────────────────────────────────────
 // All purchasable items live here. The shop scene reads this, the purchase
 // logic deducts points and writes to IndexedDB via storage.ts.
@@ -40,7 +42,7 @@ export const SHOP_ITEMS: readonly ShopItem[] = [
 ];
 
 /** Equipment card effect definitions — maps eq-card ID → effect. */
-export const EQUIP_EFFECTS: Record<string, { effectKind: string; effectValue: number }> = {
+export const EQUIP_EFFECTS: Record<string, EquipEffect> = {
   "eq-toughness":  { effectKind: "maxHpAdd",            effectValue: 1 },
   "eq-swiftness":  { effectKind: "speedMul",            effectValue: 1.1 },
   "eq-sharpshot":  { effectKind: "damageAdd",           effectValue: 1 },
