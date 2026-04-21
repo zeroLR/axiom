@@ -5,6 +5,7 @@ import {
   iconSkills, iconAchievements, iconExport, iconImport, iconSkins, iconSettings,
   iconSpan,
 } from "../icons";
+import { initOverlay, closeOverlay, createOverlayTitle, createOverlaySub } from "./ui";
 
 // ── Main Menu (DOM overlay) ─────────────────────────────────────────────────
 // Entry point of the game. Shows mode selection and meta-system access.
@@ -44,15 +45,10 @@ export class MainMenuScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (!overlay || !inner) return;
-    inner.innerHTML = "";
+    const { inner } = initOverlay();
 
     // Title
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = "Axiom";
+    const title = createOverlayTitle("Axiom");
     title.style.fontSize = "22px";
     title.style.marginBottom = "8px";
     title.style.cursor = "pointer";
@@ -60,9 +56,7 @@ export class MainMenuScene implements Scene {
     inner.appendChild(title);
 
     // Subtitle
-    const sub = document.createElement("div");
-    sub.className = "overlay-sub";
-    sub.textContent = "reverse bullet-hell deckbuilder";
+    const sub = createOverlaySub("reverse bullet-hell deckbuilder");
     sub.style.marginBottom = "16px";
     inner.appendChild(sub);
 
@@ -100,15 +94,10 @@ export class MainMenuScene implements Scene {
     this.addBtn(dataRow, iconExport, "Export", "exportData", "menu-btn", "flex:1");
     this.addBtn(dataRow, iconImport, "Import", "importData", "menu-btn", "flex:1");
     inner.appendChild(dataRow);
-
-    overlay.hidden = false;
   }
 
   exit(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (inner) inner.innerHTML = "";
-    if (overlay) overlay.hidden = true;
+    closeOverlay();
   }
 
   update(_dt: number): void {}

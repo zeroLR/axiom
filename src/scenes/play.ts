@@ -58,6 +58,7 @@ import type { StageTheme } from '../game/stageThemes';
 import { SYNERGY_CONFIG, explodeAt } from '../game/synergies';
 import { triggerShake, tickShake, getShakeOffset } from '../game/screenShake';
 import type { EnemyKind } from '../game/world';
+import { ALL_ENEMY_KINDS } from '../game/enemies/kinds';
 
 export type GameMode = 'normal' | 'survival';
 
@@ -850,21 +851,7 @@ export class PlayScene implements Scene {
 
   private createDefaultEnemyStats(): Record<EnemyKind, DeveloperEnemyStats> {
     const defaults = {} as Record<EnemyKind, DeveloperEnemyStats>;
-    const kinds: EnemyKind[] = [
-      'circle',
-      'square',
-      'star',
-      'boss',
-      'pentagon',
-      'hexagon',
-      'diamond',
-      'cross',
-      'crescent',
-      'orthogon',
-      'jets',
-      'mirror',
-    ];
-    for (const kind of kinds) {
+    for (const kind of ALL_ENEMY_KINDS) {
       const id = spawnEnemy(this.world, kind, this.rng, this.picks);
       const c = this.world.get(id);
       defaults[kind] = {

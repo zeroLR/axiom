@@ -110,8 +110,11 @@ import type {
   GameSettings,
 } from './game/data/types';
 import type { EnemyKind } from './game/world';
+import { ALL_ENEMY_KINDS } from './game/enemies/kinds';
 import { setScreenShakeEnabled } from './game/screenShake';
 import { playMusic, setMusicVolume } from './game/music';
+import type { RunContext } from './app/runContext';
+import { checkRunAchievements } from './app/achievementChecker';
 
 /** O(1) lookup for pool cards by ID. */
 const POOL_BY_ID = new Map(POOL.map((c) => [c.id, c]));
@@ -182,11 +185,7 @@ async function boot(): Promise<void> {
   window.addEventListener('resize', fitCanvas);
 
   let play: PlayScene;
-  let currentRun: {
-    mode: GameMode;
-    stageIndex: number;
-    developMode: boolean;
-  } | null = null;
+  let currentRun: RunContext | null = null;
   let paused = false;
   let seed = 0;
   let menuRng = createRng(42);
@@ -1119,21 +1118,7 @@ async function boot(): Promise<void> {
   /** Apply current enemy entries to the PlayScene. */
   function applyDeveloperEnemyEntries(): void {
     if (!play?.isDeveloperMode()) return;
-    const kinds: EnemyKind[] = [
-      'circle',
-      'square',
-      'star',
-      'pentagon',
-      'hexagon',
-      'diamond',
-      'cross',
-      'crescent',
-      'boss',
-      'orthogon',
-      'jets',
-      'mirror',
-    ];
-    for (const k of kinds) play.setDeveloperEnemySpawn(k, false, 0);
+    for (const k of ALL_ENEMY_KINDS) play.setDeveloperEnemySpawn(k, false, 0);
     for (const entry of developerEnemyEntries) {
       play.setDeveloperEnemySpawn(entry.kind, true, entry.count);
       play.setDeveloperEnemyStats(entry.kind, {
@@ -1195,20 +1180,7 @@ async function boot(): Promise<void> {
         resolve();
       };
 
-      const kinds: EnemyKind[] = [
-        'circle',
-        'square',
-        'star',
-        'pentagon',
-        'hexagon',
-        'diamond',
-        'cross',
-        'crescent',
-        'boss',
-        'orthogon',
-        'jets',
-        'mirror',
-      ];
+      const kinds = ALL_ENEMY_KINDS;
 
       function renderList(): void {
         dialog.innerHTML = '';
@@ -3228,66 +3200,18 @@ async function boot(): Promise<void> {
     }
 
     // Check achievements
-    if (result.bossKills > 0) {
-      if (unlockAchievement(achievements, 'firstBossKill')) {
+    const toUnlock = checkRunAchievements({
+      result,
+      stats: profile.stats,
+      equipment,
+      ownedSkins: profile.ownedSkins,
+      normalStageWaveTarget,
+    });
+    for (const id of toUnlock) {
+      if (unlockAchievement(achievements, id) && id === 'firstBossKill') {
         // eslint-disable-next-line no-console
         console.log('[axiom] Achievement unlocked: firstBossKill');
       }
-    }
-    if (
-      result.noPowerRun &&
-      result.mode === 'normal' &&
-      result.wavesCleared >= normalStageWaveTarget
-    ) {
-      unlockAchievement(achievements, 'noPowerNormalClear');
-    }
-    if (
-      result.noPowerRun &&
-      result.mode === 'survival' &&
-      result.wavesCleared >= 16
-    ) {
-      unlockAchievement(achievements, 'noPowerSurvival16');
-    }
-
-    // Progress achievements
-    if (profile.stats.totalKills >= 100) {
-      unlockAchievement(achievements, 'kill100');
-    }
-    if (profile.stats.totalKills >= 1000) {
-      unlockAchievement(achievements, 'kill1000');
-    }
-    if (profile.stats.normalCleared.filter(Boolean).length >= 3) {
-      unlockAchievement(achievements, 'clear3Stages');
-    }
-
-    // Difficulty achievements
-    if (result.mode === 'survival' && result.wavesCleared >= 32) {
-      unlockAchievement(achievements, 'survival32');
-    }
-    if (
-      result.mode === 'normal' &&
-      result.stageIndex === 2 &&
-      result.wavesCleared >= normalStageWaveTarget
-    ) {
-      unlockAchievement(achievements, 'clearStage3');
-    }
-
-    // Boss rush
-    if (profile.stats.totalBossKills >= 3) {
-      unlockAchievement(achievements, 'bossRush3');
-    }
-
-    // Style: full equipment
-    if (
-      equipment.equipped.length >= equipment.maxSlots &&
-      equipment.maxSlots >= 3
-    ) {
-      unlockAchievement(achievements, 'fullEquipment');
-    }
-
-    // Style: own 5 skins
-    if (profile.ownedSkins.length >= 5) {
-      unlockAchievement(achievements, 'own5Skins');
     }
 
     // Persist

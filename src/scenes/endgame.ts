@@ -1,5 +1,6 @@
 import { Container } from "pixi.js";
 import type { Scene } from "./scene";
+import { closeOverlay, createOverlayTitle, createOverlaySub, initOverlay } from "./ui";
 
 // Combined overlay scene for game-over / win. Content varies by flavour; both
 // end the run and offer a tap-to-restart button.
@@ -38,23 +39,17 @@ export class EndgameScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (!overlay || !inner) return;
-    inner.innerHTML = "";
+    const { inner } = initOverlay();
 
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = this.kind === "dead" ? "shattered" : "run complete";
-    inner.appendChild(title);
+    inner.appendChild(
+      createOverlayTitle(this.kind === "dead" ? "shattered" : "run complete"),
+    );
 
-    const sub = document.createElement("div");
-    sub.className = "overlay-sub";
-    sub.textContent =
+    const subText =
       this.kind === "dead"
         ? `reached wave ${this.wavesCleared}/${this.totalWaves}`
         : `cleared ${this.totalWaves}/${this.totalWaves} waves`;
-    inner.appendChild(sub);
+    inner.appendChild(createOverlaySub(subText));
 
     // DOMAIN SEALED — unlock banner
     if (this.unlocks && (this.unlocks.newCards.length > 0 || this.unlocks.newSkills.length > 0)) {
@@ -88,15 +83,10 @@ export class EndgameScene implements Scene {
     btn.textContent = "new run";
     btn.addEventListener("click", () => this.onRestart());
     inner.appendChild(btn);
-
-    overlay.hidden = false;
   }
 
   exit(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (inner) inner.innerHTML = "";
-    if (overlay) overlay.hidden = true;
+    closeOverlay();
   }
 
   update(_dt: number): void {}

@@ -3,8 +3,8 @@ import type { Scene } from "./scene";
 import { STAGE_THEMES } from "../game/stageThemes";
 import { STAGE_WAVES } from "../game/stageWaves";
 import { bossForStage } from "../game/bosses/registry";
-import { iconBack, iconSpan } from "../icons";
 import type { PlayerStats } from "../game/data/types";
+import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, createBodyScroll, createCardList, createBackButton } from "./ui";
 
 // ── Stage select (Main Story) ───────────────────────────────────────────────
 
@@ -26,31 +26,18 @@ export class StageSelectScene implements Scene {
   }
 
   enter(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (!overlay || !inner) return;
-    inner.innerHTML = "";
-    const content = document.createElement("div");
-    content.className = "overlay-scroll";
-    inner.appendChild(content);
+    const { inner, content } = openOverlay();
 
-    const title = document.createElement("div");
-    title.className = "overlay-title";
-    title.textContent = "MAIN STORY";
-    content.appendChild(title);
+    content.appendChild(createOverlayTitle("MAIN STORY"));
 
-    const sub = document.createElement("div");
-    sub.className = "overlay-sub";
-    sub.textContent = "主線模式";
+    const sub = createOverlaySub("主線模式");
     sub.style.marginBottom = "12px";
     content.appendChild(sub);
 
-    const body = document.createElement("div");
-    body.className = "overlay-body-scroll";
+    const body = createBodyScroll();
     content.appendChild(body);
 
-    const list = document.createElement("div");
-    list.className = "card-list";
+    const list = createCardList();
 
     const stats = this.getStats();
 
@@ -118,23 +105,11 @@ export class StageSelectScene implements Scene {
     });
     body.appendChild(list);
 
-    const back = document.createElement("button");
-    back.type = "button";
-    back.className = "big-btn";
-    back.appendChild(iconSpan(iconBack));
-    back.append(" back");
-    back.style.marginTop = "8px";
-    back.addEventListener("click", () => this.onBack());
-    inner.appendChild(back);
-
-    overlay.hidden = false;
+    inner.appendChild(createBackButton(() => this.onBack()));
   }
 
   exit(): void {
-    const overlay = document.getElementById("overlay");
-    const inner = document.getElementById("overlay-inner");
-    if (inner) inner.innerHTML = "";
-    if (overlay) overlay.hidden = true;
+    closeOverlay();
   }
 
   update(_dt: number): void {}
