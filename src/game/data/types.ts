@@ -1,3 +1,5 @@
+import type { EquipEffectKind } from "../effectEngine";
+
 // ── Persistent data models ──────────────────────────────────────────────────
 // All types stored in IndexedDB. Kept in a single file so every store shares
 // one import path and one schema version constant.
@@ -59,7 +61,7 @@ export interface EquipmentCard {
   glyph: string;
   text: string;
   /** Effect applied at run start (same shape as in-run Card effects). */
-  effectKind: string;
+  effectKind: EquipEffectKind;
   effectValue: number;
 }
 

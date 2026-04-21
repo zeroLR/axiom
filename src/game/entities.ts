@@ -17,6 +17,11 @@ import {
 import type { Card } from './cards';
 import { type Rng } from './rng';
 import {
+  isEliteKind as isEliteKindFromRegistry,
+  getEnemyDef,
+  getEnemyStats,
+} from './enemies/registry';
+import {
   type EnemyKind,
   type EntityId,
   type WeaponMode,
@@ -62,42 +67,11 @@ export function spawnAvatar(
   });
 }
 
-export interface EnemyStats {
-  hp: number;
-  maxSpeed: number;
-  contactDamage: number;
-  radius: number;
-}
-
-const ENEMY_STATS: Record<EnemyKind, EnemyStats> = {
-  circle: { hp: 3, maxSpeed: 72, contactDamage: 1, radius: 8 },
-  square: { hp: 5, maxSpeed: 98, contactDamage: 1, radius: 9 },
-  star: { hp: 8, maxSpeed: 88, contactDamage: 1, radius: 11 },
-  boss: { hp: 80, maxSpeed: 52, contactDamage: 1, radius: 22 },
-  pentagon: { hp: 6, maxSpeed: 68, contactDamage: 1, radius: 10 },
-  hexagon: { hp: 7, maxSpeed: 62, contactDamage: 1, radius: 10 },
-  diamond: { hp: 4, maxSpeed: 112, contactDamage: 1, radius: 8 },
-  cross: { hp: 7, maxSpeed: 58, contactDamage: 1, radius: 10 },
-  crescent: { hp: 5, maxSpeed: 78, contactDamage: 1, radius: 9 },
-  // Named bosses — stats overridden by BossDef.install after spawn.
-  orthogon: { hp: 135, maxSpeed: 45, contactDamage: 1, radius: 22 },
-  jets: { hp: 250, maxSpeed: 60, contactDamage: 1, radius: 22 },
-  mirror: { hp: 400, maxSpeed: 50, contactDamage: 1, radius: 22 },
-};
-
-/** Kinds tagged as elite at spawn. Aligns with tier-2+ KILL_POINTS. */
-const ELITE_KINDS: ReadonlySet<EnemyKind> = new Set([
-  'star',
-  'pentagon',
-  'hexagon',
-  'cross',
-]);
-
 /** Per-kill HP multiplier applied to elite-marked spawns. */
 const ELITE_HP_MUL = 1.5;
 
 export function isEliteKind(kind: EnemyKind): boolean {
-  return ELITE_KINDS.has(kind);
+  return isEliteKindFromRegistry(kind);
 }
 
 export function spawnEnemy(
@@ -115,7 +89,7 @@ export function spawnEnemy(
   const namedBossKey = namedBossId[kind];
   if (namedBossKey) {
     const bossDef = BOSS_REGISTRY[namedBossKey];
-    const baseStats = ENEMY_STATS[kind];
+    const baseStats = getEnemyStats(kind);
     const id = world.create({
       pos: { x: PLAY_W / 2, y: PLAY_H * 0.15 },
       vel: { x: 0, y: 0 },
@@ -154,7 +128,8 @@ export function spawnEnemy(
     return id;
   }
 
-  const stats = ENEMY_STATS[kind];
+  const stats = getEnemyStats(kind);
+  const def = getEnemyDef(kind);
   // Bosses appear in the upper play-field, centered. Other enemies spawn on
   // the outer margin of one of the four edges.
   let x: number, y: number;
@@ -191,10 +166,10 @@ export function spawnEnemy(
       maxSpeed: stats.maxSpeed,
       wobblePhase: rng() * Math.PI * 2,
       // Kind-specific fields
-      shield: kind === 'hexagon' ? 1 : undefined,
-      dashCooldown: kind === 'diamond' ? 2 + rng() * 2 : undefined,
-      shootCooldown: kind === 'cross' ? 1.5 + rng() : undefined,
-      orbitAngle: kind === 'crescent' ? rng() * Math.PI * 2 : undefined,
+      shield: def.spawnBehavior === 'shielded' ? 1 : undefined,
+      dashCooldown: def.spawnBehavior === 'dash' ? 2 + rng() * 2 : undefined,
+      shootCooldown: def.spawnBehavior === 'shoot' ? 1.5 + rng() : undefined,
+      orbitAngle: def.spawnBehavior === 'orbit' ? rng() * Math.PI * 2 : undefined,
       isElite: elite || undefined,
     },
     hp: { value: hp },
@@ -209,7 +184,8 @@ export function spawnEnemyAt(
   atX: number,
   atY: number,
 ): EntityId {
-  const stats = ENEMY_STATS[kind];
+  const stats = getEnemyStats(kind);
+  const def = getEnemyDef(kind);
   const spread = 12;
   const x = atX + (rng() - 0.5) * spread;
   const y = atY + (rng() - 0.5) * spread;
@@ -226,10 +202,10 @@ export function spawnEnemyAt(
       contactDamage: stats.contactDamage,
       maxSpeed: stats.maxSpeed,
       wobblePhase: rng() * Math.PI * 2,
-      shield: kind === 'hexagon' ? 1 : undefined,
-      dashCooldown: kind === 'diamond' ? 2 + rng() * 2 : undefined,
-      shootCooldown: kind === 'cross' ? 1.5 + rng() : undefined,
-      orbitAngle: kind === 'crescent' ? rng() * Math.PI * 2 : undefined,
+      shield: def.spawnBehavior === 'shielded' ? 1 : undefined,
+      dashCooldown: def.spawnBehavior === 'dash' ? 2 + rng() * 2 : undefined,
+      shootCooldown: def.spawnBehavior === 'shoot' ? 1.5 + rng() : undefined,
+      orbitAngle: def.spawnBehavior === 'orbit' ? rng() * Math.PI * 2 : undefined,
       isElite: elite || undefined,
     },
     hp: { value: hp },

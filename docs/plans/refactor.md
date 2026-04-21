@@ -90,32 +90,32 @@ Axiom 的整體架構具備模組化基礎（boss registry、unlocks、synergies
 
 #### 2-A：統一 Effect Engine
 
-- [ ] 建立 `src/game/effectEngine.ts`
+- [x] 建立 `src/game/effectEngine.ts`
   - 定義 `EquipEffectKind` 嚴格 union（取代 `equipment.ts` 的 `effectKind: string`）
   - 匯出 `applyEffectToWorld(effect, world, avatarId)` 統一函式
   - `cards.ts` 的 `applyCard`、`equipment.ts` 的 `applyEquipment`、`mirrorBoss.ts` 的鏡像 switch 均可呼叫同一核心
-- [ ] 更新 `src/game/data/shop.ts` 使用 `EquipEffectKind`
-- [ ] 更新 `src/game/equipment.ts` 使用 `EquipEffectKind`
-- [ ] 新增 effect engine 單元測試
+- [x] 更新 `src/game/data/shop.ts` 使用 `EquipEffectKind`
+- [x] 更新 `src/game/equipment.ts` 使用 `EquipEffectKind`
+- [x] 新增 effect engine 單元測試
 
 #### 2-B：EnemyRegistry — stats + 行為元資料
 
-- [ ] 建立 `src/game/enemies/registry.ts`
+- [x] 建立 `src/game/enemies/registry.ts`
   - `EnemyDef` interface：`{ kind, stats, isElite?, spawnBehavior? }`
   - `ENEMY_REGISTRY: Record<EnemyKind, EnemyDef>`（取代 `entities.ts` 的 `ENEMY_STATS` + `ELITE_KINDS`）
   - `getEnemyStats(kind): EnemyStats`、`isEliteKind(kind): boolean` 改為查 registry
-- [ ] 更新 `src/game/entities.ts`（`spawnEnemy`、`spawnEnemyAt`）使用 registry
-- [ ] 更新 `docs/ENEMY.md` 指向 registry 作為 canonical 資料來源
+- [x] 更新 `src/game/entities.ts`（`spawnEnemy`、`spawnEnemyAt`）使用 registry
+- [x] 更新 `docs/ENEMY.md` 指向 registry 作為 canonical 資料來源
 
 #### 2-C：Boss Runtime 拆分
 
-- [ ] 建立 `src/game/bosses/runtime/` 目錄
+- [x] 建立 `src/game/bosses/runtime/` 目錄
   - `orthogon.ts` — Orthogon AI tick 函式（從 `bossWeapon.ts` 抽出）
   - `jets.ts` — Jets AI tick 函式（從 `bossWeapon.ts` 抽出）
   - `mirror.ts` — Mirror abilities tick（從 `bossWeapon.ts` 抽出）
   - `index.ts` — re-export + dispatch by `bossPattern`
-- [ ] 縮減 `src/game/systems/bossWeapon.ts` 至純入口 dispatch（約 50 行）
-- [ ] 新增各 boss runtime 的隔離測試
+- [x] 縮減 `src/game/systems/bossWeapon.ts` 至純入口 dispatch（約 50 行）
+- [x] 新增各 boss runtime 的隔離測試
 
 ---
 

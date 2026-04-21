@@ -1,6 +1,6 @@
 # Axiom Enemy 記錄
 
-資料來源：`src/game/entities.ts`、`src/game/systems/ai.ts`、`src/game/systems/collision.ts`、`src/game/systems/bossWeapon.ts`、`src/game/mirrorBoss.ts`。
+資料來源：`src/game/enemies/registry.ts`（canonical）、`src/game/entities.ts`、`src/game/systems/ai.ts`、`src/game/systems/collision.ts`、`src/game/systems/bossWeapon.ts`、`src/game/mirrorBoss.ts`。
 
 ## 敵人種類與基礎強度
 
