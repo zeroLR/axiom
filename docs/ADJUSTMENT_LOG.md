@@ -1,6 +1,6 @@
 # Axiom Adjustment Log
 
-- **Phase 4 Schema-first + SOP (v0.0.1-beta-715ac68):** 將遊戲內容資料與業務邏輯分離：新增 `src/game/content/{cards,skills,stageThemes,enemies}.ts` 作為 schema-first 內容來源，並讓 `src/game/cards.ts`、`src/game/skills.ts`、`src/game/stageThemes.ts`、`src/game/enemies/registry.ts` 改為引用內容 schema，維持原本 API 與玩法行為不變。新增 `docs/CONTRIBUTING.md` 並補上「新增敵人 / 技能 / Boss / 關卡」SOP。同步更新 `docs/plans/refactor.md` 的 Phase 4 勾選狀態。驗證結果：`npm test`、`npm run build` 通過。
+- **Phase 4 Schema-first + SOP (v0.0.1-beta-b794ce5):** 將遊戲內容資料與業務邏輯分離：新增 `src/game/content/{cards,skills,stageThemes,enemies}.ts` 作為 schema-first 內容來源，並讓 `src/game/cards.ts`、`src/game/skills.ts`、`src/game/stageThemes.ts`、`src/game/enemies/registry.ts` 改為引用內容 schema，維持原本 API 與玩法行為不變。新增 `docs/CONTRIBUTING.md` 並補上「新增敵人 / 技能 / Boss / 關卡」SOP。同步更新 `docs/plans/refactor.md` 的 Phase 4 勾選狀態。驗證結果：`npm test`、`npm run build` 通過。
 
 - **Phase 3 UI 職責拆分（部分）(v0.0.1-beta-aca7ba9):** 將暫停畫面 DOM 組裝自 `src/main.ts` 抽離至 `src/scenes/pause.ts`，`main.ts` 改為只保留 pause 狀態與事件控制；新增 `src/scenes/components/{bonusGrid,cardTag,skillButton}.ts` 作為可複用 UI 片段，並讓 HUD 技能按鈕改由 `SkillButton` 元件生成；`DraftScene` 改用 `src/scenes/ui.ts` 的 overlay helpers（`openOverlay` / `closeOverlay` / `createOverlayTitle` / `createCardList`）。驗證結果：`npm test` 241/241 通過，`npm run build` 成功。
 
