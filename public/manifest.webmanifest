@@ -1,0 +1,19 @@
+{
+  "name": "Axiom",
+  "short_name": "Axiom",
+  "description": "Navigate geometric chaos, draft theorem-powered cards, and survive reverse bullet-hell waves.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icons/axiom-jets-a.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
