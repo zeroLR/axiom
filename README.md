@@ -1,51 +1,53 @@
-# Axiom
+# <img src="./public/icons/axiom-jets-a.svg" width="28" alt="Axiom icon" /> Axiom
 
-> **「當秩序崩解成幾何風暴，你就是唯一仍可證明真理的向量。」**
+[繁體中文](./README.zh-TW.md)
 
-Axiom 是一款 3–5 分鐘、手機直式體驗的 reverse bullet-hell deckbuilder。
-你將操控幾何化身穿越 AXIS / WING / MIRROR 三重領域，在彈幕壓力下持續生存，
-並在每波之間抽取符文卡與技能，構築能反轉戰局的連鎖組合。
+> **“When order collapses into a geometric storm, you are the last vector that can still prove the truth.”**
+
+Axiom is a 3–5 minute reverse bullet-hell deckbuilder designed for portrait mobile play.
+You control a geometric avatar through the AXIS / WING / MIRROR domains, survive dense projectile pressure,
+and draft rune cards and skills between waves to build chain combos that can flip the battle.
 
 See [`docs/concept.md`](./docs/concept.md) for the full concept, worldview,
-verb list, and deckbuilder spec.
+verb list, and deckbuilder specification.
 
 ## Game Overview
 
-- **Core loop**：移動閃避 → 自動射擊清場 → 波次後選卡強化
-- **Build craft**：透過卡牌、技能、裝備與起始形態堆疊 synergies
-- **Boss progression**：挑戰 Orthogon / Jets / Mirror，逐步解鎖更多內容
-- **Run style**：短局高密度、可重複挑戰、seed 可重現
+- **Core loop**: Dodge and move → auto-fire and clear waves → draft cards after each wave
+- **Build crafting**: Stack synergies with cards, skills, equipment, and starter forms
+- **Boss progression**: Defeat Orthogon / Jets / Mirror to unlock more content
+- **Run style**: Short high-density runs, high replayability, and reproducible seeds
 
 ## Stack
 
 - **Vite + TypeScript (strict)** — same conventions as `simple-roguelike/`
-- **PixiJS 8** (WebGL) — lots of geometric projectiles at 60 fps
+- **PixiJS 8** (WebGL) — many geometric projectiles at 60 fps
 - **Vitest** — unit tests, especially for RNG / shuffle determinism
-- Audio (Howler) deferred until the game is actually making sounds
+- Audio (Howler) is deferred until the game is actively using sound
 
-Stack chosen by `game-deckbuilder` skill; no `rot.js` (no FOV / pathfinding /
-dungeon gen), no Phaser (too heavy for a 1-week jam with pure geometry).
+Stack was chosen by the `game-deckbuilder` skill; no `rot.js` (no FOV / pathfinding / dungeon generation),
+and no Phaser (too heavy for a one-week jam focused on pure geometry).
 
-## Getting started
+## Getting Started
 
 ```bash
 npm install
-npm run dev        # vite dev server with HMR
-npm test           # vitest single run
-npm run build      # typecheck + vite build → dist/
+npm run dev        # Vite dev server with HMR
+npm test           # Vitest single run
+npm run build      # typecheck + Vite build → dist/
 ```
 
-Open the URL Vite prints. On mobile, add `?seed=<number>` to reproduce a run.
+Open the URL printed by Vite. On mobile, append `?seed=<number>` to reproduce a run.
 
-## Controls (MVP smoke test)
+## Controls (MVP Smoke Test)
 
-- **Touch / mouse drag** — avatar steers toward your pointer
-- **Arrow keys** — desktop fallback (1 nudge per press)
-- **`r`** or the **restart** button — new seed
+- **Touch / mouse drag** — steer the avatar toward your pointer
+- **Arrow keys** — desktop fallback (one nudge per press)
+- **`r`** or the **restart** button — start a new seed
 
 ## Structure
 
-```
+```text
 axiom/
 ├── docs/concept.md          # contract for downstream skills
 ├── index.html               # portrait viewport, safe-area aware
@@ -56,11 +58,11 @@ axiom/
 │       └── rng.ts           # seeded mulberry32 + shuffle
 ├── tests/
 │   └── rng.test.ts          # determinism + shuffle distribution
-└── .claude/settings.json    # typecheck on edit, vitest on stop
+└── .claude/settings.json    # typecheck on edit, Vitest on stop
 ```
 
 More folders (`cards/`, `encounters/`, `ui/`, `systems/`) will appear as the
-game grows — see `game-systems` / `game-loop` for the patterns.
+game grows — see `game-systems` / `game-loop` for the expected patterns.
 
 ## Music References
 
