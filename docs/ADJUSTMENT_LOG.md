@@ -1,5 +1,7 @@
 # Axiom Adjustment Log
 
+- **Import Save Data Notification Hardening (v0.0.1-beta-180c1c9):** 強化主選單匯入存檔流程的使用者回饋：未選擇檔案時顯示 info toast（Import canceled），JSON 格式錯誤仍顯示 error toast，並新增 runtime 例外攔截，當讀檔或寫入失敗時顯示 `Failed to import save data...` 的 error toast；成功匯入仍顯示 success toast 並返回主選單。驗證結果：`npm test`（264/264）與 `npm run build` 皆通過。
+
 - **UI Notification Unification + Boundary Service Abstraction (v0.0.1-beta-9123346):** (1) 建立 `src/app/notificationService.ts`：純函式 `buildNotification()` 與 DOM toast `showNotification()` 取代所有 9 處 `alert()`（`src/main.ts` ×7、`src/scenes/skillTree.ts` ×2）；success/error/info 三類型，3000ms/5000ms 自動消失，可點擊提早關閉；CSS toast 樣式加入 `src/style.css`；補 `tests/notificationService.test.ts`（11 個測試）。(2) 建立 `src/app/adapters.ts`：定義 `IStorageAdapter`、`IAudioAdapter`、`IMusicAdapter` 三個邊界服務介面；`src/main.ts` 啟動時集中建立具體 adapter 實例並注入 scene 層；`SettingsCallbacks` 新增 `isMuted`/`setMuted` 改為回呼注入，`settings.ts` 移除直接 import `../game/audio`；`PlayCallbacks` 新增 `playSfx` 回呼，`play.ts` 移除直接 import `../game/audio`；`SkillTreeCallbacks` 新增 `notify` 回呼；補 `tests/adapters.test.ts`（12 個測試，以 mock 驗證三個介面契約）。驗證結果：`npm test` 264/264 通過，`npm run build` 成功。
 
 - **Phase 4 Schema-first + SOP (v0.0.1-beta-b794ce5):** 將遊戲內容資料與業務邏輯分離：新增 `src/game/content/{cards,skills,stageThemes,enemies}.ts` 作為 schema-first 內容來源，並讓 `src/game/cards.ts`、`src/game/skills.ts`、`src/game/stageThemes.ts`、`src/game/enemies/registry.ts` 改為引用內容 schema，維持原本 API 與玩法行為不變。新增 `docs/CONTRIBUTING.md` 並補上「新增敵人 / 技能 / Boss / 關卡」SOP。同步更新 `docs/plans/refactor.md` 的 Phase 4 勾選狀態。驗證結果：`npm test`、`npm run build` 通過。
