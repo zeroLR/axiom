@@ -1,11 +1,20 @@
 # Axiom
 
-A 3–5 minute mobile-portrait reverse bullet-hell deckbuilder. A geometric avatar
-auto-fires at converging hostile shapes; between waves you draft rune-cards
-that mutate your form and build lethal synergies.
+> **「當秩序崩解成幾何風暴，你就是唯一仍可證明真理的向量。」**
+
+Axiom 是一款 3–5 分鐘、手機直式體驗的 reverse bullet-hell deckbuilder。
+你將操控幾何化身穿越 AXIS / WING / MIRROR 三重領域，在彈幕壓力下持續生存，
+並在每波之間抽取符文卡與技能，構築能反轉戰局的連鎖組合。
 
 See [`docs/concept.md`](./docs/concept.md) for the full concept, worldview,
 verb list, and deckbuilder spec.
+
+## Game Overview
+
+- **Core loop**：移動閃避 → 自動射擊清場 → 波次後選卡強化
+- **Build craft**：透過卡牌、技能、裝備與起始形態堆疊 synergies
+- **Boss progression**：挑戰 Orthogon / Jets / Mirror，逐步解鎖更多內容
+- **Run style**：短局高密度、可重複挑戰、seed 可重現
 
 ## Stack
 
