@@ -1,6 +1,5 @@
 import { Container } from 'pixi.js';
 import type { Scene } from './scene';
-import { isMuted, setMuted } from '../game/audio';
 import {
   isScreenShakeEnabled,
   setScreenShakeEnabled,
@@ -12,6 +11,8 @@ import { initOverlay, closeOverlay, createOverlayTitle, createBackButton } from 
 export interface SettingsCallbacks {
   onBack: () => void;
   onChanged: () => void;
+  isMuted: () => boolean;
+  setMuted: (muted: boolean) => void;
   getMasterVolume: () => number;
   getSfxVolume: () => number;
   getMusicVolume: () => number;
@@ -33,8 +34,8 @@ export class SettingsScene implements Scene {
     inner.appendChild(createOverlayTitle('Settings'));
 
     // ── Sound toggle ────────────────────────────────────────────────────────
-    const soundRow = this.createToggleRow('Sound effects', !isMuted(), (on) => {
-      setMuted(!on);
+    const soundRow = this.createToggleRow('Sound effects', !this.cb.isMuted(), (on) => {
+      this.cb.setMuted(!on);
       this.cb.onChanged();
     });
     inner.appendChild(soundRow);

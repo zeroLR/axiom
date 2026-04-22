@@ -146,8 +146,8 @@ Axiom 的整體架構具備模組化基礎（boss registry、unlocks、synergies
 | 項目 | 說明 | 優先度 |
 |---|---|---|
 | 淘汰 stringly-typed effectKind | `equipment.ts` 的 `effectKind: string` 改為嚴格 union | 隨 Phase 2-A |
-| UI 通知統一化 | 逐步以 notification service 取代 `alert()`（9 處）；可獨立測試 | P2 |
-| 邊界服務抽象 | storage / audio / music 以 adapter 介面隔離，方便測試與替換 | P3 |
+| UI 通知統一化 | 以 `src/app/notificationService.ts` toast 取代所有 9 處 `alert()`；`SkillTreeCallbacks.notify` 可注入；補 11 個測試 | ✅ 完成 |
+| 邊界服務抽象 | `IStorageAdapter`/`IAudioAdapter`/`IMusicAdapter` 介面定義於 `src/app/adapters.ts`；main.ts 集中建立並注入 scene 回呼；settings.ts / play.ts 移除直接 audio import；補 12 個 mock 測試 | ✅ 完成 |
 | 新增內容 SOP | 完成 registry 模式後，撰寫「新增 X 只需改 registry + content」指引 | Phase 4 |
 
 ---
