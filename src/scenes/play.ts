@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 
-import { playSfx } from '../game/audio';
+import type { SfxName } from '../game/audio';
 import type { Card } from '../game/cards';
 import { PLAY_H, PLAY_W, STARTING_DRAFT_TOKENS } from '../game/config';
 import { spawnAvatar, spawnEnemy } from '../game/entities';
@@ -83,6 +83,8 @@ export interface PlayCallbacks {
   ) => void;
   /** Called once when the boss wave begins (wave index is 1-based). */
   onBossWaveStart?: (wave1: number) => void;
+  /** Play a sound effect by name. */
+  playSfx: (name: SfxName) => void;
 }
 
 // The canvas CSS size varies per viewport; map pointer events back to the
@@ -599,7 +601,7 @@ export class PlayScene implements Scene {
     let died = false;
     const events: import('../game/events').GameEvents = {
       onEnemyKilled: (eid: EntityId) => {
-        playSfx('hit');
+        this.cb.playSfx('hit');
         const ec = this.world.get(eid);
         if (ec?.enemy?.kind === 'boss') {
           triggerShake(8, 0.25);

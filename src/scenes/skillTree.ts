@@ -14,6 +14,7 @@ import { isSkillUnlocked } from "../game/unlocks";
 import type { Rng } from "../game/rng";
 import { iconSpan, glyphStar4, SKILL_GLYPHS, setIconHtml } from "../icons";
 import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, createBodyScroll, createCardList, createBackButton } from "./ui";
+import type { NotifyType } from "../app/notificationService";
 
 // ── Skill Tree scene (DOM overlay) ──────────────────────────────────────────
 
@@ -23,6 +24,8 @@ export interface SkillTreeCallbacks {
   getRng: () => Rng;
   onStateChanged: (state: SkillTreeState) => void;
   onBack: () => void;
+  /** Called to display a notification to the player (e.g. skill draw result). */
+  notify: (message: string, type: NotifyType) => void;
 }
 
 export class SkillTreeScene implements Scene {
@@ -59,9 +62,9 @@ export class SkillTreeScene implements Scene {
           this.cb.onStateChanged(state);
           this.enter(); // re-render
           if (result.type === "new") {
-            alert(`New skill unlocked: ${PRIMAL_SKILLS[result.skillId].name}!`);
+            this.cb.notify(`New skill unlocked: ${PRIMAL_SKILLS[result.skillId].name}!`, "success");
           } else {
-            alert(`Duplicate! +${result.pointsAwarded} skill points.`);
+            this.cb.notify(`Duplicate! +${result.pointsAwarded} skill points.`, "info");
           }
         }
       });

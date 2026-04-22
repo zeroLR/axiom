@@ -1,7 +1,7 @@
 import './style.css';
 import { Application } from 'pixi.js';
 
-import { isMuted, playSfx, primeSfx, setMuted, setVolumes } from './game/audio';
+import { isMuted, playSfx, primeSfx, setMuted, setVolumes, getMasterVolume, getSfxVolume } from './game/audio';
 import { PLAY_H, PLAY_W, rerollTokenCostForUse } from './game/config';
 import { startLoop } from './game/loop';
 import { createRng, pickSeed } from './game/rng';
@@ -13,6 +13,8 @@ import {
   projectedCardText,
   type Card,
 } from './game/cards';
+import { showNotification } from './app/notificationService';
+import type { IStorageAdapter, IAudioAdapter, IMusicAdapter } from './app/adapters';
 import {
   CardInventory,
   isLevelableEffect,
@@ -105,7 +107,7 @@ import type {
 import type { EnemyKind } from './game/world';
 import { ALL_ENEMY_KINDS } from './game/enemies/kinds';
 import { setScreenShakeEnabled } from './game/screenShake';
-import { playMusic, setMusicVolume } from './game/music';
+import { playMusic, setMusicVolume, stopMusic, isMusicPlaying } from './game/music';
 import type { RunContext } from './app/runContext';
 import { checkRunAchievements } from './app/achievementChecker';
 import { renderPauseOverlay } from './scenes/pause';
@@ -116,6 +118,48 @@ import { createSkillButton } from './scenes/components/skillButton';
 const POOL_BY_ID = new Map(POOL.map((c) => [c.id, c]));
 
 async function boot(): Promise<void> {
+  // ── Boundary adapters ────────────────────────────────────────────────────
+  // The composition root creates concrete adapters wrapping existing modules.
+  // Scenes receive the adapter methods they need through their callback interfaces.
+  const audioAdapter: IAudioAdapter = {
+    playSfx,
+    primeSfx,
+    isMuted,
+    setMuted,
+    setVolumes,
+    getMasterVolume,
+    getSfxVolume,
+  };
+  const storageAdapter: IStorageAdapter = {
+    loadProfile,
+    saveProfile,
+    loadEquipment,
+    saveEquipment,
+    loadSkillTree,
+    saveSkillTree,
+    loadAchievements,
+    saveAchievements,
+    loadShopUnlocks,
+    saveShopUnlocks,
+    loadSettings,
+    saveSettings,
+    exportSaveData,
+    downloadSaveData,
+    parseSaveData,
+    importSaveData,
+    loadDevelopModeSlots,
+    saveDevelopModeSlots,
+  };
+  const musicAdapter: IMusicAdapter = {
+    playMusic,
+    stopMusic,
+    isMusicPlaying,
+    setMusicVolume,
+  };
+  // Satisfy unused-variable lint until adapters are threaded further.
+  void storageAdapter;
+  void musicAdapter;
+
   const gameEl = document.getElementById('game');
   const hudHp = document.getElementById('hud-hp');
   const hudWave = document.getElementById('hud-wave');
@@ -2504,7 +2548,7 @@ async function boot(): Promise<void> {
           loadBtn.addEventListener('click', () => {
             const config = normalizeDevelopModeConfig(slot.config);
             if (!config) {
-              alert('Invalid slot data: configuration failed validation.');
+              showNotification('Invalid slot data: configuration failed validation.', 'error');
               return;
             }
             pendingDevelopModeConfig = config;
@@ -2521,7 +2565,7 @@ async function boot(): Promise<void> {
           exportBtn.addEventListener('click', () => {
             const config = normalizeDevelopModeConfig(slot.config);
             if (!config) {
-              alert('Invalid slot data: configuration failed validation.');
+              showNotification('Invalid slot data: configuration failed validation.', 'error');
               return;
             }
             downloadDevelopConfigJson(i, slot.name, config);
@@ -2545,12 +2589,12 @@ async function boot(): Promise<void> {
               } catch (error) {
                 const detail =
                   error instanceof Error ? error.message : 'unknown parse error';
-                alert(`Invalid JSON file: ${detail}`);
+                showNotification(`Invalid JSON file: ${detail}`, 'error');
                 return;
               }
               const config = normalizeDevelopModeConfig(parsed);
               if (!config) {
-                alert('Invalid develop config: validation failed.');
+                showNotification('Invalid develop config: validation failed.', 'error');
                 return;
               }
               slot.config = config;
@@ -2794,6 +2838,7 @@ async function boot(): Promise<void> {
           );
         },
         onRunComplete: (result) => settleRun(result),
+        playSfx: (name) => audioAdapter.playSfx(name),
         onBossWaveStart: () => {
           // Switch to boss music
           playMusic('boss', stageIndex);
@@ -3119,6 +3164,7 @@ async function boot(): Promise<void> {
                   stack.pop();
                   showMainMenu();
                 },
+                notify: (msg, type) => showNotification(msg, type),
               }),
             );
             break;
@@ -3148,6 +3194,8 @@ async function boot(): Promise<void> {
                   syncMuteLabel();
                   saveSettings(buildSettings());
                 },
+                isMuted: () => audioAdapter.isMuted(),
+                setMuted: (m) => audioAdapter.setMuted(m),
                 getMasterVolume: () => settings.masterVolume ?? 1,
                 getSfxVolume: () => settings.sfxVolume ?? 1,
                 getMusicVolume: () => settings.musicVolume ?? 0.5,
@@ -3178,7 +3226,7 @@ async function boot(): Promise<void> {
               const text = await file.text();
               const data = parseSaveData(text);
               if (!data) {
-                alert('Invalid save file.');
+                showNotification('Invalid save file.', 'error');
                 return;
               }
               await importSaveData(data);
@@ -3190,7 +3238,7 @@ async function boot(): Promise<void> {
               shopUnlocks = await loadShopUnlocks();
               developerModeUnlocked =
                 (await loadSettings()).developerMode ?? false;
-              alert('Data imported successfully!');
+              showNotification('Data imported successfully!', 'success');
               showMainMenu();
             });
             input.click();
@@ -3204,7 +3252,7 @@ async function boot(): Promise<void> {
           if (developerModeUnlocked) return;
           developerModeUnlocked = true;
           await saveSettings({ ...buildSettings(), developerMode: true });
-          alert('Developer mode enabled.');
+          showNotification('Developer mode enabled.', 'success');
           showMainMenu();
         },
       },
