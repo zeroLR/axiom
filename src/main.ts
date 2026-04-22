@@ -3222,24 +3222,35 @@ async function boot(): Promise<void> {
             input.accept = '.json';
             input.addEventListener('change', async () => {
               const file = input.files?.[0];
-              if (!file) return;
-              const text = await file.text();
-              const data = parseSaveData(text);
-              if (!data) {
-                showNotification('Invalid save file.', 'error');
+              if (!file) {
+                showNotification('Import canceled.', 'info');
                 return;
               }
-              await importSaveData(data);
-              // Reload state
-              profile = await loadProfile();
-              equipment = await loadEquipment();
-              skillTree = await loadSkillTree();
-              achievements = await loadAchievements();
-              shopUnlocks = await loadShopUnlocks();
-              developerModeUnlocked =
-                (await loadSettings()).developerMode ?? false;
-              showNotification('Data imported successfully!', 'success');
-              showMainMenu();
+              try {
+                const text = await file.text();
+                const data = parseSaveData(text);
+                if (!data) {
+                  showNotification('Invalid save file.', 'error');
+                  return;
+                }
+                await importSaveData(data);
+                // Reload state
+                profile = await loadProfile();
+                equipment = await loadEquipment();
+                skillTree = await loadSkillTree();
+                achievements = await loadAchievements();
+                shopUnlocks = await loadShopUnlocks();
+                developerModeUnlocked =
+                  (await loadSettings()).developerMode ?? false;
+                showNotification('Data imported successfully!', 'success');
+                showMainMenu();
+              } catch (error) {
+                const detail =
+                  error instanceof Error && error.message
+                    ? ` ${error.message}`
+                    : '';
+                showNotification(`Failed to import save data.${detail}`, 'error');
+              }
             });
             input.click();
             break;
