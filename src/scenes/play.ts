@@ -59,11 +59,9 @@ import { SYNERGY_CONFIG, explodeAt } from '../game/synergies';
 import { triggerShake, tickShake, getShakeOffset } from '../game/screenShake';
 import type { EnemyKind } from '../game/world';
 import { ALL_ENEMY_KINDS } from '../game/enemies/kinds';
+import { stageStrengthMul } from '../game/stageCompiler';
 
 export type GameMode = 'normal' | 'survival';
-
-// Stage 1 / Stage 2 / Stage 3 normal-mode enemy strength multipliers.
-const NORMAL_STAGE_STRENGTH_MUL: readonly number[] = [1, 1.5, 2.0, 3.0, 4.0];
 
 /** Overload skill fire-rate multiplier (0.33 = triple fire rate). */
 const OVERLOAD_PERIOD_MUL = 0.33;
@@ -743,11 +741,9 @@ export class PlayScene implements Scene {
   }
 
   private applyNormalStageScaling(): void {
-    // `stageIndex` is 0-based (0=stage 1, 1=stage 2, 2=stage 3).
-    const stageMul =
-      this.stageIndex >= 0 && this.stageIndex < NORMAL_STAGE_STRENGTH_MUL.length
-        ? NORMAL_STAGE_STRENGTH_MUL[this.stageIndex]!
-        : 1;
+    // `stageIndex` is 0-based (0=stage 1, 1=stage 2, 2=stage 3…).
+    // Strength multiplier is derived from STAGE_CONFIGS (content/stages.ts).
+    const stageMul = stageStrengthMul(this.stageIndex);
     for (const [, c] of this.world.with('enemy', 'hp')) {
       if (c.enemy!.scaled) continue;
       // Boss stats are set by BossDef.install — skip stage scaling for bosses.

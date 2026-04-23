@@ -39,6 +39,7 @@ import {
   type StageTheme,
 } from './game/stageThemes';
 import { STAGE_WAVES } from './game/stageWaves';
+import { STAGE_CONFIGS } from './game/content/stages';
 import { WAVES } from './game/waves';
 import { survivalWaveSpec } from './game/survivalWaves';
 import { applyEquipment } from './game/equipment';
@@ -2784,7 +2785,8 @@ async function boot(): Promise<void> {
             mode === 'survival'
               ? `${cleared}`
               : `${cleared} of ${play.totalWaves()}`;
-          const offer = drawOffer(rng, 3, POOL, profile.stats);
+          const stageEnhancePool = STAGE_CONFIGS[stageIndex]?.enhancePool;
+          const offer = drawOffer(rng, 3, POOL, profile.stats, stageEnhancePool);
           let rerollUses = 0;
           let draft: DraftScene;
           draft = new DraftScene(offer, label, {
@@ -2794,7 +2796,7 @@ async function boot(): Promise<void> {
               if (play.draftTokens < cost) return false;
               play.draftTokens -= cost;
               rerollUses += 1;
-              draft.setOffer(drawOffer(rng, 3, POOL, profile.stats));
+              draft.setOffer(drawOffer(rng, 3, POOL, profile.stats, stageEnhancePool));
               return true;
             },
             onSkip: () => {
