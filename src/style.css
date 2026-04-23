@@ -182,17 +182,22 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.talent-resource-row {
+  margin-top: -2px;
 }
 
 .talent-tag {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  justify-content: center;
+  padding: 6px 12px;
   border: 1px solid var(--chrome);
   border-radius: 999px;
   background: var(--bg);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--fg);
   font-variant-numeric: tabular-nums;
@@ -206,84 +211,193 @@ body {
 .talent-branch-section {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.talent-tree-shell {
+  border: 1px solid var(--chrome);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 14px 10px 16px;
+}
+
+.talent-branch-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
-.talent-branch-head {
+.talent-branch-tab {
+  appearance: none;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 0 4px;
+  min-height: 46px;
+  border: 1px solid var(--chrome);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
 }
 
-.talent-branch-head .svg-icon {
+.talent-branch-tab .svg-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   color: var(--muted);
 }
 
-.talent-branch-head .svg-icon svg {
+.talent-branch-tab .svg-icon svg {
   width: 100%;
   height: 100%;
 }
 
+.talent-branch-tab.is-active {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.talent-branch-tab.is-active .svg-icon {
+  color: var(--fg);
+}
+
 .talent-tree-track {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  gap: 0;
+  width: 100%;
+  padding: 2px 0 6px;
 }
 
 .talent-tree-link {
-  flex: 0 0 24px;
-  height: 2px;
+  width: 2px;
+  height: 24px;
   background: var(--chrome);
   border-radius: 999px;
 }
 
 .talent-tree-node {
   appearance: none;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 150px;
-  padding: 10px;
-  border: 1px solid var(--chrome);
-  border-radius: 10px;
-  background: var(--bg);
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 176px;
+  min-height: 164px;
+  padding: 24px 18px 28px;
+  border: 2px solid var(--chrome);
+  border-radius: 22px;
+  clip-path: polygon(50% 0, 88% 20%, 88% 80%, 50% 100%, 12% 80%, 12% 20%);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--fg);
   font: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
-  transition: border-color 180ms ease, transform 180ms ease, opacity 180ms ease;
+  transition: border-color 180ms ease, background 180ms ease, opacity 180ms ease;
 }
 
 .talent-tree-node:active {
-  transform: translateY(1px);
+  opacity: 0.92;
+}
+
+.talent-tree-node-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.talent-tree-node-icon .svg-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.talent-tree-node-icon .svg-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .talent-tree-node.is-locked {
-  opacity: 0.6;
+  opacity: 0.45;
 }
 
 .talent-tree-node.is-selected {
   border-color: var(--fg);
-  background: var(--chrome);
+  background: #fff;
+}
+
+.talent-tree-node.is-maxed {
+  border-color: var(--fg);
 }
 
 .talent-tree-node-name {
   font-size: 13px;
   font-weight: 700;
+  line-height: 1.25;
 }
 
-.talent-tree-node-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.talent-tree-node-bonus {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.talent-tree-node-level {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  transform: translateX(-50%);
+  min-width: 62px;
+  padding: 4px 12px;
+  border: 1px solid var(--chrome);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.talent-bottom-bar {
+  display: grid;
+  grid-template-columns: 1fr 1.9fr;
+  gap: 8px;
+}
+
+.talent-points-card {
+  border: 1px solid var(--chrome);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 10px 12px;
+}
+
+.talent-points-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: lowercase;
+}
+
+.talent-points-value {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.talent-reset-btn {
+  min-height: 100%;
+  border-radius: 12px;
+  font-size: 14px;
 }
 
 .talent-detail-modal {

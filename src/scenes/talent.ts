@@ -9,7 +9,6 @@ import {
 } from "../game/content/talents";
 import {
   resetTalentGrowth,
-  talentBonuses,
   talentDefinition,
   talentLevel,
   talentNodeBonus,
@@ -22,12 +21,18 @@ import {
   createBackButton,
   createBodyScroll,
   createCardList,
-  createOverlaySub,
   createOverlayTitle,
   openOverlay,
 } from "./ui";
 import type { NotifyType } from "../app/notificationService";
 import {
+  glyphAegis,
+  glyphCrit,
+  glyphFragmentBasic,
+  glyphPhaseShift,
+  glyphRecursion,
+  glyphSharpShot,
+  glyphStar4,
   iconBranchEfficiency,
   iconBranchOffense,
   iconBranchSurvival,
@@ -59,6 +64,7 @@ export class TalentScene implements Scene {
   readonly root: Container;
   private readonly cb: TalentSceneCallbacks;
   private selectedId: TalentId | null = null;
+  private activeBranch: TalentBranch = "offense";
   private draftLevel = 0;
   private shouldFocusSelection = false;
 
@@ -70,20 +76,13 @@ export class TalentScene implements Scene {
   enter(): void {
     const { inner, content } = openOverlay({ constrained: true });
     const profile = this.cb.getProfile();
-    const bonuses = talentBonuses(profile.talents);
+    if (this.selectedId) {
+      this.activeBranch = talentDefinition(this.selectedId).branch;
+    }
 
-    content.appendChild(createOverlayTitle("talent growth"));
+    content.appendChild(createOverlayTitle("talent tree"));
     content.appendChild(this.createResourceTags(profile));
-    content.appendChild(this.createBonusTags(bonuses));
-
-    const resetBtn = document.createElement("button");
-    resetBtn.type = "button";
-    resetBtn.className = "menu-btn";
-    resetBtn.textContent = "Reset all talents (free)";
-    resetBtn.addEventListener("click", () => {
-      void this.handleReset();
-    });
-    content.appendChild(resetBtn);
+    content.appendChild(this.createBranchTabs());
 
     const body = createBodyScroll();
     content.appendChild(body);
@@ -91,11 +90,11 @@ export class TalentScene implements Scene {
     body.appendChild(list);
 
     const nodeButtons = new Map<TalentId, HTMLButtonElement>();
-
-    for (const branch of TALENT_BRANCH_ORDER) {
-      const section = this.createBranchSection(profile, branch, nodeButtons);
-      list.appendChild(section);
-    }
+    const section = this.createBranchSection(profile, this.activeBranch, nodeButtons);
+    const shell = document.createElement("section");
+    shell.className = "talent-tree-shell";
+    shell.appendChild(section);
+    list.appendChild(shell);
 
     if (this.selectedId && TALENT_NODES[this.selectedId]) {
       this.draftLevel = Math.max(
@@ -122,6 +121,7 @@ export class TalentScene implements Scene {
       }
     }
 
+    content.appendChild(this.createBottomBar(profile));
     inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
 
@@ -139,15 +139,6 @@ export class TalentScene implements Scene {
   ): HTMLElement {
     const section = document.createElement("section");
     section.className = "talent-branch-section";
-
-    const title = document.createElement("div");
-    title.className = "talent-branch-head";
-    title.appendChild(iconSpan(this.branchIcon(branch)));
-    const titleText = createOverlaySub(this.branchLabel(branch));
-    titleText.style.textAlign = "left";
-    titleText.style.margin = "0";
-    title.appendChild(titleText);
-    section.appendChild(title);
 
     const track = document.createElement("div");
     track.className = "talent-tree-track";
@@ -179,17 +170,27 @@ export class TalentScene implements Scene {
     btn.className = "talent-tree-node";
     if (locked) btn.classList.add("is-locked");
     if (this.selectedId === id) btn.classList.add("is-selected");
+    if (level >= maxLevel) btn.classList.add("is-maxed");
+
+    const iconWrap = document.createElement("span");
+    iconWrap.className = "talent-tree-node-icon";
+    iconWrap.appendChild(iconSpan(this.nodeIcon(def.effectKind)));
+    btn.appendChild(iconWrap);
 
     const name = document.createElement("span");
     name.className = "talent-tree-node-name";
     name.textContent = def.name;
     btn.appendChild(name);
 
-    const meta = document.createElement("div");
-    meta.className = "talent-tree-node-meta";
-    meta.appendChild(this.createTag(`Lv ${level}/${maxLevel}`));
-    meta.appendChild(this.createTag(this.formatNodeBonus(def.effectKind, talentNodeBonus(profile.talents, id))));
-    btn.appendChild(meta);
+    const bonus = document.createElement("div");
+    bonus.className = "talent-tree-node-bonus";
+    bonus.textContent = this.formatNodeBonus(def.effectKind, talentNodeBonus(profile.talents, id));
+    btn.appendChild(bonus);
+
+    const levelChip = document.createElement("span");
+    levelChip.className = "talent-tree-node-level";
+    levelChip.textContent = `${level}/${maxLevel}`;
+    btn.appendChild(levelChip);
 
     btn.addEventListener("click", () => {
       this.selectedId = id;
@@ -479,23 +480,61 @@ export class TalentScene implements Scene {
 
   private createResourceTags(profile: PlayerProfile): HTMLElement {
     const row = document.createElement("div");
-    row.className = "talent-tag-row";
+    row.className = "talent-tag-row talent-resource-row";
     row.appendChild(this.createTag(`pts ${profile.points}`));
     row.appendChild(this.createTag(`basic ${profile.fragments.basic}`));
     row.appendChild(this.createTag(`elite ${profile.fragments.elite}`));
     return row;
   }
 
-  private createBonusTags(
-    bonuses: ReturnType<typeof talentBonuses>,
-  ): HTMLElement {
+  private createBranchTabs(): HTMLElement {
     const row = document.createElement("div");
-    row.className = "talent-tag-row";
-    row.appendChild(this.createTag(`hp +${bonuses.maxHpAdd}`));
-    row.appendChild(this.createTag(`dmg +${bonuses.damageAdd}`));
-    row.appendChild(this.createTag(`crit +${(bonuses.critAdd * 100).toFixed(0)}%`));
-    row.appendChild(this.createTag(`pts +${(bonuses.pointRewardMul * 100).toFixed(0)}%`));
-    row.appendChild(this.createTag(`frag +${(bonuses.fragmentRewardMul * 100).toFixed(0)}%`));
+    row.className = "talent-branch-tabs";
+    for (const branch of TALENT_BRANCH_ORDER) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "talent-branch-tab";
+      if (branch === this.activeBranch) btn.classList.add("is-active");
+      btn.appendChild(iconSpan(this.branchIcon(branch)));
+      const label = document.createElement("span");
+      label.textContent = this.branchLabel(branch);
+      btn.appendChild(label);
+      btn.addEventListener("click", () => {
+        this.activeBranch = branch;
+        if (this.selectedId && talentDefinition(this.selectedId).branch !== branch) {
+          this.selectedId = null;
+        }
+        this.shouldFocusSelection = false;
+        this.enter();
+      });
+      row.appendChild(btn);
+    }
+    return row;
+  }
+
+  private createBottomBar(profile: PlayerProfile): HTMLElement {
+    const row = document.createElement("div");
+    row.className = "talent-bottom-bar";
+
+    const pointsCard = document.createElement("div");
+    pointsCard.className = "talent-points-card";
+    const label = document.createElement("div");
+    label.className = "talent-points-label";
+    label.textContent = "points available";
+    const value = document.createElement("div");
+    value.className = "talent-points-value";
+    value.textContent = `${profile.points}`;
+    pointsCard.append(label, value);
+
+    const resetBtn = document.createElement("button");
+    resetBtn.type = "button";
+    resetBtn.className = "menu-btn talent-reset-btn";
+    resetBtn.textContent = "Reset Tree (free)";
+    resetBtn.addEventListener("click", () => {
+      void this.handleReset();
+    });
+
+    row.append(pointsCard, resetBtn);
     return row;
   }
 
@@ -530,9 +569,9 @@ export class TalentScene implements Scene {
 
   private branchLabel(branch: TalentBranch): string {
     const labels: Record<TalentBranch, string> = {
-      survival: "survival branch",
-      offense: "offense branch",
-      efficiency: "efficiency branch",
+      survival: "survival",
+      offense: "offense",
+      efficiency: "efficiency",
     };
     return labels[branch];
   }
@@ -544,6 +583,25 @@ export class TalentScene implements Scene {
       efficiency: iconBranchEfficiency,
     };
     return icons[branch];
+  }
+
+  private nodeIcon(effectKind: TalentEffectKind): string {
+    switch (effectKind) {
+      case "maxHpAdd":
+        return glyphAegis;
+      case "iframeAdd":
+        return glyphPhaseShift;
+      case "damageAdd":
+        return glyphSharpShot;
+      case "critAdd":
+        return glyphCrit;
+      case "pointRewardMul":
+        return glyphStar4;
+      case "fragmentRewardMul":
+        return glyphRecursion;
+      default:
+        return glyphFragmentBasic;
+    }
   }
 
   private needsReset(current: TalentState, target: TalentState): boolean {
