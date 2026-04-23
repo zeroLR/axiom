@@ -1,10 +1,12 @@
 // ── Reward / point system ───────────────────────────────────────────────────
 // Points are earned per-kill during a run and settled to persistent storage at
 // run end. Boss kills also roll for special loot (skins, skill cores, etc.).
+// Fragment drops are collected across a run and settled to the player's
+// persistent fragment inventory at run end.
 
 import type { EnemyKind } from './world';
 import type { Rng } from './rng';
-import { buildStagePointMulArray, stagePointMul } from './stageCompiler';
+import { buildStagePointMulArray, stagePointMul, stageStrengthMul } from './stageCompiler';
 
 /** Points awarded per enemy kill by kind. */
 export const BASE_KILL_POINTS: Record<EnemyKind, number> = {
@@ -94,6 +96,84 @@ export function rollBossLoot(rng: Rng): LootDrop {
   return { kind: 'points', label: '+100 points', value: 100 };
 }
 
+// ── Fragment drop system ─────────────────────────────────────────────────────
+
+/** The three categories of fragment that can drop during a run. */
+export type FragmentKind = 'basic' | 'elite' | 'boss';
+
+/**
+ * Per-run fragment accumulator.  All three counters start at 0 and are
+ * incremented in PlayScene.onEnemyKilled().
+ */
+export interface FragmentTally {
+  /** Dropped by every regular and elite enemy kill; scales with stage strength. */
+  basic: number;
+  /** Dropped by elite-marked enemies only (0–2 per kill). */
+  elite: number;
+  /** Dropped by the stage boss kill only (1–5 per kill). */
+  boss: number;
+}
+
+export function emptyFragmentTally(): FragmentTally {
+  return { basic: 0, elite: 0, boss: 0 };
+}
+
+/**
+ * Base basic-fragment count per kill before stage-strength scaling.
+ * Named bosses (all stored as kind = 'boss') return 0 — they use the
+ * boss-only drop path instead.
+ */
+const BASE_FRAGMENT_DROP: Partial<Record<EnemyKind, number>> = {
+  boss: 0, orthogon: 0, jets: 0, mirror: 0, lattice: 0, rift: 0,
+};
+
+/**
+ * How many basic fragments a single enemy kill yields.
+ * - In normal mode the count scales with `stageStrengthMul`.
+ * - In survival mode the base count (1) is always returned.
+ * - Boss-kind enemies always return 0.
+ */
+export function basicFragmentsForEnemy(
+  kind: EnemyKind,
+  mode: 'normal' | 'survival',
+  stageIndex: number,
+): number {
+  const base = BASE_FRAGMENT_DROP[kind] ?? 1;
+  if (base === 0) return 0;
+  if (mode !== 'normal') return base;
+  return Math.max(1, Math.ceil(base * stageStrengthMul(stageIndex)));
+}
+
+/**
+ * Roll the fragment drops for a single enemy kill.
+ *
+ * - Regular enemy   → basic fragments (stage-strength scaled)
+ * - Elite enemy     → basic fragments + 0–2 elite fragments
+ * - Boss enemy      → 1–5 boss fragments ONLY (no basic/elite)
+ */
+export function rollFragmentDrops(
+  kind: EnemyKind,
+  isElite: boolean,
+  mode: 'normal' | 'survival',
+  stageIndex: number,
+  rng: Rng,
+): FragmentTally {
+  const tally = emptyFragmentTally();
+
+  if (kind === 'boss') {
+    tally.boss = 1 + Math.floor(rng() * 5); // 1–5
+    return tally;
+  }
+
+  tally.basic = basicFragmentsForEnemy(kind, mode, stageIndex);
+
+  if (isElite) {
+    tally.elite = Math.floor(rng() * 3); // 0–2
+  }
+
+  return tally;
+}
+
 // ── Run result ──────────────────────────────────────────────────────────────
 
 export interface RunResult {
@@ -104,6 +184,8 @@ export interface RunResult {
   bossKills: number;
   pointsEarned: number;
   loot: LootDrop[];
+  /** Fragments collected across this run (settled at run end). */
+  fragments: FragmentTally;
   /** True if the player picked 0 cards during the run. */
   noPowerRun: boolean;
 }

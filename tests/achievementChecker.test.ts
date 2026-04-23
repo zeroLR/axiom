@@ -30,6 +30,7 @@ function makeResult(overrides: Partial<RunResult> = {}): RunResult {
     bossKills: 0,
     pointsEarned: 0,
     loot: [],
+    fragments: { basic: 0, elite: 0, boss: 0 },
     noPowerRun: false,
     ...overrides,
   };

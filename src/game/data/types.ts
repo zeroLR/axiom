@@ -21,6 +21,15 @@ export interface PlayerProfile {
   activeStartShape: StartingShapeId;
   /** Lifetime stats. */
   stats: PlayerStats;
+  /** Persistent fragment inventory accumulated across all runs. */
+  fragments: FragmentInventory;
+}
+
+/** Persistent storage for the three kinds of collectible fragment. */
+export interface FragmentInventory {
+  basic: number;
+  elite: number;
+  boss: number;
 }
 
 export type StartingShapeId = "triangle" | "square" | "diamond";
@@ -41,6 +50,7 @@ export function defaultPlayerProfile(): PlayerProfile {
     ownedSkins: ["triangle"],
     activeSkin: "triangle",
     activeStartShape: "triangle",
+    fragments: { basic: 0, elite: 0, boss: 0 },
     stats: {
       totalRuns: 0,
       totalKills: 0,

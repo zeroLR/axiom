@@ -235,6 +235,8 @@ async function boot(): Promise<void> {
   let statsBeforeRun: import('./game/data/types').PlayerStats | null = null;
   /** Pending unlock diff from the latest settled run (set by settleRun, read by endgame). */
   let pendingUnlocks: EndgameUnlocks | null = null;
+  /** Pending fragment tally from the latest settled run (set by settleRun, read by endgame). */
+  let pendingFragments: import('./game/rewards').FragmentTally | null = null;
   let developerModeUnlocked = settings.developerMode ?? false;
 
   function syncRunControlButtons(): void {
@@ -2716,6 +2718,7 @@ async function boot(): Promise<void> {
     currentRun = { mode, stageIndex, developMode };
     setPaused(false);
     pendingUnlocks = null;
+    pendingFragments = null;
 
     // Snapshot stats before run so we can compute unlock diff at settle.
     statsBeforeRun = {
@@ -2822,6 +2825,7 @@ async function boot(): Promise<void> {
               total,
               () => showMainMenu(),
               pendingUnlocks ?? undefined,
+              pendingFragments ?? undefined,
             ),
           );
         },
@@ -2836,6 +2840,7 @@ async function boot(): Promise<void> {
               total,
               () => showMainMenu(),
               pendingUnlocks ?? undefined,
+              pendingFragments ?? undefined,
             ),
           );
         },
@@ -2945,6 +2950,12 @@ async function boot(): Promise<void> {
       if (drop.kind === 'core') skillTree.cores += drop.value;
       if (drop.kind === 'skillPoints') skillTree.skillPoints += drop.value;
     }
+
+    // Apply fragment drops to persistent inventory
+    profile.fragments.basic += result.fragments.basic;
+    profile.fragments.elite += result.fragments.elite;
+    profile.fragments.boss += result.fragments.boss;
+    pendingFragments = result.fragments;
 
     // Survival best
     if (result.mode === 'survival') {
