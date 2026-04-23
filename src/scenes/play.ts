@@ -473,12 +473,6 @@ export class PlayScene implements Scene {
   }
 
   buildRunResult(): RunResult {
-    const abilityIds = Array.from(
-      new Set([
-        ...this.picks.map((c) => c.id),
-        ...this.activeSkills.map((s) => s.id),
-      ]),
-    );
     return {
       mode: this.mode,
       stageIndex: this.stageIndex,
@@ -492,7 +486,6 @@ export class PlayScene implements Scene {
         detailed: { ...this.runFragments.detailed },
       },
       killsByKind: { ...this.runKillsByKind },
-      abilityIds,
       durationSec: this.runElapsedSec,
       noPowerRun: this.picks.length === 0,
     };

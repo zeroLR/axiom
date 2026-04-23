@@ -2725,6 +2725,14 @@ async function boot(): Promise<void> {
       runInventory.size === 0 && unmappedEquipment.length === 0;
   }
 
+  function summarizeRunEnhances(): Array<{ id: string; level: number }> {
+    const rows: Array<{ id: string; level: number }> = [];
+    for (const [, entry] of runInventory.all()) {
+      rows.push({ id: entry.card.id, level: entry.level });
+    }
+    return rows;
+  }
+
   function clearCardHud(): void {
     const container = document.getElementById('hud-cards');
     if (container) {
@@ -2868,7 +2876,7 @@ async function boot(): Promise<void> {
                 fragments: pendingFragments ?? undefined,
                 durationSec: pendingRunResult?.durationSec,
                 killsByKind: pendingRunResult?.killsByKind,
-                abilityIds: pendingRunResult?.abilityIds,
+                enhanceEntries: summarizeRunEnhances(),
               },
             ),
           );
@@ -2896,7 +2904,7 @@ async function boot(): Promise<void> {
                 fragments: pendingFragments ?? undefined,
                 durationSec: pendingRunResult?.durationSec,
                 killsByKind: pendingRunResult?.killsByKind,
-                abilityIds: pendingRunResult?.abilityIds,
+                enhanceEntries: summarizeRunEnhances(),
               },
             ),
           );
@@ -3279,7 +3287,6 @@ async function boot(): Promise<void> {
             stack.push(
               new CodexScene(
                 () => profile.stats,
-                () => skillTree,
                 () => {
                   stack.pop();
                   showMainMenu();
