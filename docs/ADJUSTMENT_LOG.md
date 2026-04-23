@@ -1,5 +1,7 @@
 # Axiom Adjustment Log
 
+- **Fragment 材料上限與溢出點數轉換 (v0.0.1-beta-5f069a7):** 完成 Fragment Drop roadmap 子項。(1) `fragments.ts` 新增 `FRAGMENT_MATERIAL_CAP=9999` 與 `applyFragmentGainWithCap()`，統一處理單一素材上限與溢出點數轉換（依該素材 `sellPrice` 計算）。(2) `main.ts` 結算入帳改為逐素材套用 cap，超出份額自動折算為 points；Shop 的碎片購買也套用相同規則，滿倉時不再增加素材而改為回收點數。(3) `tests/rewards.test.ts` 新增 cap 與 overflow 轉點測試，覆蓋 9999 上限與 boss 素材轉換邏輯。(4) `ROADMAP.md` 同步標記「材料上限與溢出轉換規則」完成，並註記保底機制目前暫不設計。驗證結果：`npm test` 與 `npm run build` 通過。
+
 - **Boss 擊殺後開獎結算流程 (v0.0.1-beta-f29d5cf):** 修正 boss 擊殺後直接結算導致無法取得 boss 碎片的流程。(1) `play.ts` 新增 boss 死亡演出時間窗（約 1.1s）與殘留碎片自動收取，避免最後一波立即跳轉遺失掉落；boss 碎片改由擊殺後「開獎」流程發放。(2) `rewards.ts` 新增 `rollBossChestReward()`（白70%/藍20%/深紅10%）與對應碎片/晶核機率（藍 10%、深紅 60%）；`RunResult` 新增 `bossChestReward` 結算資料欄位。(3) 新增 `scenes/bossReward.ts` 與 `style.css` 開獎視窗/晶核盒演出，玩家確認後才進入 `EndgameScene`。(4) `main.ts` 串接結算前開獎，將開獎所得 boss 專屬碎片與晶核正確入帳並反映於結算統計。(5) `ROADMAP.md` 同步勾選已完成的 Fragment Drop 子項（普通碎片、Boss 碎片、結算彙總、兌換介面）。驗證結果：`npm test`（312/312）與 `npm run build` 皆通過。
 
 - **結算與圖鑑改為 Enhance 分類展示 (v0.0.1-beta-b04ba0b):** 調整 UI 以符合 Enhance 流程。(1) `endgame.ts` 結算「abilities」改為「enhance」，資料來源改為 run 內 `CardInventory`，僅顯示 icon + `LvN`（移除技能名稱/文字）。(2) `rewards.ts` 與 `play.ts` 移除 run result 的 `abilityIds` 欄位，避免把 primal skill 混入結算持有能力清單。(3) `codex.ts` 改為 shop 類似的 tab 結構（Enemies / Enhance），將原本 Skills 區塊替換為 Enhance 卡牌圖鑑列表。(4) 敵人圖鑑 icon 依 enemy 基礎色盤上色（對齊遊戲內基礎顏色）。驗證結果：`npm test` 與 `npm run build` 通過。

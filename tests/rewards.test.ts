@@ -12,6 +12,11 @@ import {
   basicFragmentsForEnemy,
   rollFragmentDrops,
 } from "../src/game/rewards";
+import {
+  applyFragmentGainWithCap,
+  emptyFragmentDetailRecord,
+  FRAGMENT_MATERIAL_CAP,
+} from "../src/game/fragments";
 
 describe("rewards", () => {
   function createSequentialRng(values: number[]): () => number {
@@ -176,5 +181,23 @@ describe("fragment drops", () => {
     const rng2 = createRng(1);
     const stage4 = rollFragmentDrops("circle", false, "normal", 4, rng2);
     expect(stage4.basic).toBeGreaterThan(stage0.basic);
+  });
+
+  it("applyFragmentGainWithCap caps each material at 9999", () => {
+    const detailed = emptyFragmentDetailRecord();
+    const outcome = applyFragmentGainWithCap(detailed, "basic-core", FRAGMENT_MATERIAL_CAP + 10);
+    expect(detailed["basic-core"]).toBe(FRAGMENT_MATERIAL_CAP);
+    expect(outcome.accepted).toBe(FRAGMENT_MATERIAL_CAP);
+    expect(outcome.overflow).toBe(10);
+  });
+
+  it("applyFragmentGainWithCap converts overflow to points by sell price", () => {
+    const detailed = emptyFragmentDetailRecord();
+    detailed["boss-orthogon"] = FRAGMENT_MATERIAL_CAP - 1;
+    const outcome = applyFragmentGainWithCap(detailed, "boss-orthogon", 3);
+    expect(detailed["boss-orthogon"]).toBe(FRAGMENT_MATERIAL_CAP);
+    expect(outcome.accepted).toBe(1);
+    expect(outcome.overflow).toBe(2);
+    expect(outcome.overflowPoints).toBe(100);
   });
 });
