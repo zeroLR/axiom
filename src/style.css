@@ -189,9 +189,9 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--chrome);
   border-radius: 999px;
-  background: #fff;
+  background: var(--bg);
   font-size: 11px;
   line-height: 1.4;
   color: var(--fg);
@@ -252,9 +252,9 @@ body {
   gap: 6px;
   min-width: 150px;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--chrome);
   border-radius: 10px;
-  background: #fff;
+  background: var(--bg);
   color: var(--fg);
   font: inherit;
   text-align: left;
@@ -290,10 +290,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--chrome);
   border-radius: 12px;
   padding: 12px;
-  background: #fff;
+  background: var(--bg);
   transform: translateY(6px);
   opacity: 0;
   transition: transform 220ms ease, opacity 220ms ease;

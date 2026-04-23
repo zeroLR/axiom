@@ -53,6 +53,7 @@ interface DraftEvaluation {
 }
 
 const TALENT_IDS = Object.keys(TALENT_NODES) as TalentId[];
+const TALENT_PROCESSING_LIMIT = 128;
 
 export class TalentScene implements Scene {
   readonly root: Container;
@@ -348,14 +349,14 @@ export class TalentScene implements Scene {
   ): TalentState {
     const levels = { ...profile.talents.levels };
     const maxLevel = talentDefinition(id).levels.length;
-    levels[id] = Math.max(0, Math.min(maxLevel, Math.trunc(draftLevel)));
+    levels[id] = this.boundLevel(draftLevel, maxLevel);
 
     let changed = true;
     while (changed) {
       changed = false;
       for (const nodeId of TALENT_IDS) {
         const def = talentDefinition(nodeId);
-        const boundedLevel = Math.max(0, Math.min(def.levels.length, Math.trunc(levels[nodeId] ?? 0)));
+        const boundedLevel = this.boundLevel(levels[nodeId] ?? 0, def.levels.length);
         if (levels[nodeId] !== boundedLevel) {
           levels[nodeId] = boundedLevel;
           changed = true;
@@ -393,8 +394,7 @@ export class TalentScene implements Scene {
       }
     }
 
-    const safetyLimit = 128;
-    for (let attempt = 0; attempt < safetyLimit; attempt++) {
+    for (let attempt = 0; attempt < TALENT_PROCESSING_LIMIT; attempt++) {
       let remaining = false;
       let progressed = false;
       for (const nodeId of TALENT_IDS) {
@@ -441,8 +441,7 @@ export class TalentScene implements Scene {
       if (!resetResult.ok) return resetResult;
     }
 
-    const safetyLimit = 128;
-    for (let attempt = 0; attempt < safetyLimit; attempt++) {
+    for (let attempt = 0; attempt < TALENT_PROCESSING_LIMIT; attempt++) {
       const currentProfile = this.cb.getProfile();
       let remaining = false;
       let progressed = false;
@@ -567,5 +566,9 @@ export class TalentScene implements Scene {
         levels: { ...profile.talents.levels },
       },
     };
+  }
+
+  private boundLevel(value: number, maxLevel: number): number {
+    return Math.max(0, Math.min(maxLevel, Math.trunc(value)));
   }
 }
