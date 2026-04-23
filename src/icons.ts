@@ -55,6 +55,21 @@ export const iconTalents = wrap(
   `<circle cx="6" cy="18" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><line x1="7.5" y1="16.5" x2="10.5" y2="13.5"/><line x1="13.5" y1="10.5" x2="16.5" y2="7.5"/>`,
 );
 
+/** Talent branch (survival): shield frame + center bar. */
+export const iconBranchSurvival = wrap(
+  `<path d="M12 2 20 6v7c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><line x1="12" y1="8" x2="12" y2="16"/>`,
+);
+
+/** Talent branch (offense): forward dart + strike line. */
+export const iconBranchOffense = wrap(
+  `<polygon points="4,12 18,4 14,12 18,20"/><line x1="18" y1="12" x2="22" y2="12"/>`,
+);
+
+/** Talent branch (efficiency): cycle loop + center node. */
+export const iconBranchEfficiency = wrap(
+  `<path d="M7 7h6l-2-2m6 12h-6l2 2"/><path d="M6 10a6 6 0 0 1 10-3m2 7a6 6 0 0 1-10 3"/><circle cx="12" cy="12" r="1.5"/>`,
+);
+
 /** Achievements: pentagon (badge). */
 export const iconAchievements = wrap(
   `<polygon points="12,2 22.5,9.5 18.5,22 5.5,22 1.5,9.5"/>`,

@@ -26,20 +26,10 @@ export const AVATAR_TALENT_EFFECT_KINDS = [
 ] as const;
 export type AvatarTalentEffectKind = (typeof AVATAR_TALENT_EFFECT_KINDS)[number];
 
-export interface TalentResetCost {
-  basic: number;
-  elite: number;
-}
-
 export interface TalentActionResult {
   ok: boolean;
   reason?: string;
 }
-
-export const TALENT_RESET_COST: TalentResetCost = {
-  basic: 25,
-  elite: 5,
-};
 
 const TALENT_IDS = Object.keys(TALENT_NODES) as TalentId[];
 
@@ -150,11 +140,6 @@ export function upgradeTalent(
 export function resetTalentGrowth(profile: PlayerProfile): TalentActionResult {
   const spent = talentTotalSpentPoints(profile.talents);
   if (spent <= 0) return { ok: false, reason: "No talent points spent yet." };
-  if (profile.fragments.basic < TALENT_RESET_COST.basic || profile.fragments.elite < TALENT_RESET_COST.elite) {
-    return { ok: false, reason: `Need ${TALENT_RESET_COST.basic} basic + ${TALENT_RESET_COST.elite} elite fragments.` };
-  }
-  profile.fragments.basic -= TALENT_RESET_COST.basic;
-  profile.fragments.elite -= TALENT_RESET_COST.elite;
   profile.points += spent;
   profile.talents = defaultTalentState();
   return { ok: true };
