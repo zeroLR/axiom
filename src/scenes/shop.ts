@@ -156,11 +156,11 @@ export class ShopScene implements Scene {
       name.textContent = meta.label;
       const desc = document.createElement("span");
       desc.className = "card-text";
-      const gateText =
+      const unlockRequirementText =
         !meta.enemyKind || meta.unlockKills <= 0
           ? "always tradable"
           : `${meta.enemyKind.toUpperCase()} kills: ${this.cb.getEnemyKillCount(meta.enemyKind)}/${meta.unlockKills}`;
-      desc.textContent = `owned: ${owned} · buy ${meta.buyPrice}pts · sell +${meta.sellPrice}pts · ${gateText}`;
+      desc.textContent = `owned: ${owned} · buy ${meta.buyPrice}pts · sell +${meta.sellPrice}pts · ${unlockRequirementText}`;
       body.appendChild(name);
       body.appendChild(desc);
       card.appendChild(body);

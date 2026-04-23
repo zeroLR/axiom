@@ -65,7 +65,7 @@ import { diffUnlocks } from './game/unlocks';
 import { MAX_SKILL_LEVEL } from './game/data/types';
 import { unlockAchievement } from './game/achievements';
 import type { RunResult } from './game/rewards';
-import { FRAGMENT_META } from './game/fragments';
+import { FRAGMENT_META, fragmentCategory } from './game/fragments';
 import {
   applyStartingShapeLoadout,
   resolveSelectedStartingShape,
@@ -3170,22 +3170,14 @@ async function boot(): Promise<void> {
                 onBuyFragment: async (id, price) => {
                   if (profile.points < price) return;
                   profile.points -= price;
-                  const category = id.startsWith('boss-')
-                    ? 'boss'
-                    : id.startsWith('elite-')
-                      ? 'elite'
-                      : 'basic';
+                  const category = fragmentCategory(id);
                   profile.fragments[category] += 1;
                   profile.fragments.detailed[id] += 1;
                   await saveProfile(profile);
                 },
                 onSellFragment: async (id, gain) => {
                   if ((profile.fragments.detailed[id] ?? 0) <= 0) return;
-                  const category = id.startsWith('boss-')
-                    ? 'boss'
-                    : id.startsWith('elite-')
-                      ? 'elite'
-                      : 'basic';
+                  const category = fragmentCategory(id);
                   profile.fragments[category] = Math.max(0, profile.fragments[category] - 1);
                   profile.fragments.detailed[id] = Math.max(
                     0,

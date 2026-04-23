@@ -159,7 +159,7 @@ export class EndgameScene implements Scene {
     panel.appendChild(title);
     const list = document.createElement("div");
     list.className = "pause-fragment-list";
-    for (const [kind, count] of rows.sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))) {
+    for (const [kind, count] of rows.sort(([, countA], [, countB]) => (countB ?? 0) - (countA ?? 0))) {
       const row = document.createElement("div");
       row.className = "pause-fragment-row";
       const glyph = document.createElement("span");

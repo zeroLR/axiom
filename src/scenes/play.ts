@@ -158,6 +158,16 @@ export interface DeveloperControlsSnapshot {
   skills: Record<PrimalSkillId, DeveloperSkillConfig>;
 }
 
+interface FragmentPickup {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  pulse: number;
+  id: FragmentId;
+  category: FragmentCategory;
+}
+
 export class PlayScene implements Scene {
   readonly root: Container;
   readonly world: World;
@@ -199,15 +209,7 @@ export class PlayScene implements Scene {
   private readonly loot: LootDrop[] = [];
   private readonly runFragments: FragmentTally = emptyFragmentTally();
   private runElapsedSec = 0;
-  private readonly fragmentPickups: Array<{
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    pulse: number;
-    id: FragmentId;
-    category: FragmentCategory;
-  }> = [];
+  private readonly fragmentPickups: FragmentPickup[] = [];
   readonly stageIndex: number;
 
   // Primal skills (runtime)
