@@ -77,6 +77,14 @@ export interface LootDrop {
   value: number;
 }
 
+export type BossChestTier = 'white' | 'blue' | 'crimson';
+
+export interface BossChestReward {
+  tier: BossChestTier;
+  bossFragments: number;
+  core: number;
+}
+
 interface LootEntry {
   kind: LootKind;
   label: string;
@@ -102,6 +110,30 @@ export function rollBossLoot(rng: Rng): LootDrop {
   }
   // fallback
   return { kind: 'points', label: '+100 points', value: 100 };
+}
+
+/** Roll post-boss chest reward shown before endgame settlement. */
+export function rollBossChestReward(rng: Rng): BossChestReward {
+  const rarityRoll = rng();
+  if (rarityRoll < 0.7) {
+    return {
+      tier: 'white',
+      bossFragments: 3 + Math.floor(rng() * 3), // 3–5
+      core: 0,
+    };
+  }
+  if (rarityRoll < 0.9) {
+    return {
+      tier: 'blue',
+      bossFragments: 6 + Math.floor(rng() * 4), // 6–9
+      core: rng() < 0.1 ? 1 : 0,
+    };
+  }
+  return {
+    tier: 'crimson',
+    bossFragments: 10 + Math.floor(rng() * 5), // 10–14
+    core: rng() < 0.6 ? 1 : 0,
+  };
 }
 
 // ── Fragment drop system ─────────────────────────────────────────────────────
@@ -217,6 +249,8 @@ export interface RunResult {
   fragments: FragmentTally;
   /** Kills grouped by enemy kind for post-run analytics and codex progression. */
   killsByKind?: Partial<Record<EnemyKind, number>>;
+  /** Boss-only chest reward revealed after boss death sequence. */
+  bossChestReward?: BossChestReward;
   /** Run duration in seconds. */
   durationSec?: number;
   /** True if the player picked 0 cards during the run. */

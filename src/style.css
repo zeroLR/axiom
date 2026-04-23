@@ -4,6 +4,9 @@
   --accent: #d81b60;
   --muted: #8a8a99;
   --chrome: #f4f4f6;
+  --tier-white: #f3f6ff;
+  --tier-blue: #2f56d9;
+  --tier-crimson: #8f1b3d;
   color-scheme: light;
 }
 
@@ -412,6 +415,125 @@ body {
 
 .pause-detail-dialog {
   width: min(360px, calc(100vw - 24px));
+}
+
+.boss-reward-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.boss-reward-box {
+  appearance: none;
+  width: 100%;
+  min-height: 138px;
+  border: 1px solid #ccc;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fff 0%, var(--chrome) 100%);
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transform: translateY(0);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.boss-reward-box:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(17, 17, 17, 0.12);
+}
+
+.boss-reward-box:disabled {
+  cursor: default;
+}
+
+.boss-reward-box-core {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--fg);
+  border-radius: 10px;
+  transform: rotate(45deg);
+  background: #fff;
+  animation: boss-core-idle 1.4s ease-in-out infinite;
+}
+
+.boss-reward-box-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.boss-reward-box--opened .boss-reward-box-core {
+  animation: boss-core-burst 420ms ease-out;
+}
+
+.boss-reward-box--white {
+  border-color: var(--tier-white);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tier-white) 65%, transparent);
+}
+
+.boss-reward-box--blue {
+  border-color: var(--tier-blue);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tier-blue) 45%, transparent);
+}
+
+.boss-reward-box--crimson {
+  border-color: var(--tier-crimson);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tier-crimson) 45%, transparent);
+}
+
+.boss-reward-box--white .boss-reward-box-core {
+  background: var(--tier-white);
+}
+
+.boss-reward-box--blue .boss-reward-box-core {
+  background: var(--tier-blue);
+  border-color: var(--tier-blue);
+}
+
+.boss-reward-box--crimson .boss-reward-box-core {
+  background: var(--tier-crimson);
+  border-color: var(--tier-crimson);
+}
+
+.boss-reward-tier {
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+@keyframes boss-core-idle {
+  0%,
+  100% {
+    transform: rotate(45deg) scale(0.96);
+  }
+  50% {
+    transform: rotate(45deg) scale(1.04);
+  }
+}
+
+@keyframes boss-core-burst {
+  0% {
+    transform: rotate(45deg) scale(0.8);
+    filter: brightness(1.15);
+  }
+  65% {
+    transform: rotate(45deg) scale(1.28);
+    filter: brightness(1.35);
+  }
+  100% {
+    transform: rotate(45deg) scale(1);
+    filter: brightness(1);
+  }
 }
 
 #footer-hint {

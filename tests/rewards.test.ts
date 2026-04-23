@@ -7,12 +7,22 @@ import {
   NORMAL_STAGE_POINT_MUL,
   normalStagePointMultiplier,
   rollBossLoot,
+  rollBossChestReward,
   emptyFragmentTally,
   basicFragmentsForEnemy,
   rollFragmentDrops,
 } from "../src/game/rewards";
 
 describe("rewards", () => {
+  function createSequentialRng(values: number[]): () => number {
+    let i = 0;
+    return () => {
+      const v = values[Math.min(i, values.length - 1)] ?? 0;
+      i += 1;
+      return v;
+    };
+  }
+
   it("every enemy kind has a positive point value", () => {
     for (const [kind, pts] of Object.entries(BASE_KILL_POINTS)) {
       expect(pts, `${kind} should award > 0 points`).toBeGreaterThan(0);
@@ -58,6 +68,36 @@ describe("rewards", () => {
 
   it("BOSS_WAVE_BONUS is positive", () => {
     expect(BOSS_WAVE_BONUS).toBeGreaterThan(0);
+  });
+
+  it("rollBossChestReward returns valid structured reward", () => {
+    const rng = createRng(456);
+    for (let i = 0; i < 80; i++) {
+      const reward = rollBossChestReward(rng);
+      expect(["white", "blue", "crimson"]).toContain(reward.tier);
+      expect(reward.bossFragments).toBeGreaterThan(0);
+      expect([0, 1]).toContain(reward.core);
+    }
+  });
+
+  it("rollBossChestReward tier ranges and core chances are respected", () => {
+    const white = rollBossChestReward(() => 0.2);
+    expect(white.tier).toBe("white");
+    expect(white.core).toBe(0);
+    expect(white.bossFragments).toBeGreaterThanOrEqual(3);
+    expect(white.bossFragments).toBeLessThanOrEqual(5);
+
+    const blueWithCore = rollBossChestReward(createSequentialRng([0.8, 0.4, 0.05]));
+    expect(blueWithCore.tier).toBe("blue");
+    expect(blueWithCore.core).toBe(1);
+    expect(blueWithCore.bossFragments).toBeGreaterThanOrEqual(6);
+    expect(blueWithCore.bossFragments).toBeLessThanOrEqual(9);
+
+    const crimsonNoCore = rollBossChestReward(createSequentialRng([0.95, 0.2, 0.9]));
+    expect(crimsonNoCore.tier).toBe("crimson");
+    expect(crimsonNoCore.core).toBe(0);
+    expect(crimsonNoCore.bossFragments).toBeGreaterThanOrEqual(10);
+    expect(crimsonNoCore.bossFragments).toBeLessThanOrEqual(14);
   });
 });
 
@@ -138,4 +178,3 @@ describe("fragment drops", () => {
     expect(stage4.basic).toBeGreaterThan(stage0.basic);
   });
 });
-
