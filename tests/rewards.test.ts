@@ -14,7 +14,7 @@ import {
 } from "../src/game/rewards";
 
 describe("rewards", () => {
-  function seqRng(values: number[]): () => number {
+  function createSequentialRng(values: number[]): () => number {
     let i = 0;
     return () => {
       const v = values[Math.min(i, values.length - 1)] ?? 0;
@@ -87,13 +87,13 @@ describe("rewards", () => {
     expect(white.bossFragments).toBeGreaterThanOrEqual(3);
     expect(white.bossFragments).toBeLessThanOrEqual(5);
 
-    const blueWithCore = rollBossChestReward(seqRng([0.8, 0.4, 0.05]));
+    const blueWithCore = rollBossChestReward(createSequentialRng([0.8, 0.4, 0.05]));
     expect(blueWithCore.tier).toBe("blue");
     expect(blueWithCore.core).toBe(1);
     expect(blueWithCore.bossFragments).toBeGreaterThanOrEqual(6);
     expect(blueWithCore.bossFragments).toBeLessThanOrEqual(9);
 
-    const crimsonNoCore = rollBossChestReward(seqRng([0.95, 0.2, 0.9]));
+    const crimsonNoCore = rollBossChestReward(createSequentialRng([0.95, 0.2, 0.9]));
     expect(crimsonNoCore.tier).toBe("crimson");
     expect(crimsonNoCore.core).toBe(0);
     expect(crimsonNoCore.bossFragments).toBeGreaterThanOrEqual(10);

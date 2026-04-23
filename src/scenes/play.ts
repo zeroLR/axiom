@@ -745,20 +745,8 @@ export class PlayScene implements Scene {
       this.draftTokens += 1;
     }
 
-    // Roll fragment drops for this kill.
     if (kind !== 'boss') {
-      const frags = rollFragmentDrops(
-        kind,
-        ec.enemy.isElite ?? false,
-        this.mode,
-        this.stageIndex,
-        this.rng,
-        bossKindForStage(this.stageIndex),
-      );
-      for (const [id, count] of Object.entries(frags.detailed)) {
-        if (count <= 0) continue;
-        this.spawnFragmentPickups(id as FragmentId, count, ec.pos.x, ec.pos.y);
-      }
+      this.dropEnemyFragments(kind, ec.enemy.isElite ?? false, ec.pos.x, ec.pos.y);
     }
 
     if (kind === 'boss') {
@@ -794,6 +782,26 @@ export class PlayScene implements Scene {
         s.killCounter = 0;
         explodeAt(this.world, pos.x, pos.y, cfg.radius, cfg.damage, events);
       }
+    }
+  }
+
+  private dropEnemyFragments(
+    kind: EnemyKind,
+    isElite: boolean,
+    x: number,
+    y: number,
+  ): void {
+    const frags = rollFragmentDrops(
+      kind,
+      isElite,
+      this.mode,
+      this.stageIndex,
+      this.rng,
+      bossKindForStage(this.stageIndex),
+    );
+    for (const [id, count] of Object.entries(frags.detailed)) {
+      if (count <= 0) continue;
+      this.spawnFragmentPickups(id as FragmentId, count, x, y);
     }
   }
 

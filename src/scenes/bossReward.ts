@@ -28,7 +28,7 @@ export class BossRewardScene implements Scene {
     const { inner } = initOverlay();
     const tier = TIER_META[this.reward.tier];
     inner.appendChild(createOverlayTitle('boss core stabilized'));
-    inner.appendChild(createOverlaySub('open the theorem chest'));
+    inner.appendChild(createOverlaySub('open the crystal chest'));
 
     const panel = document.createElement('div');
     panel.className = 'boss-reward-panel';
