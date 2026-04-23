@@ -123,13 +123,9 @@ import type { RunContext } from './app/runContext';
 import { checkRunAchievements } from './app/achievementChecker';
 import { applyEffectToWorld } from './game/effectEngine';
 import {
-  TALENT_NODES,
-  type TalentLevelDef,
-} from './game/content/talents';
-import {
+  AVATAR_TALENT_EFFECT_KINDS,
   resetTalentGrowth,
   talentBonuses,
-  talentLevel,
   upgradeTalent,
 } from './game/talents';
 import { renderPauseOverlay } from './scenes/pause';
@@ -264,59 +260,16 @@ async function boot(): Promise<void> {
   /** Settled run payload consumed by endgame summary UI. */
   let pendingRunResult: RunResult | null = null;
   let developerModeUnlocked = settings.developerMode ?? false;
-
-  function sumTalentBonus(
-    levels: number,
-    defs: TalentLevelDef[],
-  ): number {
-    let total = 0;
-    const count = Math.min(levels, defs.length);
-    for (let i = 0; i < count; i++) total += defs[i]!.bonus;
-    return total;
-  }
+  /** Resource branch always grants at least +1 fragment when the source gain is positive. */
+  const TALENT_FRAGMENT_BONUS_MIN = 1;
 
   function applyTalentAvatarBonuses(): void {
-    const state = profile.talents;
-    const hpAdd = sumTalentBonus(
-      talentLevel(state, 'survivalVitality'),
-      TALENT_NODES.survivalVitality.levels,
-    );
-    const iframeAdd = sumTalentBonus(
-      talentLevel(state, 'survivalPhase'),
-      TALENT_NODES.survivalPhase.levels,
-    );
-    const damageAdd = sumTalentBonus(
-      talentLevel(state, 'offenseVector'),
-      TALENT_NODES.offenseVector.levels,
-    );
-    const critAdd = sumTalentBonus(
-      talentLevel(state, 'offenseCritical'),
-      TALENT_NODES.offenseCritical.levels,
-    );
-    if (hpAdd > 0) {
+    const bonuses = talentBonuses(profile.talents);
+    for (const kind of AVATAR_TALENT_EFFECT_KINDS) {
+      const value = bonuses[kind];
+      if (value <= 0) continue;
       applyEffectToWorld(
-        { kind: 'maxHpAdd', value: hpAdd },
-        play.world,
-        play.avatarId,
-      );
-    }
-    if (iframeAdd > 0) {
-      applyEffectToWorld(
-        { kind: 'iframeAdd', value: iframeAdd },
-        play.world,
-        play.avatarId,
-      );
-    }
-    if (damageAdd > 0) {
-      applyEffectToWorld(
-        { kind: 'damageAdd', value: damageAdd },
-        play.world,
-        play.avatarId,
-      );
-    }
-    if (critAdd > 0) {
-      applyEffectToWorld(
-        { kind: 'critAdd', value: critAdd },
+        { kind, value },
         play.world,
         play.avatarId,
       );
@@ -3112,11 +3065,10 @@ async function boot(): Promise<void> {
       for (const meta of FRAGMENT_META) {
         const base = result.fragments.detailed[meta.id] ?? 0;
         if (base <= 0) continue;
-        const boosted = Math.max(
-          base,
-          Math.round(base * (1 + talentMeta.fragmentRewardMul)),
+        const delta = Math.max(
+          TALENT_FRAGMENT_BONUS_MIN,
+          Math.round(base * talentMeta.fragmentRewardMul),
         );
-        const delta = boosted - base;
         if (delta > 0) {
           result.fragments.detailed[meta.id] += delta;
           result.fragments[meta.category] += delta;

@@ -18,6 +18,14 @@ export interface TalentBonuses {
   fragmentRewardMul: number;
 }
 
+export const AVATAR_TALENT_EFFECT_KINDS = [
+  "maxHpAdd",
+  "iframeAdd",
+  "damageAdd",
+  "critAdd",
+] as const;
+export type AvatarTalentEffectKind = (typeof AVATAR_TALENT_EFFECT_KINDS)[number];
+
 export interface TalentResetCost {
   basic: number;
   elite: number;
@@ -36,7 +44,9 @@ export const TALENT_RESET_COST: TalentResetCost = {
 const TALENT_IDS = Object.keys(TALENT_NODES) as TalentId[];
 
 export function talentLevel(state: TalentState, id: TalentId): number {
-  return Math.max(0, Math.floor(state.levels[id] ?? 0));
+  // Safety for migrated/imported save data: normalize to non-negative integer.
+  const raw = state.levels[id] ?? 0;
+  return Number.isFinite(raw) ? Math.max(0, Math.trunc(raw)) : 0;
 }
 
 export function talentMaxLevel(id: TalentId): number {
@@ -45,6 +55,25 @@ export function talentMaxLevel(id: TalentId): number {
 
 export function talentDefinition(id: TalentId): TalentNodeDef {
   return TALENT_NODES[id];
+}
+
+export function talentNodeBonus(state: TalentState, id: TalentId): number {
+  const def = TALENT_NODES[id];
+  const level = Math.min(talentLevel(state, id), def.levels.length);
+  let total = 0;
+  for (let i = 0; i < level; i++) total += def.levels[i]!.bonus;
+  return total;
+}
+
+export function talentPrerequisiteMessage(
+  state: TalentState,
+  id: TalentId,
+): string | null {
+  const def = TALENT_NODES[id];
+  if (!def.requires) return null;
+  const reqLevel = talentLevel(state, def.requires.id);
+  if (reqLevel >= def.requires.level) return null;
+  return `Locked: ${TALENT_NODES[def.requires.id].name} Lv.${def.requires.level}`;
 }
 
 export function talentTotalSpentPoints(state: TalentState): number {
@@ -70,10 +99,7 @@ export function talentBonuses(state: TalentState): TalentBonuses {
   };
   for (const id of TALENT_IDS) {
     const def = TALENT_NODES[id];
-    const level = Math.min(talentLevel(state, id), def.levels.length);
-    for (let i = 0; i < level; i++) {
-      bonuses[def.effectKind] += def.levels[i]!.bonus;
-    }
+    bonuses[def.effectKind] += talentNodeBonus(state, id);
   }
   return bonuses;
 }

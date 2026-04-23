@@ -4,6 +4,7 @@ import type { PlayerProfile, TalentId } from "../game/data/types";
 import {
   TALENT_BRANCH_ORDER,
   TALENT_NODES,
+  type TalentEffectKind,
   type TalentBranch,
 } from "../game/content/talents";
 import {
@@ -11,6 +12,8 @@ import {
   talentBonuses,
   talentDefinition,
   talentLevel,
+  talentNodeBonus,
+  talentPrerequisiteMessage,
   type TalentActionResult,
 } from "../game/talents";
 import {
@@ -53,9 +56,7 @@ export class TalentScene implements Scene {
       ),
     );
     content.appendChild(
-      createOverlaySub(
-        `+hp ${bonuses.maxHpAdd} · +dmg ${bonuses.damageAdd} · +crit ${(bonuses.critAdd * 100).toFixed(0)}% · +pts ${(bonuses.pointRewardMul * 100).toFixed(0)}% · +frag ${(bonuses.fragmentRewardMul * 100).toFixed(0)}%`,
-      ),
+      createOverlaySub(this.formatBonusSummary(bonuses)),
     );
 
     const resetBtn = document.createElement("button");
@@ -93,15 +94,18 @@ export class TalentScene implements Scene {
   render(_alpha: number): void {}
 
   private createBranchTitle(branch: TalentBranch): HTMLElement {
+    const BRANCH_LABELS: Record<TalentBranch, string> = {
+      survival: "survival branch",
+      offense: "offense branch",
+      efficiency: "efficiency branch",
+    };
     const el = document.createElement("div");
     el.className = "overlay-sub";
     el.style.textAlign = "left";
     el.style.margin = "2px 4px 0";
     el.style.letterSpacing = "0.08em";
     el.style.textTransform = "uppercase";
-    if (branch === "survival") el.textContent = "survival branch";
-    else if (branch === "offense") el.textContent = "offense branch";
-    else el.textContent = "efficiency branch";
+    el.textContent = BRANCH_LABELS[branch];
     return el;
   }
 
@@ -124,14 +128,14 @@ export class TalentScene implements Scene {
     desc.className = "card-text";
     desc.style.whiteSpace = "pre-line";
     const next = def.levels[level];
-    if (def.requires && talentLevel(profile.talents, def.requires.id) < def.requires.level) {
-      const reqName = TALENT_NODES[def.requires.id].name;
-      desc.textContent = `${def.description}\nLocked: ${reqName} Lv.${def.requires.level}`;
+    const prerequisiteMessage = talentPrerequisiteMessage(profile.talents, id);
+    if (prerequisiteMessage) {
+      desc.textContent = `${def.description}\n${prerequisiteMessage}`;
       row.style.opacity = "0.55";
     } else if (!next) {
-      desc.textContent = `${def.description}\nCurrent bonus: ${this.formatNodeBonus(def.effectKind, level, def.levels)}`;
+      desc.textContent = `${def.description}\nCurrent bonus: ${this.formatNodeBonus(def.effectKind, talentNodeBonus(profile.talents, id))}`;
     } else {
-      desc.textContent = `${def.description}\nCurrent bonus: ${this.formatNodeBonus(def.effectKind, level, def.levels)}\nNext cost: ${next.pointCost} pts + ${next.fragmentCost} ${def.fragmentKind}`;
+      desc.textContent = `${def.description}\nCurrent bonus: ${this.formatNodeBonus(def.effectKind, talentNodeBonus(profile.talents, id))}\nNext cost: ${next.pointCost} pts + ${next.fragmentCost} ${def.fragmentKind}`;
     }
     row.appendChild(desc);
 
@@ -173,11 +177,9 @@ export class TalentScene implements Scene {
   }
 
   private formatNodeBonus(
-    effectKind: string,
-    level: number,
-    levels: Array<{ bonus: number }>,
+    effectKind: TalentEffectKind,
+    total: number,
   ): string {
-    const total = levels.slice(0, level).reduce((sum, row) => sum + row.bonus, 0);
     switch (effectKind) {
       case "maxHpAdd":
         return `+${Math.round(total)} max HP`;
@@ -194,5 +196,18 @@ export class TalentScene implements Scene {
       default:
         return `${total}`;
     }
+  }
+
+  private formatBonusSummary(
+    bonuses: ReturnType<typeof talentBonuses>,
+  ): string {
+    const parts: Array<{ label: string; value: string }> = [
+      { label: "hp", value: `${bonuses.maxHpAdd}` },
+      { label: "dmg", value: `${bonuses.damageAdd}` },
+      { label: "crit", value: `${(bonuses.critAdd * 100).toFixed(0)}%` },
+      { label: "pts", value: `${(bonuses.pointRewardMul * 100).toFixed(0)}%` },
+      { label: "frag", value: `${(bonuses.fragmentRewardMul * 100).toFixed(0)}%` },
+    ];
+    return parts.map((part) => `+${part.label} ${part.value}`).join(" · ");
   }
 }
