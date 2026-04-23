@@ -73,8 +73,8 @@
 - [x] 角色槽位系統：玩家可用點數生成新角色（最多 6 槽，遞增成本）
 - [x] 職業被動能力 schema 與 effectEngine 整合（run 開始套用 + 結算套用 pointRewardMul / fragmentRewardMul）
 - [x] 選形狀時同步 character lineage；主選單按鈕改名為「Class Creation」；存檔遷移（activeStartShape → characters.slots[0].lineage）
-- [ ] 職業選擇 / 轉職完整 UI（Class Creation Scene — Phase C）
-- [ ] 轉職流程 UI（消耗確認、動畫/演出 — Phase C）
+- [x] 職業選擇 / 轉職完整 UI（Class Creation Scene — Phase C 完成）
+- [x] 轉職流程 UI（升階確認 modal，含成本顯示與分支選擇）
 - [ ] T4（tier 4）節點設計與門檻（預留資料結構欄位）
 
 ### 融合（異變）系統（Fusion / Mutation）

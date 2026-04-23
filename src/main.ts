@@ -31,7 +31,7 @@ import { CodexScene } from './scenes/codex';
 import { StageSelectScene } from './scenes/stageSelect';
 import { ShopScene } from './scenes/shop';
 import { EquipmentScene } from './scenes/equipment';
-import { StartShapeSelectScene } from './scenes/startShapeSelect';
+import { ClassCreationScene } from './scenes/classCreation';
 import { SkillTreeScene } from './scenes/skillTree';
 import { TalentScene } from './scenes/talent';
 import { AchievementsScene } from './scenes/achievements';
@@ -132,8 +132,11 @@ import {
   activeCharacterSlot,
   CLASS_PASSIVE_AVATAR_ADDITIVE_KINDS,
   classPassiveBonuses,
+  createCharacterSlot,
   lineageToStartingShape,
-  startingShapeToLineage,
+  promoteClass,
+  resetCharacterClass,
+  setActiveCharacterSlot,
 } from './game/classes';
 import { renderPauseOverlay } from './scenes/pause';
 import { closeOverlay } from './scenes/ui';
@@ -3367,23 +3370,48 @@ async function boot(): Promise<void> {
           case 'classCreation':
             stack.pop();
             stack.push(
-              new StartShapeSelectScene({
+              new ClassCreationScene({
                 getProfile: () => profile,
-                onSelect: async (shapeId) => {
-                  profile.activeStartShape = shapeId;
-                  // Phase B bridge: keep active character's lineage in sync with the
-                  // shape selection until the full Class Creation UI (Phase C) ships.
-                  // Phase C will replace this page with a proper ClassCreationScene.
-                  const activeChar = activeCharacterSlot(profile.characters);
-                  if (activeChar) {
-                    activeChar.lineage = startingShapeToLineage(shapeId);
+                onPromote: async (slotId, branch) => {
+                  const result = promoteClass(profile, slotId, branch);
+                  if (result.ok) {
+                    // Sync activeStartShape with the active character's lineage
+                    const activeChar = activeCharacterSlot(profile.characters);
+                    if (activeChar) {
+                      profile.activeStartShape = lineageToStartingShape(activeChar.lineage);
+                    }
+                    await saveProfile(profile);
                   }
-                  await saveProfile(profile);
+                  return result;
+                },
+                onReset: async (slotId) => {
+                  const result = resetCharacterClass(profile, slotId);
+                  if (result.ok) {
+                    await saveProfile(profile);
+                  }
+                  return result;
+                },
+                onCreateSlot: async (lineage) => {
+                  const result = createCharacterSlot(profile, lineage);
+                  if (result.ok) {
+                    await saveProfile(profile);
+                  }
+                  return result;
+                },
+                onSelectSlot: (slotId) => {
+                  if (setActiveCharacterSlot(profile.characters, slotId)) {
+                    const activeChar = activeCharacterSlot(profile.characters);
+                    if (activeChar) {
+                      profile.activeStartShape = lineageToStartingShape(activeChar.lineage);
+                    }
+                    void saveProfile(profile);
+                  }
                 },
                 onBack: () => {
                   stack.pop();
                   showMainMenu();
                 },
+                notify: (msg, type) => showNotification(msg, type),
               }),
             );
             break;
