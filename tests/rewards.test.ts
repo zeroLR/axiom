@@ -15,6 +15,7 @@ import {
 import {
   applyFragmentGainWithCap,
   emptyFragmentDetailRecord,
+  FRAGMENT_META_BY_ID,
   FRAGMENT_MATERIAL_CAP,
 } from "../src/game/fragments";
 
@@ -195,9 +196,11 @@ describe("fragment drops", () => {
     const detailed = emptyFragmentDetailRecord();
     detailed["boss-orthogon"] = FRAGMENT_MATERIAL_CAP - 1;
     const outcome = applyFragmentGainWithCap(detailed, "boss-orthogon", 3);
+    const sellPrice = FRAGMENT_META_BY_ID["boss-orthogon"].sellPrice;
+    expect(sellPrice).toBe(50);
     expect(detailed["boss-orthogon"]).toBe(FRAGMENT_MATERIAL_CAP);
     expect(outcome.accepted).toBe(1);
     expect(outcome.overflow).toBe(2);
-    expect(outcome.overflowPoints).toBe(100);
+    expect(outcome.overflowPoints).toBe(2 * sellPrice);
   });
 });

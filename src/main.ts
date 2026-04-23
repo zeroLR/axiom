@@ -3049,7 +3049,7 @@ async function boot(): Promise<void> {
       if (drop.kind === 'skillPoints') skillTree.skillPoints += drop.value;
     }
 
-    // Apply fragment drops to persistent inventory (9999 cap per material with overflow-to-points conversion).
+    // Apply fragment drops to persistent inventory (FRAGMENT_MATERIAL_CAP per material with overflow-to-points conversion).
     let fragmentOverflowPoints = 0;
     for (const meta of FRAGMENT_META) {
       const gain = result.fragments.detailed[meta.id] ?? 0;

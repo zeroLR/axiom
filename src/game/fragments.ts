@@ -143,7 +143,12 @@ export interface FragmentOverflowResult {
 
 /**
  * Apply fragment gain with a hard cap per fragment material.
- * Overflow is converted to points using that fragment's sell price.
+ * Mutates `detailed` in place for the provided `id`.
+ * - `detailed`: player-owned per-fragment inventory record.
+ * - `id`: fragment material identifier to receive.
+ * - `amount`: incoming fragment count (floored to integer, negative treated as 0).
+ * Returns accepted amount, overflow count, and overflow points converted by that
+ * fragment material's sell price.
  */
 export function applyFragmentGainWithCap(
   detailed: FragmentDetailRecord,
@@ -151,7 +156,7 @@ export function applyFragmentGainWithCap(
   amount: number,
 ): FragmentOverflowResult {
   const safeAmount = Math.max(0, Math.floor(amount));
-  if (safeAmount <= 0) {
+  if (safeAmount === 0) {
     return { accepted: 0, overflow: 0, overflowPoints: 0 };
   }
   const current = Math.max(0, detailed[id] ?? 0);
