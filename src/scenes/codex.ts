@@ -3,8 +3,7 @@ import type { Scene } from "./scene";
 import type { PlayerStats } from "../game/data/types";
 import { ALL_ENEMY_KINDS } from "../game/enemies/kinds";
 import { getEnemyDef } from "../game/enemies/registry";
-import { POOL } from "../game/cards";
-import { CARD_GLYPHS, ENEMY_GLYPHS, iconCodex, iconEnhance, iconSpan, setIconHtml } from "../icons";
+import { ENEMY_GLYPHS, setIconHtml } from "../icons";
 import {
   openOverlay,
   closeOverlay,
@@ -14,8 +13,6 @@ import {
   createCardList,
   createBackButton,
 } from "./ui";
-
-type CodexTab = "enemies" | "enhance";
 
 function enemyBaseColor(kind: string): string {
   switch (kind) {
@@ -47,7 +44,6 @@ export class CodexScene implements Scene {
   readonly root: Container;
   private readonly getStats: () => PlayerStats;
   private readonly onBack: () => void;
-  private activeTab: CodexTab = "enemies";
 
   constructor(
     getStats: () => PlayerStats,
@@ -63,21 +59,12 @@ export class CodexScene implements Scene {
     const stats = this.getStats();
 
     content.appendChild(createOverlayTitle("codex"));
-    content.appendChild(createOverlaySub("enemies · enhance"));
-
-    const tabRow = document.createElement("div");
-    tabRow.className = "tab-row";
-    const enemyTab = this.createTab(iconCodex, "Enemies", "enemies", tabRow);
-    const enhanceTab = this.createTab(iconEnhance, "Enhance", "enhance", tabRow);
-    if (this.activeTab === "enemies") enemyTab.classList.add("tab-active");
-    else enhanceTab.classList.add("tab-active");
-    content.appendChild(tabRow);
+    content.appendChild(createOverlaySub("enemy database"));
 
     const body = createBodyScroll();
     content.appendChild(body);
     const list = createCardList();
-    if (this.activeTab === "enemies") this.renderEnemies(list, stats);
-    else this.renderEnhance(list);
+    this.renderEnemies(list, stats);
     body.appendChild(list);
 
     inner.appendChild(createBackButton(() => this.onBack()));
@@ -115,45 +102,5 @@ export class CodexScene implements Scene {
       card.appendChild(cardBody);
       list.appendChild(card);
     }
-  }
-
-  private renderEnhance(list: HTMLElement): void {
-    const ordered = [...POOL].sort((a, b) => a.rarity.localeCompare(b.rarity) || a.name.localeCompare(b.name));
-    for (const def of ordered) {
-      const card = document.createElement("div");
-      card.className = "card-btn";
-      const glyph = document.createElement("span");
-      glyph.className = "card-glyph codex-glyph codex-glyph--enhance";
-      const svg = CARD_GLYPHS[def.id];
-      if (svg) setIconHtml(glyph, svg);
-      else glyph.textContent = def.glyph;
-      card.appendChild(glyph);
-      const cardBody = document.createElement("span");
-      cardBody.className = "card-body";
-      const name = document.createElement("span");
-      name.className = "card-name";
-      name.textContent = def.name;
-      const desc = document.createElement("span");
-      desc.className = "card-text";
-      desc.textContent = `${def.text} · ${def.rarity.toUpperCase()}`;
-      cardBody.appendChild(name);
-      cardBody.appendChild(desc);
-      card.appendChild(cardBody);
-      list.appendChild(card);
-    }
-  }
-
-  private createTab(icon: string, label: string, tab: CodexTab, parent: HTMLElement): HTMLButtonElement {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "tab-btn";
-    btn.appendChild(iconSpan(icon));
-    btn.append(` ${label}`);
-    btn.addEventListener("click", () => {
-      this.activeTab = tab;
-      this.enter();
-    });
-    parent.appendChild(btn);
-    return btn;
   }
 }

@@ -2,6 +2,7 @@ import {
   TALENT_NODES,
   type TalentNodeDef,
 } from "./content/talents";
+import type { CardEffect } from "./content/cards";
 import {
   defaultTalentState,
   type PlayerProfile,
@@ -89,9 +90,27 @@ export function talentBonuses(state: TalentState): TalentBonuses {
   };
   for (const id of TALENT_IDS) {
     const def = TALENT_NODES[id];
+    if (!def.effectKind) continue; // skip core nodes
     bonuses[def.effectKind] += talentNodeBonus(state, id);
   }
   return bonuses;
+}
+
+/**
+ * Returns the list of CardEffects from core talent nodes that are currently
+ * levelled (level >= 1). These are applied at run start alongside equipment
+ * and class passives.
+ */
+export function talentCoreEffects(state: TalentState): CardEffect[] {
+  const effects: CardEffect[] = [];
+  for (const id of TALENT_IDS) {
+    const def = TALENT_NODES[id];
+    if (!def.isCore || !def.coreEffect) continue;
+    if (talentLevel(state, id) >= 1) {
+      effects.push(def.coreEffect);
+    }
+  }
+  return effects;
 }
 
 export function canUpgradeTalent(

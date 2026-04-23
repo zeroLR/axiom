@@ -6,8 +6,9 @@ import {
   SKILL_IDS,
   type PrimalSkillDef,
 } from "./content/skills";
-import type { PlayerStats } from "./data/types";
-import { isSkillUnlocked } from "./unlocks";
+import { CLASS_NODES } from "./content/classes";
+import { getActiveNodeChain } from "./classes";
+import type { CharacterSlot } from "./data/types";
 
 export { MAX_SKILL_LEVEL };
 export { PRIMAL_SKILLS, SKILL_IDS };
@@ -35,14 +36,15 @@ export type DrawResult =
   | { type: "new"; skillId: PrimalSkillId }
   | { type: "duplicate"; skillId: PrimalSkillId; pointsAwarded: number };
 
-/** Spend one core to draw a random primal skill. Returns null if 0 cores.
- *  When `stats` is provided, only boss-unlocked skills are in the draw pool. */
-export function drawPrimalSkill(state: SkillTreeState, rng: Rng, stats?: PlayerStats): DrawResult | null {
+/**
+ * Spend one core to draw a random primal skill. Returns null if 0 cores.
+ * @deprecated Skills are now derived from class promotions via activeSkillsFromCharacter.
+ *             This function is retained for legacy saves and developer tooling.
+ */
+export function drawPrimalSkill(state: SkillTreeState, rng: Rng): DrawResult | null {
   if (state.cores <= 0) return null;
 
-  const available = stats
-    ? SKILL_IDS.filter((id) => isSkillUnlocked(PRIMAL_SKILLS[id], stats))
-    : SKILL_IDS;
+  const available = SKILL_IDS;
   if (available.length === 0) return null;
 
   state.cores -= 1;
@@ -147,4 +149,33 @@ export function lifestealHeal(_level: number): number {
 /** Reflect shield reflects enemy projectiles and blocks all damage. */
 export function reflectDamageRatio(level: number): number {
   return 1 + level * 0.15;
+}
+
+// ── Class-derived skill loading ─────────────────────────────────────────────
+
+/**
+ * Derive the active primal skills for a run from the character's class node chain.
+ * Each class node that has a `skillId` field contributes that skill at base level.
+ * Skills are ordered as they appear in the node chain (T1 first, then T2).
+ */
+export function activeSkillsFromCharacter(slot: CharacterSlot): ActiveSkillState[] {
+  const seen = new Set<PrimalSkillId>();
+  const result: ActiveSkillState[] = [];
+  for (const nodeId of getActiveNodeChain(slot)) {
+    const node = CLASS_NODES[nodeId];
+    if (!node?.skillId) continue;
+    const id = node.skillId;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const def = PRIMAL_SKILLS[id];
+    result.push({
+      id,
+      level: 0,
+      cooldown: 0,
+      active: 0,
+      duration: skillDuration(def, 0),
+      maxCooldown: skillCooldown(def, 0),
+    });
+  }
+  return result;
 }

@@ -175,10 +175,22 @@ export function defaultFusionState(): FusionState {
 export type TalentId =
   | "survivalVitality"
   | "survivalPhase"
+  | "survivalArmor"
+  | "survivalReflexes"
+  | "survivalShield"
+  | "survivalRevive"
   | "offenseVector"
   | "offenseCritical"
+  | "offenseEdge"
+  | "offensePrecision"
+  | "offenseCombustion"
+  | "offenseDesperado"
   | "efficiencyPoints"
-  | "efficiencyFragments";
+  | "efficiencyFragments"
+  | "efficiencyAccrual"
+  | "efficiencyProfit"
+  | "efficiencyKinetic"
+  | "efficiencyHoming";
 
 export interface TalentState {
   levels: Record<TalentId, number>;
@@ -189,10 +201,22 @@ export function defaultTalentState(): TalentState {
     levels: {
       survivalVitality: 0,
       survivalPhase: 0,
+      survivalArmor: 0,
+      survivalReflexes: 0,
+      survivalShield: 0,
+      survivalRevive: 0,
       offenseVector: 0,
       offenseCritical: 0,
+      offenseEdge: 0,
+      offensePrecision: 0,
+      offenseCombustion: 0,
+      offenseDesperado: 0,
       efficiencyPoints: 0,
       efficiencyFragments: 0,
+      efficiencyAccrual: 0,
+      efficiencyProfit: 0,
+      efficiencyKinetic: 0,
+      efficiencyHoming: 0,
     },
   };
 }

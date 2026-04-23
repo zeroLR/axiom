@@ -550,9 +550,10 @@ export class TalentScene implements Scene {
   }
 
   private formatNodeBonus(
-    effectKind: TalentEffectKind,
+    effectKind: TalentEffectKind | undefined,
     total: number,
   ): string {
+    if (!effectKind) return "CORE ability";
     switch (effectKind) {
       case "maxHpAdd":
         return `+${Math.round(total)} HP`;
@@ -589,7 +590,7 @@ export class TalentScene implements Scene {
     return icons[branch];
   }
 
-  private nodeIcon(effectKind: TalentEffectKind): string {
+  private nodeIcon(effectKind: TalentEffectKind | undefined): string {
     switch (effectKind) {
       case "maxHpAdd":
         return glyphAegis;
@@ -604,7 +605,7 @@ export class TalentScene implements Scene {
       case "fragmentRewardMul":
         return glyphRecursion;
       default:
-        // Neutral fallback for forward-compatibility when new effect kinds are added.
+        // Core node or forward-compatible fallback.
         return glyphStar4;
     }
   }

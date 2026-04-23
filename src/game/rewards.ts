@@ -67,7 +67,7 @@ export const BOSS_WAVE_BONUS = 5;
 
 // ── Boss loot rolls ─────────────────────────────────────────────────────────
 
-export type LootKind = 'points' | 'skin' | 'skillPoints' | 'core';
+export type LootKind = 'points' | 'skin' | 'core';
 
 export interface LootDrop {
   kind: LootKind;
@@ -96,8 +96,8 @@ interface LootEntry {
 const BOSS_LOOT_TABLE: LootEntry[] = [
   { kind: 'points', label: '+100 points', value: 100, weight: 40 },
   { kind: 'skin', label: 'Boss skin shard', value: 0, weight: 55 },
-  { kind: 'skillPoints', label: '+30 skill pts', value: 30, weight: 75 },
-  { kind: 'core', label: 'Primal core ✧', value: 1, weight: 100 },
+  { kind: 'core', label: 'Primal core ✧', value: 1, weight: 75 },
+  { kind: 'core', label: 'Primal core ✧✧', value: 2, weight: 100 },
 ];
 
 /** Roll one loot drop from the boss loot table. */

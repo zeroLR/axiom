@@ -53,6 +53,7 @@ import {
 } from './game/equipment';
 import {
   createActiveSkillStates,
+  activeSkillsFromCharacter,
   PRIMAL_SKILLS,
   cloneInheritRatio,
   timeStopSpeedMul,
@@ -64,7 +65,6 @@ import {
   reflectDamageRatio,
 } from './game/skills';
 import { diffUnlocks } from './game/unlocks';
-import { MAX_SKILL_LEVEL } from './game/data/types';
 import { unlockAchievement } from './game/achievements';
 import type { RunResult } from './game/rewards';
 import {
@@ -126,6 +126,7 @@ import {
   AVATAR_TALENT_EFFECT_KINDS,
   resetTalentGrowth,
   talentBonuses,
+  talentCoreEffects,
   upgradeTalent,
 } from './game/talents';
 import {
@@ -257,7 +258,7 @@ async function boot(): Promise<void> {
   let currentRun: RunContext | null = null;
   let paused = false;
   let seed = 0;
-  let menuRng = createRng(42);
+  let menuRng = createRng(42); void menuRng; // available for future use (was used by legacy skill gacha)
   let runInventory = new CardInventory();
   /** Snapshot of stats at run start, used to compute unlock diff at end. */
   let statsBeforeRun: import('./game/data/types').PlayerStats | null = null;
@@ -280,6 +281,17 @@ async function boot(): Promise<void> {
       if (value <= 0) continue;
       applyEffectToWorld(
         { kind, value },
+        play.world,
+        play.avatarId,
+      );
+    }
+  }
+
+  function applyTalentCoreEffects(): void {
+    const effects = talentCoreEffects(profile.talents);
+    for (const effect of effects) {
+      applyEffectToWorld(
+        effect as import('./game/effectEngine').RuntimeEffect,
         play.world,
         play.avatarId,
       );
@@ -2852,12 +2864,17 @@ async function boot(): Promise<void> {
         ? (STAGE_WAVES[stageIndex] ?? WAVES)
         : [survivalWaveSpec(1, rng)]; // survival starts with wave 1
 
-    // In develop mode, start with no skills and default skin (bare avatar).
-    const activeSkills = developMode ? [] : createActiveSkillStates(skillTree);
-
     // Derive starting shape from the active character's lineage (class system).
     // Falls back to the legacy activeStartShape field if no character slot exists.
     const activeChar = activeCharacterSlot(profile.characters);
+
+    // In develop mode, start with no skills and default skin (bare avatar).
+    // In normal mode, derive active skills from the character's class node chain.
+    const activeSkills = developMode
+      ? []
+      : activeChar
+        ? activeSkillsFromCharacter(activeChar)
+        : createActiveSkillStates(skillTree);
     const startingShape = activeChar
       ? lineageToStartingShape(activeChar.lineage)
       : resolveSelectedStartingShape(profile);
@@ -3025,6 +3042,7 @@ async function boot(): Promise<void> {
       // Apply equipment loadout at run start.
       applyEquipment(equipment, play.world, play.avatarId);
       applyTalentAvatarBonuses();
+      applyTalentCoreEffects();
       applyClassPassiveBonuses();
 
       // Seed the card inventory with equipped equipment cards (they count as Lv 1).
@@ -3149,7 +3167,6 @@ async function boot(): Promise<void> {
     // Apply loot
     for (const drop of result.loot) {
       if (drop.kind === 'core') skillTree.cores += drop.value;
-      if (drop.kind === 'skillPoints') skillTree.skillPoints += drop.value;
     }
 
     // Apply fragment drops to persistent inventory (FRAGMENT_MATERIAL_CAP per material with overflow-to-points conversion).
@@ -3420,35 +3437,11 @@ async function boot(): Promise<void> {
             stack.pop();
             stack.push(
               new SkillTreeScene({
-                getState: () => skillTree,
-                getStats: () => profile.stats,
-                getRng: () => menuRng,
-                onStateChanged: async (state) => {
-                  skillTree = state;
-                  // Check achievements
-                  const anyUnlocked = Object.values(skillTree.skills).some(
-                    (s) => s.unlocked,
-                  );
-                  if (anyUnlocked) {
-                    if (unlockAchievement(achievements, 'firstPrimalSkill')) {
-                      await saveAchievements(achievements);
-                    }
-                  }
-                  const anyMaxed = Object.values(skillTree.skills).some(
-                    (s) => s.unlocked && s.level >= MAX_SKILL_LEVEL,
-                  );
-                  if (anyMaxed) {
-                    if (unlockAchievement(achievements, 'maxSkillLevel')) {
-                      await saveAchievements(achievements);
-                    }
-                  }
-                  await saveSkillTree(skillTree);
-                },
+                getActiveSlot: () => activeCharacterSlot(profile.characters),
                 onBack: () => {
                   stack.pop();
                   showMainMenu();
                 },
-                notify: (msg, type) => showNotification(msg, type),
               }),
             );
             break;
