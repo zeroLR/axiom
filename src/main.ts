@@ -66,7 +66,12 @@ import { diffUnlocks } from './game/unlocks';
 import { MAX_SKILL_LEVEL } from './game/data/types';
 import { unlockAchievement } from './game/achievements';
 import type { RunResult } from './game/rewards';
-import { FRAGMENT_META, bossKindForStage, fragmentCategory } from './game/fragments';
+import {
+  FRAGMENT_META,
+  applyFragmentGainWithCap,
+  bossKindForStage,
+  fragmentCategory,
+} from './game/fragments';
 import {
   applyStartingShapeLoadout,
   resolveSelectedStartingShape,
@@ -3044,13 +3049,15 @@ async function boot(): Promise<void> {
       if (drop.kind === 'skillPoints') skillTree.skillPoints += drop.value;
     }
 
-    // Apply fragment drops to persistent inventory
-    profile.fragments.basic += result.fragments.basic;
-    profile.fragments.elite += result.fragments.elite;
-    profile.fragments.boss += result.fragments.boss;
+    // Apply fragment drops to persistent inventory (FRAGMENT_MATERIAL_CAP per material with overflow-to-points conversion).
+    let fragmentOverflowPoints = 0;
     for (const meta of FRAGMENT_META) {
-      profile.fragments.detailed[meta.id] += result.fragments.detailed[meta.id] ?? 0;
+      const gain = result.fragments.detailed[meta.id] ?? 0;
+      const outcome = applyFragmentGainWithCap(profile.fragments.detailed, meta.id, gain);
+      profile.fragments[meta.category] += outcome.accepted;
+      fragmentOverflowPoints += outcome.overflowPoints;
     }
+    if (fragmentOverflowPoints > 0) profile.points += fragmentOverflowPoints;
     pendingFragments = result.fragments;
     pendingRunResult = result;
 
@@ -3207,8 +3214,9 @@ async function boot(): Promise<void> {
                   if (profile.points < price) return;
                   profile.points -= price;
                   const category = fragmentCategory(id);
-                  profile.fragments[category] += 1;
-                  profile.fragments.detailed[id] += 1;
+                  const outcome = applyFragmentGainWithCap(profile.fragments.detailed, id, 1);
+                  profile.fragments[category] += outcome.accepted;
+                  if (outcome.overflowPoints > 0) profile.points += outcome.overflowPoints;
                   await saveProfile(profile);
                 },
                 onSellFragment: async (id, gain) => {

@@ -40,6 +40,7 @@ export interface FragmentMeta {
 }
 
 export type FragmentDetailRecord = Record<FragmentId, number>;
+export const FRAGMENT_MATERIAL_CAP = 9999;
 
 const BASE_STRENGTH: Record<EnemyKind, number> = {
   circle: 1,
@@ -132,4 +133,37 @@ export function bossKindForStage(stageIndex: number): BossFragmentKind {
 export function fragmentCategory(id: FragmentId): FragmentCategory {
   if (id === "basic-core") return "basic";
   return id.startsWith("elite-") ? "elite" : "boss";
+}
+
+export interface FragmentOverflowResult {
+  accepted: number;
+  overflow: number;
+  overflowPoints: number;
+}
+
+/**
+ * Apply fragment gain with a hard cap per fragment material.
+ * Mutates `detailed` in place for the provided `id`.
+ * - `detailed`: player-owned per-fragment inventory record.
+ * - `id`: fragment material identifier to receive.
+ * - `amount`: incoming fragment count (floored to integer, negative treated as 0).
+ * Returns accepted amount, overflow count, and overflow points converted by that
+ * fragment material's sell price.
+ */
+export function applyFragmentGainWithCap(
+  detailed: FragmentDetailRecord,
+  id: FragmentId,
+  amount: number,
+): FragmentOverflowResult {
+  const safeAmount = Math.max(0, Math.floor(amount));
+  if (safeAmount === 0) {
+    return { accepted: 0, overflow: 0, overflowPoints: 0 };
+  }
+  const current = Math.max(0, detailed[id] ?? 0);
+  const remaining = Math.max(0, FRAGMENT_MATERIAL_CAP - current);
+  const accepted = Math.min(safeAmount, remaining);
+  const overflow = safeAmount - accepted;
+  detailed[id] = current + accepted;
+  const overflowPoints = overflow * FRAGMENT_META_BY_ID[id].sellPrice;
+  return { accepted, overflow, overflowPoints };
 }
