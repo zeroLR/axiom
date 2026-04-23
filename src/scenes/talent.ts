@@ -28,7 +28,6 @@ import type { NotifyType } from "../app/notificationService";
 import {
   glyphAegis,
   glyphCrit,
-  glyphFragmentBasic,
   glyphPhaseShift,
   glyphRecursion,
   glyphSharpShot,
@@ -164,13 +163,18 @@ export class TalentScene implements Scene {
     const level = talentLevel(profile.talents, id);
     const maxLevel = def.levels.length;
     const locked = Boolean(talentPrerequisiteMessage(profile.talents, id));
+    const bonusText = this.formatNodeBonus(def.effectKind, talentNodeBonus(profile.talents, id));
 
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "talent-tree-node";
+    btn.setAttribute(
+      "aria-label",
+      `${def.name}. Level ${level} of ${maxLevel}. Bonus ${bonusText}.${locked ? " Locked." : ""}`,
+    );
     if (locked) btn.classList.add("is-locked");
     if (this.selectedId === id) btn.classList.add("is-selected");
-    if (level >= maxLevel) btn.classList.add("is-maxed");
+    if (level >= maxLevel && this.selectedId !== id) btn.classList.add("is-maxed");
 
     const iconWrap = document.createElement("span");
     iconWrap.className = "talent-tree-node-icon";
@@ -184,7 +188,7 @@ export class TalentScene implements Scene {
 
     const bonus = document.createElement("div");
     bonus.className = "talent-tree-node-bonus";
-    bonus.textContent = this.formatNodeBonus(def.effectKind, talentNodeBonus(profile.talents, id));
+    bonus.textContent = bonusText;
     btn.appendChild(bonus);
 
     const levelChip = document.createElement("span");
@@ -529,7 +533,7 @@ export class TalentScene implements Scene {
     const resetBtn = document.createElement("button");
     resetBtn.type = "button";
     resetBtn.className = "menu-btn talent-reset-btn";
-    resetBtn.textContent = "Reset Tree (free)";
+    resetBtn.textContent = "reset tree (free)";
     resetBtn.addEventListener("click", () => {
       void this.handleReset();
     });
@@ -600,7 +604,8 @@ export class TalentScene implements Scene {
       case "fragmentRewardMul":
         return glyphRecursion;
       default:
-        return glyphFragmentBasic;
+        // Neutral fallback for forward-compatibility when new effect kinds are added.
+        return glyphStar4;
     }
   }
 

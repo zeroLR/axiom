@@ -293,7 +293,7 @@ body {
   gap: 5px;
   width: 176px;
   min-height: 164px;
-  padding: 24px 18px 28px;
+  padding: 28px 22px 32px;
   border: 2px solid var(--chrome);
   border-radius: 22px;
   clip-path: polygon(50% 0, 88% 20%, 88% 80%, 50% 100%, 12% 80%, 12% 20%);
@@ -345,11 +345,13 @@ body {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.25;
+  max-width: 118px;
 }
 
 .talent-tree-node-bonus {
   font-size: 11px;
   color: var(--muted);
+  max-width: 118px;
 }
 
 .talent-tree-node-level {
