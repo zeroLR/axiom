@@ -1,21 +1,35 @@
 import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import { SHOP_ITEMS, type ShopItem } from "../game/data/shop";
+import type { EnemyKind } from "../game/world";
 import type { PlayerProfile, EquipmentLoadout, ShopUnlocks } from "../game/data/types";
-import { iconSkins, iconEnhance, iconSpan, SHOP_GLYPHS, setIconHtml } from "../icons";
+import {
+  FRAGMENT_META,
+  type FragmentId,
+} from "../game/fragments";
+import {
+  iconSkins,
+  iconEnhance,
+  iconShop,
+  iconSpan,
+  SHOP_GLYPHS,
+  FRAGMENT_GLYPHS,
+  setIconHtml,
+} from "../icons";
 import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, createBodyScroll, createCardList, createBackButton } from "./ui";
-
-// ── Shop scene (DOM overlay) ────────────────────────────────────────────────
 
 export interface ShopCallbacks {
   getProfile: () => PlayerProfile;
   getEquipment: () => EquipmentLoadout;
   getShopUnlocks: () => ShopUnlocks;
+  getEnemyKillCount: (kind: EnemyKind) => number;
   onPurchase: (item: ShopItem) => void;
+  onBuyFragment: (id: FragmentId, price: number) => void;
+  onSellFragment: (id: FragmentId, gain: number) => void;
   onBack: () => void;
 }
 
-type ShopTab = "skin" | "enhance";
+type ShopTab = "skin" | "enhance" | "fragments";
 
 export class ShopScene implements Scene {
   readonly root: Container;
@@ -37,21 +51,38 @@ export class ShopScene implements Scene {
     this.refreshPoints(pointsEl);
     content.appendChild(pointsEl);
 
-    // Tab row
     const tabRow = document.createElement("div");
     tabRow.className = "tab-row";
     const skinTab = this.createTab(iconSkins, "Skins", "skin", tabRow);
     const enhTab = this.createTab(iconEnhance, "Enhance", "enhance", tabRow);
+    const fragTab = this.createTab(iconShop, "Fragments", "fragments", tabRow);
     if (this.activeTab === "skin") skinTab.classList.add("tab-active");
-    else enhTab.classList.add("tab-active");
+    else if (this.activeTab === "enhance") enhTab.classList.add("tab-active");
+    else fragTab.classList.add("tab-active");
     content.appendChild(tabRow);
 
     const body = createBodyScroll();
     content.appendChild(body);
 
-    // Item list (filtered by tab)
     const list = createCardList();
+    if (this.activeTab === "fragments") {
+      this.renderFragmentMarket(list);
+    } else {
+      this.renderDefaultShop(list);
+    }
+    body.appendChild(list);
 
+    inner.appendChild(createBackButton(() => this.cb.onBack()));
+  }
+
+  exit(): void {
+    closeOverlay({ constrained: true });
+  }
+
+  update(_dt: number): void {}
+  render(_alpha: number): void {}
+
+  private renderDefaultShop(list: HTMLElement): void {
     const filteredItems = SHOP_ITEMS.filter((item) => {
       if (this.activeTab === "skin") return item.category === "skin";
       return item.category === "equipCard" || item.category === "slotExpand";
@@ -89,26 +120,77 @@ export class ShopScene implements Scene {
       if (!purchased && canAfford) {
         btn.addEventListener("click", () => {
           this.cb.onPurchase(item);
-          // Re-render
           this.enter();
         });
       } else {
         btn.disabled = true;
       }
-
       list.appendChild(btn);
     }
-    body.appendChild(list);
-
-    inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
 
-  exit(): void {
-    closeOverlay({ constrained: true });
-  }
+  private renderFragmentMarket(list: HTMLElement): void {
+    const profile = this.cb.getProfile();
+    for (const meta of FRAGMENT_META) {
+      const owned = profile.fragments.detailed[meta.id];
+      const canBuyByKills =
+        !meta.enemyKind ||
+        this.cb.getEnemyKillCount(meta.enemyKind) >= meta.unlockKills;
+      const canBuy = canBuyByKills && profile.points >= meta.buyPrice;
+      const canSell = owned > 0;
 
-  update(_dt: number): void {}
-  render(_alpha: number): void {}
+      const card = document.createElement("div");
+      card.className = "card-btn fragment-market-card";
+
+      const glyph = document.createElement("span");
+      glyph.className = "card-glyph";
+      const icon = FRAGMENT_GLYPHS[meta.id];
+      if (icon) setIconHtml(glyph, icon);
+      else glyph.textContent = "•";
+      card.appendChild(glyph);
+
+      const body = document.createElement("span");
+      body.className = "card-body";
+      const name = document.createElement("span");
+      name.className = "card-name";
+      name.textContent = meta.label;
+      const desc = document.createElement("span");
+      desc.className = "card-text";
+      const unlockRequirementText =
+        !meta.enemyKind || meta.unlockKills <= 0
+          ? "always tradable"
+          : `${meta.enemyKind.toUpperCase()} kills: ${this.cb.getEnemyKillCount(meta.enemyKind)}/${meta.unlockKills}`;
+      desc.textContent = `owned: ${owned} · buy ${meta.buyPrice}pts · sell +${meta.sellPrice}pts · ${unlockRequirementText}`;
+      body.appendChild(name);
+      body.appendChild(desc);
+      card.appendChild(body);
+
+      const actions = document.createElement("div");
+      actions.className = "draft-actions";
+      const buyBtn = document.createElement("button");
+      buyBtn.type = "button";
+      buyBtn.className = "menu-btn";
+      buyBtn.textContent = "buy";
+      buyBtn.disabled = !canBuy;
+      buyBtn.addEventListener("click", () => {
+        this.cb.onBuyFragment(meta.id, meta.buyPrice);
+        this.enter();
+      });
+      const sellBtn = document.createElement("button");
+      sellBtn.type = "button";
+      sellBtn.className = "menu-btn";
+      sellBtn.textContent = "sell";
+      sellBtn.disabled = !canSell;
+      sellBtn.addEventListener("click", () => {
+        this.cb.onSellFragment(meta.id, meta.sellPrice);
+        this.enter();
+      });
+      actions.appendChild(buyBtn);
+      actions.appendChild(sellBtn);
+      card.appendChild(actions);
+      list.appendChild(card);
+    }
+  }
 
   private createTab(icon: string, label: string, tab: ShopTab, parent: HTMLElement): HTMLButtonElement {
     const btn = document.createElement("button");

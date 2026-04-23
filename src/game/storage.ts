@@ -6,6 +6,7 @@
 import {
   SCHEMA_VERSION,
   defaultPlayerProfile,
+  defaultEnemyKills,
   defaultEquipmentLoadout,
   defaultSkillTreeState,
   defaultAchievementState,
@@ -19,6 +20,7 @@ import {
   type GameSettings,
   type SaveData,
 } from "./data/types";
+import { emptyFragmentDetailRecord, FRAGMENT_META } from "./fragments";
 
 const DB_NAME = "axiom";
 const DB_VERSION = 2; // IndexedDB schema version (bump to trigger onupgradeneeded)
@@ -84,6 +86,13 @@ async function putStore<T>(store: StoreName, value: T): Promise<void> {
 export async function loadProfile(): Promise<PlayerProfile> {
   const raw = await getStore("profile", defaultPlayerProfile());
   const base = defaultPlayerProfile();
+  const detailedBase = emptyFragmentDetailRecord();
+  const rawDetailed = raw.fragments?.detailed ?? {};
+  const detailed = { ...detailedBase };
+  for (const meta of FRAGMENT_META) {
+    detailed[meta.id] = Number(rawDetailed[meta.id] ?? detailedBase[meta.id]) || 0;
+  }
+  const enemyKills = { ...defaultEnemyKills(), ...(raw.stats?.enemyKills ?? {}) };
   return {
     ...base,
     ...raw,
@@ -92,10 +101,12 @@ export async function loadProfile(): Promise<PlayerProfile> {
       basic: raw.fragments?.basic ?? 0,
       elite: raw.fragments?.elite ?? 0,
       boss: raw.fragments?.boss ?? 0,
+      detailed,
     },
     stats: {
       ...base.stats,
       ...raw.stats,
+      enemyKills,
       totalPointsEarned: raw.stats?.totalPointsEarned ?? base.stats.totalPointsEarned,
       // Expand normalCleared to cover all 5 stages (forward-compat migration).
       normalCleared: base.stats.normalCleared.map(

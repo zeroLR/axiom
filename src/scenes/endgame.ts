@@ -1,19 +1,38 @@
 import { Container } from "pixi.js";
 import type { Scene } from "./scene";
-import { closeOverlay, createOverlayTitle, createOverlaySub, initOverlay } from "./ui";
+import type { EnemyKind } from "../game/world";
 import type { FragmentTally } from "../game/rewards";
-
-// Combined overlay scene for game-over / win. Content varies by flavour; both
-// end the run and offer a tap-to-restart button.
+import { FRAGMENT_META } from "../game/fragments";
+import { POOL } from "../game/cards";
+import { PRIMAL_SKILLS } from "../game/skills";
+import {
+  CARD_GLYPHS,
+  ENEMY_GLYPHS,
+  FRAGMENT_GLYPHS,
+  SKILL_GLYPHS,
+  setIconHtml,
+} from "../icons";
+import { closeOverlay, createOverlayTitle, createOverlaySub, initOverlay } from "./ui";
 
 export type EndgameKind = "dead" | "won";
 
-/** Items unlocked by this run (computed by diffUnlocks). */
 export interface EndgameUnlocks {
-  /** Card display names that became available. */
   newCards: string[];
-  /** Skill display names that became available. */
   newSkills: string[];
+}
+
+interface EndgameActions {
+  onRetry: () => void;
+  onMenu: () => void;
+  onNext?: () => void;
+}
+
+interface EndgameSummary {
+  fragments?: FragmentTally;
+  unlocks?: EndgameUnlocks;
+  durationSec?: number;
+  killsByKind?: Partial<Record<EnemyKind, number>>;
+  abilityIds?: string[];
 }
 
 export class EndgameScene implements Scene {
@@ -21,25 +40,22 @@ export class EndgameScene implements Scene {
   private readonly kind: EndgameKind;
   private readonly wavesCleared: number;
   private readonly totalWaves: number;
-  private readonly onRestart: () => void;
-  private readonly unlocks?: EndgameUnlocks;
-  private readonly fragments?: FragmentTally;
+  private readonly actions: EndgameActions;
+  private readonly summary: EndgameSummary;
 
   constructor(
     kind: EndgameKind,
     wavesCleared: number,
     totalWaves: number,
-    onRestart: () => void,
-    unlocks?: EndgameUnlocks,
-    fragments?: FragmentTally,
+    actions: EndgameActions,
+    summary?: EndgameSummary,
   ) {
     this.root = new Container();
     this.kind = kind;
     this.wavesCleared = wavesCleared;
     this.totalWaves = totalWaves;
-    this.onRestart = onRestart;
-    this.unlocks = unlocks;
-    this.fragments = fragments;
+    this.actions = actions;
+    this.summary = summary ?? {};
   }
 
   enter(): void {
@@ -48,80 +64,46 @@ export class EndgameScene implements Scene {
     inner.appendChild(
       createOverlayTitle(this.kind === "dead" ? "shattered" : "run complete"),
     );
-
     const subText =
       this.kind === "dead"
         ? `reached wave ${this.wavesCleared}/${this.totalWaves}`
         : `cleared ${this.totalWaves}/${this.totalWaves} waves`;
     inner.appendChild(createOverlaySub(subText));
 
-    // Fragment haul summary
-    if (this.fragments) {
-      const { basic, elite, boss } = this.fragments;
-      const total = basic + elite + boss;
-      if (total > 0) {
-        const haul = document.createElement("div");
-        haul.style.fontFamily = "ui-monospace, monospace";
-        haul.style.textTransform = "uppercase";
-        haul.style.letterSpacing = "0.08em";
-        haul.style.textAlign = "center";
-        haul.style.margin = "12px 0";
-        haul.style.padding = "10px";
-        haul.style.border = "1px solid currentColor";
-        haul.style.opacity = "0.9";
-
-        const heading = document.createElement("div");
-        heading.style.fontWeight = "bold";
-        heading.style.marginBottom = "6px";
-        heading.textContent = "FRAGMENT HAUL";
-        haul.appendChild(heading);
-
-        const lines: string[] = [];
-        if (basic > 0) lines.push(`BASIC ×${basic}`);
-        if (elite > 0) lines.push(`ELITE ×${elite}`);
-        if (boss > 0) lines.push(`BOSS ×${boss}`);
-
-        const detail = document.createElement("div");
-        detail.style.fontSize = "0.9em";
-        detail.textContent = lines.join("  |  ");
-        haul.appendChild(detail);
-
-        inner.appendChild(haul);
-      }
+    if (this.summary.durationSec !== undefined) {
+      const time = document.createElement("div");
+      time.className = "overlay-sub";
+      time.textContent = `time: ${this.summary.durationSec.toFixed(1)}s`;
+      inner.appendChild(time);
     }
 
-    // DOMAIN SEALED — unlock banner
-    if (this.unlocks && (this.unlocks.newCards.length > 0 || this.unlocks.newSkills.length > 0)) {
-      const banner = document.createElement("div");
-      banner.style.fontFamily = "ui-monospace, monospace";
-      banner.style.textTransform = "uppercase";
-      banner.style.letterSpacing = "0.08em";
-      banner.style.textAlign = "center";
-      banner.style.margin = "12px 0";
-      banner.style.padding = "10px";
-      banner.style.border = "1px solid currentColor";
-      banner.style.opacity = "0.9";
+    this.renderAbilityPanel(inner);
+    this.renderKillPanel(inner);
+    this.renderFragmentPanel(inner);
+    this.renderUnlockBanner(inner);
 
-      const heading = document.createElement("div");
-      heading.style.fontWeight = "bold";
-      heading.style.marginBottom = "6px";
-      heading.textContent = "DOMAIN SEALED";
-      banner.appendChild(heading);
+    const retryBtn = document.createElement("button");
+    retryBtn.type = "button";
+    retryBtn.className = "big-btn";
+    retryBtn.textContent = "retry";
+    retryBtn.addEventListener("click", () => this.actions.onRetry());
+    inner.appendChild(retryBtn);
 
-      const items = [...this.unlocks.newCards, ...this.unlocks.newSkills];
-      const unlockLine = document.createElement("div");
-      unlockLine.textContent = `UNLOCKED: ${items.join(", ")}`;
-      banner.appendChild(unlockLine);
-
-      inner.appendChild(banner);
+    if (this.actions.onNext) {
+      const nextBtn = document.createElement("button");
+      nextBtn.type = "button";
+      nextBtn.className = "menu-btn";
+      nextBtn.textContent = "next stage";
+      nextBtn.addEventListener("click", () => this.actions.onNext?.());
+      inner.appendChild(nextBtn);
     }
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "big-btn";
-    btn.textContent = "new run";
-    btn.addEventListener("click", () => this.onRestart());
-    inner.appendChild(btn);
+    const menuBtn = document.createElement("button");
+    menuBtn.type = "button";
+    menuBtn.className = "menu-btn";
+    menuBtn.textContent = "main menu";
+    menuBtn.addEventListener("click", () => this.actions.onMenu());
+    inner.appendChild(menuBtn);
   }
 
   exit(): void {
@@ -129,6 +111,126 @@ export class EndgameScene implements Scene {
   }
 
   update(_dt: number): void {}
-
   render(_alpha: number): void {}
+
+  private renderAbilityPanel(inner: HTMLElement): void {
+    const ids = this.summary.abilityIds ?? [];
+    if (ids.length === 0) return;
+    const panel = document.createElement("div");
+    panel.className = "pause-panel";
+    const title = document.createElement("div");
+    title.className = "pause-panel-title";
+    title.textContent = "abilities";
+    panel.appendChild(title);
+    const list = document.createElement("div");
+    list.className = "pause-fragment-list";
+    const cardMap = new Map(POOL.map((c) => [c.id, c]));
+    for (const id of ids) {
+      const row = document.createElement("div");
+      row.className = "pause-fragment-row";
+      const glyph = document.createElement("span");
+      glyph.className = "pause-card-tag-glyph";
+      const card = cardMap.get(id);
+      const skill = PRIMAL_SKILLS[id as keyof typeof PRIMAL_SKILLS];
+      const svg = CARD_GLYPHS[id] ?? SKILL_GLYPHS[id];
+      if (svg) setIconHtml(glyph, svg);
+      else glyph.textContent = "•";
+      row.appendChild(glyph);
+      const label = document.createElement("span");
+      label.className = "pause-bonus-value";
+      label.textContent = card?.name ?? skill?.name ?? id;
+      row.appendChild(label);
+      list.appendChild(row);
+    }
+    panel.appendChild(list);
+    inner.appendChild(panel);
+  }
+
+  private renderKillPanel(inner: HTMLElement): void {
+    const kills = this.summary.killsByKind;
+    if (!kills) return;
+    const rows = Object.entries(kills).filter(([, n]) => (n ?? 0) > 0);
+    if (rows.length === 0) return;
+    const panel = document.createElement("div");
+    panel.className = "pause-panel";
+    const title = document.createElement("div");
+    title.className = "pause-panel-title";
+    title.textContent = "enemy kills";
+    panel.appendChild(title);
+    const list = document.createElement("div");
+    list.className = "pause-fragment-list";
+    for (const [kind, count] of rows.sort(([, countA], [, countB]) => (countB ?? 0) - (countA ?? 0))) {
+      const row = document.createElement("div");
+      row.className = "pause-fragment-row";
+      const glyph = document.createElement("span");
+      glyph.className = "pause-card-tag-glyph";
+      const svg = ENEMY_GLYPHS[kind];
+      if (svg) setIconHtml(glyph, svg);
+      else glyph.textContent = "•";
+      row.appendChild(glyph);
+      const label = document.createElement("span");
+      label.className = "pause-bonus-key";
+      label.textContent = kind.toUpperCase();
+      row.appendChild(label);
+      const val = document.createElement("span");
+      val.className = "pause-bonus-value";
+      val.textContent = `×${count}`;
+      row.appendChild(val);
+      list.appendChild(row);
+    }
+    panel.appendChild(list);
+    inner.appendChild(panel);
+  }
+
+  private renderFragmentPanel(inner: HTMLElement): void {
+    const fragments = this.summary.fragments;
+    if (!fragments) return;
+    const rows = FRAGMENT_META.filter((meta) => fragments.detailed[meta.id] > 0);
+    if (rows.length === 0) return;
+    const panel = document.createElement("div");
+    panel.className = "pause-panel";
+    const title = document.createElement("div");
+    title.className = "pause-panel-title";
+    title.textContent = "fragments";
+    panel.appendChild(title);
+    const list = document.createElement("div");
+    list.className = "pause-fragment-list";
+    for (const meta of rows) {
+      const row = document.createElement("div");
+      row.className = "pause-fragment-row";
+      const glyph = document.createElement("span");
+      glyph.className = "pause-card-tag-glyph";
+      const svg = FRAGMENT_GLYPHS[meta.id];
+      if (svg) setIconHtml(glyph, svg);
+      else glyph.textContent = "•";
+      row.appendChild(glyph);
+      const name = document.createElement("span");
+      name.className = "pause-bonus-key";
+      name.textContent = meta.label;
+      row.appendChild(name);
+      const val = document.createElement("span");
+      val.className = "pause-bonus-value";
+      val.textContent = `×${fragments.detailed[meta.id]}`;
+      row.appendChild(val);
+      list.appendChild(row);
+    }
+    panel.appendChild(list);
+    inner.appendChild(panel);
+  }
+
+  private renderUnlockBanner(inner: HTMLElement): void {
+    const unlocks = this.summary.unlocks;
+    if (!unlocks || (unlocks.newCards.length === 0 && unlocks.newSkills.length === 0)) return;
+    const banner = document.createElement("div");
+    banner.className = "pause-panel";
+    const heading = document.createElement("div");
+    heading.className = "pause-panel-title";
+    heading.textContent = "domain sealed";
+    banner.appendChild(heading);
+    const unlockLine = document.createElement("div");
+    unlockLine.className = "pause-bonus-value";
+    unlockLine.textContent = `UNLOCKED: ${[...unlocks.newCards, ...unlocks.newSkills].join(", ")}`;
+    banner.appendChild(unlockLine);
+    inner.appendChild(banner);
+  }
 }

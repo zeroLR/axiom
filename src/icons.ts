@@ -55,6 +55,11 @@ export const iconAchievements = wrap(
   `<polygon points="12,2 22.5,9.5 18.5,22 5.5,22 1.5,9.5"/>`,
 );
 
+/** Codex: stacked cards / registry. */
+export const iconCodex = wrap(
+  `<rect x="4" y="3" width="12" height="16" rx="1"/><rect x="8" y="6" width="12" height="16" rx="1"/>`,
+);
+
 /** Export: upward arrow through a line. */
 export const iconExport = wrap(
   `<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5,12 12,5 19,12"/><line x1="4" y1="22" x2="20" y2="22"/>`,
@@ -467,6 +472,47 @@ export const glyphCore = glyphWrap(
   `<polygon points="12,2 14,10 22,12 14,14 12,22 10,14 2,12 10,10"/>`,
 );
 
+// ── Enemy glyphs ──────────────────────────────────────────────────────────────
+
+export const glyphEnemyCircle = glyphWrap(`<circle cx="12" cy="12" r="9"/>`);
+export const glyphEnemySquare = glyphWrap(`<rect x="4" y="4" width="16" height="16"/>`);
+export const glyphEnemyStar = glyphWrap(`<polygon points="12,2 15,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 9,9"/>`);
+export const glyphEnemyBoss = glyphWrap(`<polygon points="12,2 22,7 22,17 12,22 2,17 2,7"/>`);
+export const glyphEnemyPentagon = glyphWrap(`<polygon points="12,2 22,10 18,22 6,22 2,10"/>`);
+export const glyphEnemyHexagon = glyphWrap(`<polygon points="12,2 21,7 21,17 12,22 3,17 3,7"/>`);
+export const glyphEnemyDiamond = glyphWrap(`<polygon points="12,2 22,12 12,22 2,12"/>`);
+export const glyphEnemyCross = glyphWrap(`<line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/>`);
+export const glyphEnemyCrescent = glyphWrap(`<path d="M16 3a9 9 0 1 0 0 18a7 7 0 1 1 0-18z"/>`);
+export const glyphEnemySpiral = glyphWrap(`<path d="M12 4a8 8 0 1 1-8 8c0-2.7 2.2-5 5-5s5 2.3 5 5-2 3-3 3"/>`);
+export const glyphEnemyLance = glyphWrap(`<line x1="4" y1="20" x2="20" y2="4"/><polyline points="15,4 20,4 20,9"/>`);
+export const glyphEnemyPrism = glyphWrap(`<polygon points="12,2 21,8 17,22 7,22 3,8"/>`);
+export const glyphEnemyOcto = glyphWrap(`<polygon points="8,2 16,2 22,8 22,16 16,22 8,22 2,16 2,8"/>`);
+export const glyphEnemyShade = glyphWrap(`<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>`);
+export const glyphEnemyOrthogon = glyphWrap(`<line x1="12" y1="2" x2="12" y2="22" stroke-width="3"/><line x1="2" y1="12" x2="22" y2="12" stroke-width="3"/>`);
+export const glyphEnemyJets = glyphFill(`<polygon points="12,21 4,7 12,11 20,7"/>`);
+export const glyphEnemyMirror = glyphWrap(`<polygon points="12,2 20,7 20,17 12,22 4,17 4,7"/><line x1="6" y1="8" x2="18" y2="16"/>`);
+export const glyphEnemyLattice = glyphWrap(`<rect x="4" y="4" width="16" height="16"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/>`);
+export const glyphEnemyRift = glyphWrap(`<path d="M6 4c4 0 4 4 8 4s4 4 0 4s-4 4 0 4s-4 4-8 4"/>`);
+
+// ── Fragment glyphs ───────────────────────────────────────────────────────────
+
+export const glyphFragmentBasic = glyphWrap(
+  `<polygon points="12,2 20,7 20,17 12,22 4,17 4,7"/><circle cx="12" cy="12" r="3" fill="currentColor"/>`,
+);
+export const glyphFragmentEliteStar = glyphWrap(`<polygon points="12,2 15,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 9,9"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentElitePentagon = glyphWrap(`<polygon points="12,2 22,10 18,22 6,22 2,10"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentEliteHexagon = glyphWrap(`<polygon points="12,2 21,7 21,17 12,22 3,17 3,7"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentEliteCross = glyphWrap(`<line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentElitePrism = glyphWrap(`<polygon points="12,2 21,8 17,22 7,22 3,8"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentEliteOcto = glyphWrap(`<polygon points="8,2 16,2 22,8 22,16 16,22 8,22 2,16 2,8"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentEliteShade = glyphWrap(`<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentBossBoss = glyphWrap(`<polygon points="12,2 22,7 22,17 12,22 2,17 2,7"/><polygon points="12,6 16,11 12,18 8,11"/>`);
+export const glyphFragmentBossOrthogon = glyphWrap(`<line x1="12" y1="2" x2="12" y2="22" stroke-width="3"/><line x1="2" y1="12" x2="22" y2="12" stroke-width="3"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentBossJets = glyphFill(`<polygon points="12,21 4,7 12,11 20,7"/><circle cx="12" cy="11" r="2"/>`);
+export const glyphFragmentBossMirror = glyphWrap(`<polygon points="12,2 20,7 20,17 12,22 4,17 4,7"/><line x1="6" y1="8" x2="18" y2="16"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentBossLattice = glyphWrap(`<rect x="4" y="4" width="16" height="16"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="12" cy="12" r="2"/>`);
+export const glyphFragmentBossRift = glyphWrap(`<path d="M6 4c4 0 4 4 8 4s4 4 0 4s-4 4 0 4s-4 4-8 4"/><circle cx="12" cy="12" r="2"/>`);
+
 // ── Boss-gated card glyphs ───────────────────────────────────────────────────
 
 /** ╋  Axis Lock: thick cross / plus. */
@@ -555,6 +601,45 @@ export const SHOP_GLYPHS: Record<string, string> = {
   "slot-4": glyphSlot4,
   "slot-5": glyphSlot5,
   "slot-6": glyphSlot6,
+};
+
+export const ENEMY_GLYPHS: Record<string, string> = {
+  circle: glyphEnemyCircle,
+  square: glyphEnemySquare,
+  star: glyphEnemyStar,
+  boss: glyphEnemyBoss,
+  pentagon: glyphEnemyPentagon,
+  hexagon: glyphEnemyHexagon,
+  diamond: glyphEnemyDiamond,
+  cross: glyphEnemyCross,
+  crescent: glyphEnemyCrescent,
+  spiral: glyphEnemySpiral,
+  lance: glyphEnemyLance,
+  prism: glyphEnemyPrism,
+  octo: glyphEnemyOcto,
+  shade: glyphEnemyShade,
+  orthogon: glyphEnemyOrthogon,
+  jets: glyphEnemyJets,
+  mirror: glyphEnemyMirror,
+  lattice: glyphEnemyLattice,
+  rift: glyphEnemyRift,
+};
+
+export const FRAGMENT_GLYPHS: Record<string, string> = {
+  "basic-core": glyphFragmentBasic,
+  "elite-star": glyphFragmentEliteStar,
+  "elite-pentagon": glyphFragmentElitePentagon,
+  "elite-hexagon": glyphFragmentEliteHexagon,
+  "elite-cross": glyphFragmentEliteCross,
+  "elite-prism": glyphFragmentElitePrism,
+  "elite-octo": glyphFragmentEliteOcto,
+  "elite-shade": glyphFragmentEliteShade,
+  "boss-boss": glyphFragmentBossBoss,
+  "boss-orthogon": glyphFragmentBossOrthogon,
+  "boss-jets": glyphFragmentBossJets,
+  "boss-mirror": glyphFragmentBossMirror,
+  "boss-lattice": glyphFragmentBossLattice,
+  "boss-rift": glyphFragmentBossRift,
 };
 
 export const ACHIEVEMENT_GLYPHS: Record<string, string> = {
