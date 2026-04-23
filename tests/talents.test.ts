@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { TALENT_NODES } from "../src/game/content/talents";
 import { defaultPlayerProfile, defaultTalentState } from "../src/game/data/types";
 import {
-  TALENT_RESET_COST,
   canUpgradeTalent,
   resetTalentGrowth,
   talentBonuses,
@@ -62,7 +61,7 @@ describe("talent growth", () => {
     expect(bonuses.pointRewardMul).toBeCloseTo(0.04);
   });
 
-  it("reset spends materials and refunds spent points", () => {
+  it("reset is free and refunds spent points", () => {
     const profile = defaultPlayerProfile();
     profile.points = 9999;
     profile.fragments.basic = 9999;
@@ -78,8 +77,8 @@ describe("talent growth", () => {
 
     expect(result.ok).toBe(true);
     expect(profile.points).toBe(pointsAfterUpgrade + spent);
-    expect(profile.fragments.basic).toBe(basicAfterUpgrade - TALENT_RESET_COST.basic);
-    expect(profile.fragments.elite).toBe(eliteAfterUpgrade - TALENT_RESET_COST.elite);
+    expect(profile.fragments.basic).toBe(basicAfterUpgrade);
+    expect(profile.fragments.elite).toBe(eliteAfterUpgrade);
     expect(profile.talents.levels.survivalVitality).toBe(0);
     expect(profile.talents.levels.offenseVector).toBe(0);
   });
