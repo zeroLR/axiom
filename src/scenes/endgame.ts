@@ -3,13 +3,10 @@ import type { Scene } from "./scene";
 import type { EnemyKind } from "../game/world";
 import type { FragmentTally } from "../game/rewards";
 import { FRAGMENT_META } from "../game/fragments";
-import { POOL } from "../game/cards";
-import { PRIMAL_SKILLS } from "../game/skills";
 import {
   CARD_GLYPHS,
   ENEMY_GLYPHS,
   FRAGMENT_GLYPHS,
-  SKILL_GLYPHS,
   setIconHtml,
 } from "../icons";
 import { closeOverlay, createOverlayTitle, createOverlaySub, initOverlay } from "./ui";
@@ -32,7 +29,7 @@ interface EndgameSummary {
   unlocks?: EndgameUnlocks;
   durationSec?: number;
   killsByKind?: Partial<Record<EnemyKind, number>>;
-  abilityIds?: string[];
+  enhanceEntries?: Array<{ id: string; level: number }>;
 }
 
 export class EndgameScene implements Scene {
@@ -114,33 +111,30 @@ export class EndgameScene implements Scene {
   render(_alpha: number): void {}
 
   private renderAbilityPanel(inner: HTMLElement): void {
-    const ids = this.summary.abilityIds ?? [];
-    if (ids.length === 0) return;
+    const entries = this.summary.enhanceEntries ?? [];
+    if (entries.length === 0) return;
     const panel = document.createElement("div");
     panel.className = "pause-panel";
     const title = document.createElement("div");
     title.className = "pause-panel-title";
-    title.textContent = "abilities";
+    title.textContent = "enhance";
     panel.appendChild(title);
     const list = document.createElement("div");
-    list.className = "pause-fragment-list";
-    const cardMap = new Map(POOL.map((c) => [c.id, c]));
-    for (const id of ids) {
-      const row = document.createElement("div");
-      row.className = "pause-fragment-row";
+    list.className = "pause-card-tag-list";
+    for (const entry of [...entries].sort((a, b) => b.level - a.level || a.id.localeCompare(b.id))) {
+      const chip = document.createElement("span");
+      chip.className = "pause-card-tag";
       const glyph = document.createElement("span");
       glyph.className = "pause-card-tag-glyph";
-      const card = cardMap.get(id);
-      const skill = PRIMAL_SKILLS[id as keyof typeof PRIMAL_SKILLS];
-      const svg = CARD_GLYPHS[id] ?? SKILL_GLYPHS[id];
+      const svg = CARD_GLYPHS[entry.id];
       if (svg) setIconHtml(glyph, svg);
       else glyph.textContent = "•";
-      row.appendChild(glyph);
-      const label = document.createElement("span");
-      label.className = "pause-bonus-value";
-      label.textContent = card?.name ?? skill?.name ?? id;
-      row.appendChild(label);
-      list.appendChild(row);
+      chip.appendChild(glyph);
+      const lv = document.createElement("span");
+      lv.className = "pause-card-tag-lv";
+      lv.textContent = `Lv${entry.level}`;
+      chip.appendChild(lv);
+      list.appendChild(chip);
     }
     panel.appendChild(list);
     inner.appendChild(panel);

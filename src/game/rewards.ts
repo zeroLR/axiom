@@ -217,8 +217,6 @@ export interface RunResult {
   fragments: FragmentTally;
   /** Kills grouped by enemy kind for post-run analytics and codex progression. */
   killsByKind?: Partial<Record<EnemyKind, number>>;
-  /** Ability IDs held at the end of this run. */
-  abilityIds?: string[];
   /** Run duration in seconds. */
   durationSec?: number;
   /** True if the player picked 0 cards during the run. */
