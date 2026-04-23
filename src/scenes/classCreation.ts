@@ -175,7 +175,7 @@ export class ClassCreationScene implements Scene {
       }
 
       // Bottom bar: passive summary + reset
-      list.appendChild(this.createBottomBar(profile, slot));
+      list.appendChild(this.createBottomBar(slot));
     } else {
       // No slots (shouldn't normally happen)
       const msg = createOverlaySub("No characters available. Create one to begin.");
@@ -704,7 +704,7 @@ export class ClassCreationScene implements Scene {
 
   // ── Bottom bar: passive summary + reset ─────────────────────────────────────
 
-  private createBottomBar(_profile: PlayerProfile, slot: CharacterSlot): HTMLElement {
+  private createBottomBar(slot: CharacterSlot): HTMLElement {
     const bar = document.createElement("div");
     bar.className = "talent-bottom-bar";
     bar.style.marginTop = "12px";

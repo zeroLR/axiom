@@ -291,7 +291,7 @@ async function boot(): Promise<void> {
     // Additive effects
     for (const kind of CLASS_PASSIVE_AVATAR_ADDITIVE_KINDS) {
       const value = bonuses[kind];
-      if (value > 0) applyEffectToWorld({ kind, value }, play.world, play.avatarId);
+      if (value !== 0) applyEffectToWorld({ kind, value }, play.world, play.avatarId);
     }
     // Multiplicative fire-rate effect
     if (bonuses.periodMul !== 1) {
