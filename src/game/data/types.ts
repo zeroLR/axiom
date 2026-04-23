@@ -28,6 +28,8 @@ export interface PlayerProfile {
   stats: PlayerStats;
   /** Persistent fragment inventory accumulated across all runs. */
   fragments: FragmentInventory;
+  /** Persistent talent progression state. */
+  talents: TalentState;
 }
 
 /** Persistent storage for the three kinds of collectible fragment. */
@@ -82,6 +84,7 @@ export function defaultPlayerProfile(): PlayerProfile {
     activeSkin: "triangle",
     activeStartShape: "triangle",
     fragments: { basic: 0, elite: 0, boss: 0, detailed: emptyFragmentDetailRecord() },
+    talents: defaultTalentState(),
     stats: {
       totalRuns: 0,
       totalKills: 0,
@@ -90,6 +93,33 @@ export function defaultPlayerProfile(): PlayerProfile {
       bestSurvivalWave: 0,
       normalCleared: [false, false, false, false, false],
       totalPointsEarned: 0,
+    },
+  };
+}
+
+// ── Talent Growth ────────────────────────────────────────────────────────────
+
+export type TalentId =
+  | "survivalVitality"
+  | "survivalPhase"
+  | "offenseVector"
+  | "offenseCritical"
+  | "efficiencyPoints"
+  | "efficiencyFragments";
+
+export interface TalentState {
+  levels: Record<TalentId, number>;
+}
+
+export function defaultTalentState(): TalentState {
+  return {
+    levels: {
+      survivalVitality: 0,
+      survivalPhase: 0,
+      offenseVector: 0,
+      offenseCritical: 0,
+      efficiencyPoints: 0,
+      efficiencyFragments: 0,
     },
   };
 }

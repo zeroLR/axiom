@@ -33,6 +33,7 @@ import { ShopScene } from './scenes/shop';
 import { EquipmentScene } from './scenes/equipment';
 import { StartShapeSelectScene } from './scenes/startShapeSelect';
 import { SkillTreeScene } from './scenes/skillTree';
+import { TalentScene } from './scenes/talent';
 import { AchievementsScene } from './scenes/achievements';
 import { SettingsScene } from './scenes/settings';
 import {
@@ -120,6 +121,13 @@ import { setScreenShakeEnabled } from './game/screenShake';
 import { playMusic, setMusicVolume, stopMusic, isMusicPlaying } from './game/music';
 import type { RunContext } from './app/runContext';
 import { checkRunAchievements } from './app/achievementChecker';
+import { applyEffectToWorld } from './game/effectEngine';
+import {
+  AVATAR_TALENT_EFFECT_KINDS,
+  resetTalentGrowth,
+  talentBonuses,
+  upgradeTalent,
+} from './game/talents';
 import { renderPauseOverlay } from './scenes/pause';
 import { closeOverlay } from './scenes/ui';
 import { createSkillButton } from './scenes/components/skillButton';
@@ -252,6 +260,21 @@ async function boot(): Promise<void> {
   /** Settled run payload consumed by endgame summary UI. */
   let pendingRunResult: RunResult | null = null;
   let developerModeUnlocked = settings.developerMode ?? false;
+  /** Resource branch always grants at least +1 fragment when the source gain is positive. */
+  const TALENT_FRAGMENT_BONUS_MIN = 1;
+
+  function applyTalentAvatarBonuses(): void {
+    const bonuses = talentBonuses(profile.talents);
+    for (const kind of AVATAR_TALENT_EFFECT_KINDS) {
+      const value = bonuses[kind];
+      if (value <= 0) continue;
+      applyEffectToWorld(
+        { kind, value },
+        play.world,
+        play.avatarId,
+      );
+    }
+  }
 
   function syncRunControlButtons(): void {
     const runActive = currentRun !== null;
@@ -2968,6 +2991,7 @@ async function boot(): Promise<void> {
       applyStartingShapeLoadout(play.world, play.avatarId, startingShape);
       // Apply equipment loadout at run start.
       applyEquipment(equipment, play.world, play.avatarId);
+      applyTalentAvatarBonuses();
 
       // Seed the card inventory with equipped equipment cards (they count as Lv 1).
       for (const cardId of equipment.equipped) {
@@ -3034,6 +3058,28 @@ async function boot(): Promise<void> {
       result.fragments.boss += result.bossChestReward.bossFragments;
       result.fragments.detailed[stageBossFragmentId] += result.bossChestReward.bossFragments;
       if (result.bossChestReward.core > 0) skillTree.cores += result.bossChestReward.core;
+    }
+
+    const talentMeta = talentBonuses(profile.talents);
+    if (talentMeta.fragmentRewardMul > 0) {
+      for (const meta of FRAGMENT_META) {
+        const base = result.fragments.detailed[meta.id] ?? 0;
+        if (base <= 0) continue;
+        const delta = Math.max(
+          TALENT_FRAGMENT_BONUS_MIN,
+          Math.round(base * talentMeta.fragmentRewardMul),
+        );
+        if (delta > 0) {
+          result.fragments.detailed[meta.id] += delta;
+          result.fragments[meta.category] += delta;
+        }
+      }
+    }
+    if (talentMeta.pointRewardMul > 0) {
+      result.pointsEarned = Math.max(
+        0,
+        Math.round(result.pointsEarned * (1 + talentMeta.pointRewardMul)),
+      );
     }
 
     // Update profile
@@ -3308,6 +3354,30 @@ async function boot(): Promise<void> {
                     }
                   }
                   await saveSkillTree(skillTree);
+                },
+                onBack: () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+                notify: (msg, type) => showNotification(msg, type),
+              }),
+            );
+            break;
+
+          case 'talentGrowth':
+            stack.pop();
+            stack.push(
+              new TalentScene({
+                getProfile: () => profile,
+                onUpgrade: async (id) => {
+                  const result = upgradeTalent(profile, id);
+                  if (result.ok) await saveProfile(profile);
+                  return result;
+                },
+                onReset: async () => {
+                  const result = resetTalentGrowth(profile);
+                  if (result.ok) await saveProfile(profile);
+                  return result;
                 },
                 onBack: () => {
                   stack.pop();

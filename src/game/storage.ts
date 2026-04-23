@@ -7,6 +7,7 @@ import {
   SCHEMA_VERSION,
   defaultPlayerProfile,
   defaultEnemyKills,
+  defaultTalentState,
   defaultEquipmentLoadout,
   defaultSkillTreeState,
   defaultAchievementState,
@@ -93,6 +94,8 @@ export async function loadProfile(): Promise<PlayerProfile> {
     detailed[meta.id] = Number(rawDetailed[meta.id] ?? detailedBase[meta.id]) || 0;
   }
   const enemyKills = { ...defaultEnemyKills(), ...(raw.stats?.enemyKills ?? {}) };
+  const talentBase = defaultTalentState();
+  const rawTalentLevels = raw.talents?.levels ?? {};
   return {
     ...base,
     ...raw,
@@ -102,6 +105,12 @@ export async function loadProfile(): Promise<PlayerProfile> {
       elite: raw.fragments?.elite ?? 0,
       boss: raw.fragments?.boss ?? 0,
       detailed,
+    },
+    talents: {
+      levels: {
+        ...talentBase.levels,
+        ...rawTalentLevels,
+      },
     },
     stats: {
       ...base.stats,
