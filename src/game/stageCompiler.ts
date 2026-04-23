@@ -74,6 +74,7 @@ export function compileStageWaves(config: StageConfig, rng?: Rng): readonly Wave
 /**
  * Enemy strength multiplier for the given 0-based stage index.
  * Reads from `STAGE_CONFIGS` — single source of truth.
+ * Returns 1 for out-of-range (negative or beyond last stage) indices.
  */
 export function stageStrengthMul(stageIndex: number): number {
   return STAGE_CONFIGS[stageIndex]?.enemyStrengthMul ?? 1;
@@ -82,6 +83,7 @@ export function stageStrengthMul(stageIndex: number): number {
 /**
  * Kill-point multiplier for the given 0-based stage index in normal mode.
  * Reads from `STAGE_CONFIGS` — single source of truth.
+ * Returns 1 for out-of-range (negative or beyond last stage) indices.
  */
 export function stagePointMul(stageIndex: number): number {
   return STAGE_CONFIGS[stageIndex]?.pointMul ?? 1;

@@ -22,8 +22,11 @@ export function weightedPick<T>(entries: WeightedItem<T>[], rng: Rng): T {
     if (r <= 0) return e.item;
   }
   // Floating-point edge case: return last positive-weight item.
-  const last = [...entries].reverse().find(e => e.weight > 0);
-  return last!.item;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i]!.weight > 0) return entries[i]!.item;
+  }
+  // Unreachable: total > 0 guarantees at least one positive-weight entry.
+  throw new Error('weightedPick: unreachable fallback');
 }
 
 /**

@@ -7,7 +7,6 @@ import {
   stagePointMul,
   buildStagePointMulArray,
 } from '../src/game/stageCompiler';
-import type { WaveSpec } from '../src/game/waves';
 
 // ── STAGE_CONFIGS sanity ─────────────────────────────────────────────────────
 
@@ -91,7 +90,7 @@ describe('compileStageWaves', () => {
   it('compiled wave specs have correct indices', () => {
     const waves = compileStageWaves(STAGE_CONFIGS[0]!);
     waves.forEach((w, i) => {
-      expect((w as WaveSpec).index).toBe(i + 1);
+      expect(w.index).toBe(i + 1);
     });
   });
 
