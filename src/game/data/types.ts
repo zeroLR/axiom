@@ -10,7 +10,7 @@ import {
 // one import path and one schema version constant.
 
 /** Global schema version — bump when store shapes change. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 // ── Player Profile ──────────────────────────────────────────────────────────
 
@@ -30,6 +30,10 @@ export interface PlayerProfile {
   fragments: FragmentInventory;
   /** Persistent talent progression state. */
   talents: TalentState;
+  /** Class Creation — character slots and progression. */
+  characters: CharactersState;
+  /** Fusion / Mutation placeholder (not yet functional). */
+  fusion: FusionState;
 }
 
 /** Persistent storage for the three kinds of collectible fragment. */
@@ -85,6 +89,8 @@ export function defaultPlayerProfile(): PlayerProfile {
     activeStartShape: "triangle",
     fragments: { basic: 0, elite: 0, boss: 0, detailed: emptyFragmentDetailRecord() },
     talents: defaultTalentState(),
+    characters: defaultCharactersState(),
+    fusion: defaultFusionState(),
     stats: {
       totalRuns: 0,
       totalKills: 0,
@@ -95,6 +101,73 @@ export function defaultPlayerProfile(): PlayerProfile {
       totalPointsEarned: 0,
     },
   };
+}
+
+// ── Class Creation ────────────────────────────────────────────────────────────
+
+/** Identifies one of the three playable class lineages. */
+export type ClassLineageId = "axis" | "wing" | "mirror";
+
+/**
+ * A single character slot. The character's class progress is stored here.
+ * - `tier` 0–3: current advancement tier (0 = base class, 3 = fully promoted)
+ * - `branchPath`: array of branch choices per tier ≥ 2 ([t2Branch, t3Branch], each 0 or 1)
+ */
+export interface CharacterSlot {
+  id: string;
+  name: string;
+  lineage: ClassLineageId;
+  tier: number;
+  branchPath: number[];
+  createdAt: number;
+}
+
+export interface CharactersState {
+  slots: CharacterSlot[];
+  /** ID of the currently active character slot. */
+  activeSlotId: string;
+  /** How many slots are currently unlocked (max 6). */
+  maxSlots: number;
+}
+
+export function defaultCharactersState(): CharactersState {
+  return {
+    slots: [
+      {
+        id: "char-1",
+        name: "Character 1",
+        lineage: "axis",
+        tier: 0,
+        branchPath: [],
+        createdAt: 0,
+      },
+    ],
+    activeSlotId: "char-1",
+    maxSlots: 1,
+  };
+}
+
+// ── Fusion (placeholder — not yet functional) ─────────────────────────────────
+
+/**
+ * A future Fusion record (not yet implemented).
+ * Stored so future feature work can migrate existing data.
+ */
+export interface FusionRecord {
+  id: string;
+  slotAId: string;
+  slotBId: string;
+  /** ID of the boss fragment used to fuse (e.g. "boss-mirror"). */
+  bossFusionFragmentId: string;
+}
+
+export interface FusionState {
+  /** All fusion records (placeholder, not yet functional). */
+  records: FusionRecord[];
+}
+
+export function defaultFusionState(): FusionState {
+  return { records: [] };
 }
 
 // ── Talent Growth ────────────────────────────────────────────────────────────

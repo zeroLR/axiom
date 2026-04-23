@@ -480,6 +480,28 @@ export const glyphStarOutline = glyphWrap(
   `<polygon points="12,2 15,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 9,9"/>`,
 );
 
+// ── Class Creation lineage icons ──────────────────────────────────────────────
+
+/** AXIS lineage: converging arrows to center point (precision). */
+export const iconLineageAxis = wrap(
+  `<polygon points="12,3 22,21 2,21"/><line x1="12" y1="3" x2="12" y2="21"/>`,
+);
+
+/** WING lineage: two angled wings / parallel chevrons (speed). */
+export const iconLineageWing = wrap(
+  `<polyline points="3,8 12,4 21,8"/><polyline points="3,16 12,12 21,16"/>`,
+);
+
+/** MIRROR lineage: diamond (endurance / reflection). */
+export const iconLineageMirror = wrap(
+  `<polygon points="12,2 22,12 12,22 2,12"/><line x1="2" y1="12" x2="22" y2="12"/>`,
+);
+
+/** Class Creation: person outline (character). */
+export const iconClassCreate = wrap(
+  `<circle cx="12" cy="7" r="4"/><path d="M4,21 C4,17 8,14 12,14 C16,14 20,17 20,21"/>`,
+);
+
 // ── Misc glyphs ─────────────────────────────────────────────────────────────
 
 /** △  Default triangle skin glyph. */

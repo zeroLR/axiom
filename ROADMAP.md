@@ -68,15 +68,18 @@
 
 ### 職業（創造）系統（Class Creation）
 > 從起始形狀延伸為基礎職系，分三大定理職業；角色可多開培養。
-- [ ] 定義三大基礎定理職系（對應 AXIS / WING / MIRROR 主題）
-- [ ] 每條職系支援 1→2→3→4 轉進階分支，定義轉職門檻（等級 / Boss 碎片 / 點數）
-- [ ] 角色槽位系統：玩家可用點數生成新角色，各角色獨立成長
-- [ ] 職業被動能力 schema 與 effectEngine 整合
-- [ ] 職業選擇 UI（起始形狀選擇頁升級改版）
-- [ ] 轉職流程 UI（消耗確認、動畫/演出）
+- [x] 定義三大基礎定理職系（對應 AXIS / WING / MIRROR 主題）
+- [x] 每條職系支援 T0→T3 轉進階分支（含 T1 單路、T2/T3 雙分支），定義轉職門檻（stage clear / Boss 碎片 / 點數）
+- [x] 角色槽位系統：玩家可用點數生成新角色（最多 6 槽，遞增成本）
+- [x] 職業被動能力 schema 與 effectEngine 整合（run 開始套用 + 結算套用 pointRewardMul / fragmentRewardMul）
+- [x] 選形狀時同步 character lineage；主選單按鈕改名為「Class Creation」；存檔遷移（activeStartShape → characters.slots[0].lineage）
+- [x] 職業選擇 / 轉職完整 UI（Class Creation Scene — Phase C 完成）
+- [x] 轉職流程 UI（升階確認 modal，含成本顯示與分支選擇）
+- [ ] T4（tier 4）節點設計與門檻（預留資料結構欄位）
 
 ### 融合（異變）系統（Fusion / Mutation）
 > 終局內容：兩名 1 轉以上角色 + Boss 碎片 + 點數 → 異變特殊職業。
+- [x] FusionRecord / FusionState 資料結構前置欄位（不可逆門檻欄位預留，記錄在 PlayerProfile.fusion）
 - [ ] 融合條件設計（角色轉職等級、指定 Boss 碎片種類、點數成本）
 - [ ] 異變職業 schema（特殊被動與主動能力，不可再轉職或融合）
 - [ ] 融合職業的碎片強化天賦路徑（替代轉職後的成長出口）

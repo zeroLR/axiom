@@ -436,6 +436,280 @@ body {
   flex: 1 1 0;
 }
 
+/* ── Class Creation Scene ───────────────────────────────────────────────── */
+
+.cc-slot-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 0 8px 0;
+}
+
+.cc-slot-tab {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--chrome);
+  border-radius: 8px;
+  color: var(--fg);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.cc-slot-tab:hover {
+  background: var(--chrome);
+}
+
+.cc-slot-tab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.cc-slot-tab.is-create {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.cc-slot-tab.is-create:hover {
+  color: var(--fg);
+  background: transparent;
+  border-color: var(--fg);
+  border-style: dashed;
+}
+
+.cc-lineage-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 4px 0;
+}
+
+.cc-lineage-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  flex: 1;
+}
+
+.cc-lineage-tier {
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--chrome);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.cc-lineage-flavor {
+  font-size: 12px;
+  color: var(--muted);
+  padding-bottom: 8px;
+  font-style: italic;
+}
+
+.cc-tree-track {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.cc-tree-link {
+  width: 2px;
+  height: 14px;
+  background: var(--chrome);
+  align-self: center;
+}
+
+.cc-branch-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}
+
+.cc-node {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  background: var(--bg);
+  border: 1px solid var(--chrome);
+  border-radius: 10px;
+  color: var(--fg);
+  cursor: default;
+  font-family: inherit;
+  padding: 8px 12px;
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease;
+  width: 100%;
+}
+
+.cc-node.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+.cc-node.is-next {
+  border-color: var(--fg);
+  cursor: pointer;
+}
+
+.cc-node.is-next:hover {
+  background: var(--chrome);
+}
+
+.cc-node.is-locked {
+  opacity: 0.45;
+}
+
+.cc-node.is-inactive {
+  opacity: 0.3;
+}
+
+.cc-node-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cc-node-passive {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.cc-node-tier-chip {
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--chrome);
+  border-radius: 4px;
+  padding: 1px 5px;
+  align-self: flex-start;
+}
+
+.cc-promote-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--chrome);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--bg);
+  transform: translateY(6px);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.cc-promote-modal.open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.cc-branch-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cc-branch-btn {
+  appearance: none;
+  background: var(--bg);
+  border: 1px solid var(--chrome);
+  border-radius: 8px;
+  color: var(--fg);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.cc-branch-btn:hover {
+  background: var(--chrome);
+}
+
+.cc-branch-btn.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+.cc-branch-btn-name {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.cc-branch-btn-passive {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.cc-promote-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cc-promote-actions > * {
+  flex: 1 1 0;
+}
+
+.cc-create-lineage-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.cc-create-lineage-btn {
+  appearance: none;
+  background: var(--bg);
+  border: 1px solid var(--chrome);
+  border-radius: 10px;
+  color: var(--fg);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 10px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.cc-create-lineage-btn:hover {
+  background: var(--chrome);
+}
+
+.cc-create-lineage-btn.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+.cc-create-lineage-btn .svg-icon {
+  font-size: 1.6em;
+}
+
+.cc-create-lineage-name {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.cc-create-lineage-shape {
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .card-btn {
   appearance: none;
   display: flex;
