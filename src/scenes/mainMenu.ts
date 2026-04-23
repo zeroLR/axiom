@@ -16,7 +16,7 @@ export type MenuAction =
   | { kind: "developMode" }
   | { kind: "shop" }
   | { kind: "equipment" }
-  | { kind: "startShape" }
+  | { kind: "classCreation" }
   | { kind: "skillTree" }
   | { kind: "talentGrowth" }
   | { kind: "codex" }
@@ -87,7 +87,7 @@ export class MainMenuScene implements Scene {
     this.addBtn(row, iconAchievements, "Achievements", "achievements", "menu-btn");
     inner.appendChild(row);
 
-    this.addBtn(inner, iconSkins, "Starting Shape", "startShape", "menu-btn");
+    this.addBtn(inner, iconSkins, "Class Creation", "classCreation", "menu-btn");
     this.addBtn(inner, iconSettings, "Settings", "settings", "menu-btn");
 
     // Data row

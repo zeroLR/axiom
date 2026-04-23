@@ -128,6 +128,13 @@ import {
   talentBonuses,
   upgradeTalent,
 } from './game/talents';
+import {
+  activeCharacterSlot,
+  CLASS_PASSIVE_AVATAR_ADDITIVE_KINDS,
+  classPassiveBonuses,
+  lineageToStartingShape,
+  startingShapeToLineage,
+} from './game/classes';
 import { renderPauseOverlay } from './scenes/pause';
 import { closeOverlay } from './scenes/ui';
 import { createSkillButton } from './scenes/components/skillButton';
@@ -274,6 +281,24 @@ async function boot(): Promise<void> {
         play.avatarId,
       );
     }
+  }
+
+  function applyClassPassiveBonuses(): void {
+    const bonuses = classPassiveBonuses(profile.characters);
+    // Additive effects
+    for (const kind of CLASS_PASSIVE_AVATAR_ADDITIVE_KINDS) {
+      const value = bonuses[kind];
+      if (value > 0) applyEffectToWorld({ kind, value }, play.world, play.avatarId);
+    }
+    // Multiplicative fire-rate effect
+    if (bonuses.periodMul !== 1) {
+      applyEffectToWorld({ kind: 'periodMul', value: bonuses.periodMul }, play.world, play.avatarId);
+    }
+    // Multiplicative movement-speed effect
+    if (bonuses.speedMul !== 1) {
+      applyEffectToWorld({ kind: 'speedMul', value: bonuses.speedMul }, play.world, play.avatarId);
+    }
+    // pointRewardMul and fragmentRewardMul are applied in settleRun
   }
 
   function syncRunControlButtons(): void {
@@ -2827,7 +2852,12 @@ async function boot(): Promise<void> {
     // In develop mode, start with no skills and default skin (bare avatar).
     const activeSkills = developMode ? [] : createActiveSkillStates(skillTree);
 
-    const startingShape = resolveSelectedStartingShape(profile);
+    // Derive starting shape from the active character's lineage (class system).
+    // Falls back to the legacy activeStartShape field if no character slot exists.
+    const activeChar = activeCharacterSlot(profile.characters);
+    const startingShape = activeChar
+      ? lineageToStartingShape(activeChar.lineage)
+      : resolveSelectedStartingShape(profile);
     const runSkin = developMode
       ? 'triangle'
       : runSkinForStartingShape(startingShape, profile.activeSkin);
@@ -2992,6 +3022,7 @@ async function boot(): Promise<void> {
       // Apply equipment loadout at run start.
       applyEquipment(equipment, play.world, play.avatarId);
       applyTalentAvatarBonuses();
+      applyClassPassiveBonuses();
 
       // Seed the card inventory with equipped equipment cards (they count as Lv 1).
       for (const cardId of equipment.equipped) {
@@ -3079,6 +3110,29 @@ async function boot(): Promise<void> {
       result.pointsEarned = Math.max(
         0,
         Math.round(result.pointsEarned * (1 + talentMeta.pointRewardMul)),
+      );
+    }
+
+    // Apply class passive settlement bonuses (stack on top of talent bonuses)
+    const classMeta = classPassiveBonuses(profile.characters);
+    if (classMeta.fragmentRewardMul > 0) {
+      for (const meta of FRAGMENT_META) {
+        const base = result.fragments.detailed[meta.id] ?? 0;
+        if (base <= 0) continue;
+        const delta = Math.max(
+          TALENT_FRAGMENT_BONUS_MIN,
+          Math.round(base * classMeta.fragmentRewardMul),
+        );
+        if (delta > 0) {
+          result.fragments.detailed[meta.id] += delta;
+          result.fragments[meta.category] += delta;
+        }
+      }
+    }
+    if (classMeta.pointRewardMul > 0) {
+      result.pointsEarned = Math.max(
+        0,
+        Math.round(result.pointsEarned * (1 + classMeta.pointRewardMul)),
       );
     }
 
@@ -3310,13 +3364,18 @@ async function boot(): Promise<void> {
             );
             break;
 
-          case 'startShape':
+          case 'classCreation':
             stack.pop();
             stack.push(
               new StartShapeSelectScene({
                 getProfile: () => profile,
                 onSelect: async (shapeId) => {
                   profile.activeStartShape = shapeId;
+                  // Sync active character lineage so startRun picks up the change.
+                  const activeChar = activeCharacterSlot(profile.characters);
+                  if (activeChar) {
+                    activeChar.lineage = startingShapeToLineage(shapeId);
+                  }
                   await saveProfile(profile);
                 },
                 onBack: () => {

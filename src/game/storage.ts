@@ -8,6 +8,8 @@ import {
   defaultPlayerProfile,
   defaultEnemyKills,
   defaultTalentState,
+  defaultCharactersState,
+  defaultFusionState,
   defaultEquipmentLoadout,
   defaultSkillTreeState,
   defaultAchievementState,
@@ -22,6 +24,7 @@ import {
   type SaveData,
 } from "./data/types";
 import { emptyFragmentDetailRecord, FRAGMENT_META } from "./fragments";
+import { startingShapeToLineage } from "./classes";
 
 const DB_NAME = "axiom";
 const DB_VERSION = 2; // IndexedDB schema version (bump to trigger onupgradeneeded)
@@ -96,6 +99,20 @@ export async function loadProfile(): Promise<PlayerProfile> {
   const enemyKills = { ...defaultEnemyKills(), ...(raw.stats?.enemyKills ?? {}) };
   const talentBase = defaultTalentState();
   const rawTalentLevels = raw.talents?.levels ?? {};
+
+  // ── Class Creation migration ───────────────────────────────────────────────
+  // If an existing save has no characters data, derive the lineage from
+  // activeStartShape so the first run correctly uses the previously-selected shape.
+  const defaultChars = defaultCharactersState();
+  let characters = raw.characters;
+  if (!characters || !Array.isArray(characters.slots) || characters.slots.length === 0) {
+    const lineage = startingShapeToLineage(raw.activeStartShape ?? "triangle");
+    characters = {
+      ...defaultChars,
+      slots: [{ ...defaultChars.slots[0]!, lineage }],
+    };
+  }
+
   return {
     ...base,
     ...raw,
@@ -112,6 +129,8 @@ export async function loadProfile(): Promise<PlayerProfile> {
         ...rawTalentLevels,
       },
     },
+    characters,
+    fusion: raw.fusion ?? defaultFusionState(),
     stats: {
       ...base.stats,
       ...raw.stats,
