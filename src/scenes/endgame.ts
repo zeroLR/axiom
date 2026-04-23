@@ -1,6 +1,7 @@
 import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import { closeOverlay, createOverlayTitle, createOverlaySub, initOverlay } from "./ui";
+import type { FragmentTally } from "../game/rewards";
 
 // Combined overlay scene for game-over / win. Content varies by flavour; both
 // end the run and offer a tap-to-restart button.
@@ -22,6 +23,7 @@ export class EndgameScene implements Scene {
   private readonly totalWaves: number;
   private readonly onRestart: () => void;
   private readonly unlocks?: EndgameUnlocks;
+  private readonly fragments?: FragmentTally;
 
   constructor(
     kind: EndgameKind,
@@ -29,6 +31,7 @@ export class EndgameScene implements Scene {
     totalWaves: number,
     onRestart: () => void,
     unlocks?: EndgameUnlocks,
+    fragments?: FragmentTally,
   ) {
     this.root = new Container();
     this.kind = kind;
@@ -36,6 +39,7 @@ export class EndgameScene implements Scene {
     this.totalWaves = totalWaves;
     this.onRestart = onRestart;
     this.unlocks = unlocks;
+    this.fragments = fragments;
   }
 
   enter(): void {
@@ -50,6 +54,41 @@ export class EndgameScene implements Scene {
         ? `reached wave ${this.wavesCleared}/${this.totalWaves}`
         : `cleared ${this.totalWaves}/${this.totalWaves} waves`;
     inner.appendChild(createOverlaySub(subText));
+
+    // Fragment haul summary
+    if (this.fragments) {
+      const { basic, elite, boss } = this.fragments;
+      const total = basic + elite + boss;
+      if (total > 0) {
+        const haul = document.createElement("div");
+        haul.style.fontFamily = "ui-monospace, monospace";
+        haul.style.textTransform = "uppercase";
+        haul.style.letterSpacing = "0.08em";
+        haul.style.textAlign = "center";
+        haul.style.margin = "12px 0";
+        haul.style.padding = "10px";
+        haul.style.border = "1px solid currentColor";
+        haul.style.opacity = "0.9";
+
+        const heading = document.createElement("div");
+        heading.style.fontWeight = "bold";
+        heading.style.marginBottom = "6px";
+        heading.textContent = "FRAGMENT HAUL";
+        haul.appendChild(heading);
+
+        const lines: string[] = [];
+        if (basic > 0) lines.push(`BASIC ×${basic}`);
+        if (elite > 0) lines.push(`ELITE ×${elite}`);
+        if (boss > 0) lines.push(`BOSS ×${boss}`);
+
+        const detail = document.createElement("div");
+        detail.style.fontSize = "0.9em";
+        detail.textContent = lines.join("  |  ");
+        haul.appendChild(detail);
+
+        inner.appendChild(haul);
+      }
+    }
 
     // DOMAIN SEALED — unlock banner
     if (this.unlocks && (this.unlocks.newCards.length > 0 || this.unlocks.newSkills.length > 0)) {

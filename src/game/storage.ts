@@ -88,6 +88,11 @@ export async function loadProfile(): Promise<PlayerProfile> {
     ...base,
     ...raw,
     activeStartShape: raw.activeStartShape ?? base.activeStartShape,
+    fragments: {
+      basic: raw.fragments?.basic ?? 0,
+      elite: raw.fragments?.elite ?? 0,
+      boss: raw.fragments?.boss ?? 0,
+    },
     stats: {
       ...base.stats,
       ...raw.stats,

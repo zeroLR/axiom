@@ -29,7 +29,10 @@ import {
   BOSS_WAVE_BONUS,
   killPointsForEnemy,
   rollBossLoot,
+  rollFragmentDrops,
+  emptyFragmentTally,
   type LootDrop,
+  type FragmentTally,
   type RunResult,
 } from '../game/rewards';
 import {
@@ -185,6 +188,7 @@ export class PlayScene implements Scene {
   private runEliteKills = 0;
   draftTokens = STARTING_DRAFT_TOKENS;
   private readonly loot: LootDrop[] = [];
+  private readonly runFragments: FragmentTally = emptyFragmentTally();
   readonly stageIndex: number;
 
   // Primal skills (runtime)
@@ -447,6 +451,7 @@ export class PlayScene implements Scene {
       bossKills: this.runBossKills,
       pointsEarned: this.runPoints,
       loot: this.loot,
+      fragments: { ...this.runFragments },
       noPowerRun: this.picks.length === 0,
     };
   }
@@ -681,6 +686,18 @@ export class PlayScene implements Scene {
       this.runEliteKills += 1;
       this.draftTokens += 1;
     }
+
+    // Roll fragment drops for this kill.
+    const frags = rollFragmentDrops(
+      kind,
+      ec.enemy.isElite ?? false,
+      this.mode,
+      this.stageIndex,
+      this.rng,
+    );
+    this.runFragments.basic += frags.basic;
+    this.runFragments.elite += frags.elite;
+    this.runFragments.boss += frags.boss;
 
     if (kind === 'boss') {
       this.runBossKills += 1;
