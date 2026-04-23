@@ -29,10 +29,12 @@ import {
   BOSS_WAVE_BONUS,
   killPointsForEnemy,
   rollBossLoot,
+  rollBossChestReward,
   rollFragmentDrops,
   emptyFragmentTally,
   type LootDrop,
   type FragmentTally,
+  type BossChestReward,
   type RunResult,
 } from '../game/rewards';
 import {
@@ -74,6 +76,7 @@ export type GameMode = 'normal' | 'survival';
 
 /** Overload skill fire-rate multiplier (0.33 = triple fire rate). */
 const OVERLOAD_PERIOD_MUL = 0.33;
+const BOSS_DEATH_ANIM_SEC = 1.1;
 
 export interface PlayCallbacks {
   onWaveCleared: (clearedIdx: number) => void; // 1-based
@@ -210,6 +213,10 @@ export class PlayScene implements Scene {
   private readonly runFragments: FragmentTally = emptyFragmentTally();
   private runElapsedSec = 0;
   private readonly fragmentPickups: FragmentPickup[] = [];
+  private pendingBossChestReward: BossChestReward | null = null;
+  private bossDeathFx:
+    | { x: number; y: number; timer: number; duration: number }
+    | null = null;
   readonly stageIndex: number;
 
   // Primal skills (runtime)
@@ -486,6 +493,9 @@ export class PlayScene implements Scene {
         detailed: { ...this.runFragments.detailed },
       },
       killsByKind: { ...this.runKillsByKind },
+      bossChestReward: this.pendingBossChestReward
+        ? { ...this.pendingBossChestReward }
+        : undefined,
       durationSec: this.runElapsedSec,
       noPowerRun: this.picks.length === 0,
     };
@@ -670,6 +680,9 @@ export class PlayScene implements Scene {
     decayHitFlash(this.world, dt);
     tickShake(dt);
     this.tickFragmentPickups(dt);
+    if (this.bossDeathFx) {
+      this.bossDeathFx.timer = Math.max(0, this.bossDeathFx.timer - dt);
+    }
 
     if (this.developerInvincible) {
       const avatar = this.world.get(this.avatarId);
@@ -689,7 +702,9 @@ export class PlayScene implements Scene {
     if (!this.developerMode && this.wave.cleared) {
       const cleared = this.waveIdx + 1;
       if (this.mode === 'normal' && cleared >= this.waves.length) {
+        if ((this.bossDeathFx?.timer ?? 0) > 0) return;
         this.ended = true;
+        this.collectAllFragments();
         this.cb.onRunComplete(this.buildRunResult());
         this.cb.onRunWon();
       } else {
@@ -731,20 +746,28 @@ export class PlayScene implements Scene {
     }
 
     // Roll fragment drops for this kill.
-    const frags = rollFragmentDrops(
-      kind,
-      ec.enemy.isElite ?? false,
-      this.mode,
-      this.stageIndex,
-      this.rng,
-      bossKindForStage(this.stageIndex),
-    );
-    for (const [id, count] of Object.entries(frags.detailed)) {
-      if (count <= 0) continue;
-      this.spawnFragmentPickups(id as FragmentId, count, ec.pos.x, ec.pos.y);
+    if (kind !== 'boss') {
+      const frags = rollFragmentDrops(
+        kind,
+        ec.enemy.isElite ?? false,
+        this.mode,
+        this.stageIndex,
+        this.rng,
+        bossKindForStage(this.stageIndex),
+      );
+      for (const [id, count] of Object.entries(frags.detailed)) {
+        if (count <= 0) continue;
+        this.spawnFragmentPickups(id as FragmentId, count, ec.pos.x, ec.pos.y);
+      }
     }
 
     if (kind === 'boss') {
+      this.bossDeathFx = {
+        x: ec.pos.x,
+        y: ec.pos.y,
+        timer: BOSS_DEATH_ANIM_SEC,
+        duration: BOSS_DEATH_ANIM_SEC,
+      };
       this.runBossKills += 1;
       // Boss wave bonus
       this.runPoints += BOSS_WAVE_BONUS * (this.waveIdx + 1);
@@ -752,6 +775,7 @@ export class PlayScene implements Scene {
       const drop = rollBossLoot(this.rng);
       this.loot.push(drop);
       if (drop.kind === 'points') this.runPoints += drop.value;
+      this.pendingBossChestReward = rollBossChestReward(this.rng);
     }
   }
 
@@ -1057,6 +1081,26 @@ export class PlayScene implements Scene {
         this.fragmentG.fill({ color: 0x1f4dff, alpha: 0.92 });
       }
     }
+    if (this.bossDeathFx) {
+      const p = 1 - this.bossDeathFx.timer / this.bossDeathFx.duration;
+      const ring = 20 + p * 48;
+      const alpha = Math.max(0, 0.65 - p * 0.65);
+      this.fragmentG.circle(this.bossDeathFx.x, this.bossDeathFx.y, ring);
+      this.fragmentG.stroke({ color: 0xd81b60, width: 3, alpha });
+      const spark = 6 + Math.sin(p * Math.PI * 6) * 3;
+      this.fragmentG.circle(this.bossDeathFx.x, this.bossDeathFx.y, spark);
+      this.fragmentG.fill({ color: 0x111111, alpha: 0.35 + alpha * 0.5 });
+    }
+  }
+
+  private collectAllFragments(): void {
+    if (this.fragmentPickups.length === 0) return;
+    for (const drop of this.fragmentPickups) {
+      this.runFragments[drop.category] += 1;
+      this.runFragments.detailed[drop.id] += 1;
+    }
+    this.fragmentPickups.length = 0;
+    this.cb.updateFragments?.(this.getRunFragments());
   }
 
   private updateHud(): void {

@@ -23,6 +23,7 @@ import {
 import { bossForStage } from './game/bosses/registry';
 import { DraftScene } from './scenes/draft';
 import { EndgameScene, type EndgameUnlocks } from './scenes/endgame';
+import { BossRewardScene } from './scenes/bossReward';
 import { PlayScene, type PointerMapper, type GameMode } from './scenes/play';
 import { SceneStack } from './scenes/scene';
 import { MainMenuScene, type MenuAction } from './scenes/mainMenu';
@@ -65,7 +66,7 @@ import { diffUnlocks } from './game/unlocks';
 import { MAX_SKILL_LEVEL } from './game/data/types';
 import { unlockAchievement } from './game/achievements';
 import type { RunResult } from './game/rewards';
-import { FRAGMENT_META, fragmentCategory } from './game/fragments';
+import { FRAGMENT_META, bossKindForStage, fragmentCategory } from './game/fragments';
 import {
   applyStartingShapeLoadout,
   resolveSelectedStartingShape,
@@ -241,6 +242,8 @@ async function boot(): Promise<void> {
   let pendingUnlocks: EndgameUnlocks | null = null;
   /** Pending fragment tally from the latest settled run (set by settleRun, read by endgame). */
   let pendingFragments: import('./game/rewards').FragmentTally | null = null;
+  /** Pending boss chest reward shown before the endgame scene. */
+  let pendingBossChestReward: import('./game/rewards').BossChestReward | null = null;
   /** Settled run payload consumed by endgame summary UI. */
   let pendingRunResult: RunResult | null = null;
   let developerModeUnlocked = settings.developerMode ?? false;
@@ -2757,6 +2760,7 @@ async function boot(): Promise<void> {
     setPaused(false);
     pendingUnlocks = null;
     pendingFragments = null;
+    pendingBossChestReward = null;
     pendingRunResult = null;
     if (hudFragments) {
       hudFragments.innerHTML = '';
@@ -2887,27 +2891,43 @@ async function boot(): Promise<void> {
           const total = play.totalWaves();
           const hasNextStage =
             mode === 'normal' && stageIndex + 1 < STAGE_WAVES.length;
-          stack.push(
-            new EndgameScene(
-              'won',
-              total,
-              total,
-              {
-                onRetry: () => startRun(mode, stageIndex, developMode),
-                onNext: hasNextStage
-                  ? () => startRun('normal', stageIndex + 1, false)
-                  : undefined,
-                onMenu: () => showMainMenu(),
-              },
-              {
-                unlocks: pendingUnlocks ?? undefined,
-                fragments: pendingFragments ?? undefined,
-                durationSec: pendingRunResult?.durationSec,
-                killsByKind: pendingRunResult?.killsByKind,
-                enhanceEntries: summarizeRunEnhances(),
-              },
-            ),
-          );
+          const showWonEndgame = (): void => {
+            stack.push(
+              new EndgameScene(
+                'won',
+                total,
+                total,
+                {
+                  onRetry: () => startRun(mode, stageIndex, developMode),
+                  onNext: hasNextStage
+                    ? () => startRun('normal', stageIndex + 1, false)
+                    : undefined,
+                  onMenu: () => showMainMenu(),
+                },
+                {
+                  unlocks: pendingUnlocks ?? undefined,
+                  fragments: pendingFragments ?? undefined,
+                  durationSec: pendingRunResult?.durationSec,
+                  killsByKind: pendingRunResult?.killsByKind,
+                  enhanceEntries: summarizeRunEnhances(),
+                },
+              ),
+            );
+          };
+          if (pendingBossChestReward) {
+            const reward = pendingBossChestReward;
+            stack.push(
+              new BossRewardScene(reward, {
+                onConfirm: () => {
+                  pendingBossChestReward = null;
+                  stack.pop();
+                  showWonEndgame();
+                },
+              }),
+            );
+            return;
+          }
+          showWonEndgame();
         },
         onRunComplete: (result) => settleRun(result),
         playSfx: (name) => audioAdapter.playSfx(name),
@@ -3003,6 +3023,14 @@ async function boot(): Promise<void> {
   }
 
   async function settleRun(result: RunResult): Promise<void> {
+    pendingBossChestReward = result.bossChestReward ?? null;
+    if (result.bossChestReward) {
+      const stageBossFragmentId = `boss-${bossKindForStage(result.stageIndex)}` as const;
+      result.fragments.boss += result.bossChestReward.bossFragments;
+      result.fragments.detailed[stageBossFragmentId] += result.bossChestReward.bossFragments;
+      if (result.bossChestReward.core > 0) skillTree.cores += result.bossChestReward.core;
+    }
+
     // Update profile
     profile.points += result.pointsEarned;
     profile.stats.totalRuns += 1;
