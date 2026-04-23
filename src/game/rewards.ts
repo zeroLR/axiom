@@ -4,6 +4,7 @@
 
 import type { EnemyKind } from './world';
 import type { Rng } from './rng';
+import { buildStagePointMulArray, stagePointMul } from './stageCompiler';
 
 /** Points awarded per enemy kill by kind. */
 export const BASE_KILL_POINTS: Record<EnemyKind, number> = {
@@ -28,16 +29,17 @@ export const BASE_KILL_POINTS: Record<EnemyKind, number> = {
   rift: 50,
 };
 
-/** Stage 1–5 normal-mode point multipliers. */
-export const NORMAL_STAGE_POINT_MUL: readonly number[] = [1, 2, 3, 4, 5];
+/**
+ * Stage 1–N normal-mode point multipliers, derived from STAGE_CONFIGS.
+ * Exported for backward compatibility (tests reference this directly).
+ */
+export const NORMAL_STAGE_POINT_MUL: readonly number[] = buildStagePointMulArray();
 
 /** Backward-compatible alias for base points. */
 export const KILL_POINTS = BASE_KILL_POINTS;
 
 export function normalStagePointMultiplier(stageIndex: number): number {
-  return stageIndex >= 0 && stageIndex < NORMAL_STAGE_POINT_MUL.length
-    ? NORMAL_STAGE_POINT_MUL[stageIndex]!
-    : 1;
+  return stagePointMul(stageIndex);
 }
 
 export function killPointsForEnemy(

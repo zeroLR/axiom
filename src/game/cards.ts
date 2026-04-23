@@ -12,10 +12,44 @@ export const POOL = CARD_POOL;
 
 import type { PlayerStats } from "./data/types";
 import { filterUnlockedCards } from "./unlocks";
+import type { CardWeight } from "./content/stages";
+import { weightedPickN } from "./weightedSampler";
 
-export function drawOffer(rng: Rng, count: number, pool: readonly Card[] = POOL, stats?: PlayerStats): Card[] {
+/**
+ * Draw `count` distinct card offers for a post-wave draft screen.
+ *
+ * - `pool` defaults to the full card pool.
+ * - `stats` filters out boss-gated cards that haven't been unlocked yet.
+ * - `enhancePool` (optional) provides a curated stage-specific weighted card
+ *   selection. Only cards whose `cardId` appears in `enhancePool` are offered,
+ *   proportional to their `weight`. When absent, the full unlocked pool is used
+ *   with equal weights (original behaviour).
+ */
+export function drawOffer(
+  rng: Rng,
+  count: number,
+  pool: readonly Card[] = POOL,
+  stats?: PlayerStats,
+  enhancePool?: readonly CardWeight[],
+): Card[] {
   const available = stats ? filterUnlockedCards(pool, stats) : [...pool];
-  return shuffle(rng, available).slice(0, Math.min(count, available.length));
+
+  if (!enhancePool || enhancePool.length === 0) {
+    return shuffle(rng, available).slice(0, Math.min(count, available.length));
+  }
+
+  // Build a set for fast lookup of cards allowed by the enhance pool.
+  const poolById = new Map<string, number>(enhancePool.map(e => [e.cardId, e.weight]));
+  const weighted = available
+    .filter(c => poolById.has(c.id))
+    .map(c => ({ item: c, weight: poolById.get(c.id)! }));
+
+  if (weighted.length === 0) {
+    // Enhance pool has no intersection with available cards — fall back.
+    return shuffle(rng, available).slice(0, Math.min(count, available.length));
+  }
+
+  return weightedPickN(weighted, count, rng);
 }
 
 function formatNum(value: number, maxDigits = 2): string {
