@@ -215,10 +215,11 @@ export function promoteClass(
     (profile.fragments.detailed[req.fragmentId] ?? 0) - req.fragmentCost,
   );
 
-  // Advance tier and record branch choice
+  // Advance tier and record branch choice for the new tier.
+  // branchPath indices: [0] = T2 branch, [1] = T3 branch.
+  // For T1→T2 (slot.tier=1): index = tier-1 = 0. For T2→T3 (slot.tier=2): index = tier-1 = 1.
   if (slot.tier >= 1) {
-    // branchPath[tier - 1] records the branch taken at this promotion
-    slot.branchPath[slot.tier - 1] = branch;
+    slot.branchPath[slot.tier - 1] = branch; // index = nextTier - 2 = currentTier - 1
   }
   slot.tier += 1;
 

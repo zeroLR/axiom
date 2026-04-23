@@ -3371,7 +3371,9 @@ async function boot(): Promise<void> {
                 getProfile: () => profile,
                 onSelect: async (shapeId) => {
                   profile.activeStartShape = shapeId;
-                  // Sync active character lineage so startRun picks up the change.
+                  // Phase B bridge: keep active character's lineage in sync with the
+                  // shape selection until the full Class Creation UI (Phase C) ships.
+                  // Phase C will replace this page with a proper ClassCreationScene.
                   const activeChar = activeCharacterSlot(profile.characters);
                   if (activeChar) {
                     activeChar.lineage = startingShapeToLineage(shapeId);
