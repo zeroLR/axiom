@@ -7,6 +7,14 @@
 import type { EnemyKind } from './world';
 import type { Rng } from './rng';
 import { buildStagePointMulArray, stagePointMul, stageStrengthMul } from './stageCompiler';
+import {
+  bossKindForStage,
+  emptyFragmentDetailRecord,
+  type BossFragmentKind,
+  type EliteFragmentKind,
+  type FragmentDetailRecord,
+  type FragmentId,
+} from './fragments';
 
 /** Points awarded per enemy kill by kind. */
 export const BASE_KILL_POINTS: Record<EnemyKind, number> = {
@@ -112,10 +120,12 @@ export interface FragmentTally {
   elite: number;
   /** Dropped by the stage boss kill only (1–5 per kill). */
   boss: number;
+  /** Per-fragment detailed tally (basic + each elite/boss exclusive type). */
+  detailed: FragmentDetailRecord;
 }
 
 export function emptyFragmentTally(): FragmentTally {
-  return { basic: 0, elite: 0, boss: 0 };
+  return { basic: 0, elite: 0, boss: 0, detailed: emptyFragmentDetailRecord() };
 }
 
 /**
@@ -157,18 +167,37 @@ export function rollFragmentDrops(
   mode: 'normal' | 'survival',
   stageIndex: number,
   rng: Rng,
+  bossKindHint?: BossFragmentKind,
 ): FragmentTally {
   const tally = emptyFragmentTally();
 
   if (kind === 'boss') {
     tally.boss = 1 + Math.floor(rng() * 5); // 1–5
+    const bossKind = bossKindHint ?? bossKindForStage(stageIndex);
+    tally.detailed[`boss-${bossKind}`] += tally.boss;
+    return tally;
+  }
+
+  if (
+    kind === 'orthogon' ||
+    kind === 'jets' ||
+    kind === 'mirror' ||
+    kind === 'lattice' ||
+    kind === 'rift'
+  ) {
+    tally.boss = 1 + Math.floor(rng() * 5); // 1–5
+    tally.detailed[`boss-${kind}`] += tally.boss;
     return tally;
   }
 
   tally.basic = basicFragmentsForEnemy(kind, mode, stageIndex);
+  tally.detailed['basic-core'] += tally.basic;
 
   if (isElite) {
     tally.elite = Math.floor(rng() * 3); // 0–2
+    if (tally.elite > 0) {
+      tally.detailed[`elite-${kind as EliteFragmentKind}` as FragmentId] += tally.elite;
+    }
   }
 
   return tally;
@@ -186,6 +215,12 @@ export interface RunResult {
   loot: LootDrop[];
   /** Fragments collected across this run (settled at run end). */
   fragments: FragmentTally;
+  /** Kills grouped by enemy kind for post-run analytics and codex progression. */
+  killsByKind?: Partial<Record<EnemyKind, number>>;
+  /** Ability IDs held at the end of this run. */
+  abilityIds?: string[];
+  /** Run duration in seconds. */
+  durationSec?: number;
   /** True if the player picked 0 cards during the run. */
   noPowerRun: boolean;
 }

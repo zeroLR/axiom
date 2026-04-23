@@ -1,4 +1,9 @@
 import type { EquipEffectKind } from "../effectEngine";
+import type { EnemyKind } from "../world";
+import {
+  emptyFragmentDetailRecord,
+  type FragmentDetailRecord,
+} from "../fragments";
 
 // ── Persistent data models ──────────────────────────────────────────────────
 // All types stored in IndexedDB. Kept in a single file so every store shares
@@ -30,6 +35,7 @@ export interface FragmentInventory {
   basic: number;
   elite: number;
   boss: number;
+  detailed: FragmentDetailRecord;
 }
 
 export type StartingShapeId = "triangle" | "square" | "diamond";
@@ -38,10 +44,35 @@ export interface PlayerStats {
   totalRuns: number;
   totalKills: number;
   totalBossKills: number;
+  enemyKills: Record<EnemyKind, number>;
   bestSurvivalWave: number;
   normalCleared: boolean[];  // indexed 0..4 for 5 stages
   /** Cumulative points earned across all runs; used for progression unlocks. */
   totalPointsEarned: number;
+}
+
+export function defaultEnemyKills(): Record<EnemyKind, number> {
+  return {
+    circle: 0,
+    square: 0,
+    star: 0,
+    boss: 0,
+    pentagon: 0,
+    hexagon: 0,
+    diamond: 0,
+    cross: 0,
+    crescent: 0,
+    spiral: 0,
+    lance: 0,
+    prism: 0,
+    octo: 0,
+    shade: 0,
+    orthogon: 0,
+    jets: 0,
+    mirror: 0,
+    lattice: 0,
+    rift: 0,
+  };
 }
 
 export function defaultPlayerProfile(): PlayerProfile {
@@ -50,11 +81,12 @@ export function defaultPlayerProfile(): PlayerProfile {
     ownedSkins: ["triangle"],
     activeSkin: "triangle",
     activeStartShape: "triangle",
-    fragments: { basic: 0, elite: 0, boss: 0 },
+    fragments: { basic: 0, elite: 0, boss: 0, detailed: emptyFragmentDetailRecord() },
     stats: {
       totalRuns: 0,
       totalKills: 0,
       totalBossKills: 0,
+      enemyKills: defaultEnemyKills(),
       bestSurvivalWave: 0,
       normalCleared: [false, false, false, false, false],
       totalPointsEarned: 0,

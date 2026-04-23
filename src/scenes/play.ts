@@ -36,6 +36,12 @@ import {
   type RunResult,
 } from '../game/rewards';
 import {
+  bossKindForStage,
+  fragmentCategory,
+  type FragmentCategory,
+  type FragmentId,
+} from '../game/fragments';
+import {
   type ActiveSkillState,
   PRIMAL_SKILLS,
   activateSkill,
@@ -82,6 +88,7 @@ export interface PlayCallbacks {
     points: number,
     tokens: number,
   ) => void;
+  updateFragments?: (fragments: FragmentTally) => void;
   /** Called once when the boss wave begins (wave index is 1-based). */
   onBossWaveStart?: (wave1: number) => void;
   /** Play a sound effect by name. */
@@ -159,6 +166,7 @@ export class PlayScene implements Scene {
 
   private readonly rng: Rng;
   private readonly g: Graphics;
+  private readonly fragmentG: Graphics;
   private readonly cb: PlayCallbacks;
   private readonly mapper: PointerMapper;
   private readonly mode: GameMode;
@@ -186,9 +194,20 @@ export class PlayScene implements Scene {
   private runKills = 0;
   private runBossKills = 0;
   private runEliteKills = 0;
+  private readonly runKillsByKind: Partial<Record<EnemyKind, number>> = {};
   draftTokens = STARTING_DRAFT_TOKENS;
   private readonly loot: LootDrop[] = [];
   private readonly runFragments: FragmentTally = emptyFragmentTally();
+  private runElapsedSec = 0;
+  private readonly fragmentPickups: Array<{
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    pulse: number;
+    id: FragmentId;
+    category: FragmentCategory;
+  }> = [];
   readonly stageIndex: number;
 
   // Primal skills (runtime)
@@ -223,6 +242,8 @@ export class PlayScene implements Scene {
     this.root.addChild(gridG);
     this.g = new Graphics();
     this.root.addChild(this.g);
+    this.fragmentG = new Graphics();
+    this.root.addChild(this.fragmentG);
     this.world = new World();
     this.rng = rng;
     this.cb = cb;
@@ -284,6 +305,13 @@ export class PlayScene implements Scene {
 
   recordPick(card: Card): void {
     this.picks.push(card);
+  }
+
+  getRunFragments(): FragmentTally {
+    return {
+      ...this.runFragments,
+      detailed: { ...this.runFragments.detailed },
+    };
   }
 
   currentWave1(): number {
@@ -443,6 +471,12 @@ export class PlayScene implements Scene {
   }
 
   buildRunResult(): RunResult {
+    const abilityIds = Array.from(
+      new Set([
+        ...this.picks.map((c) => c.id),
+        ...this.activeSkills.map((s) => s.id),
+      ]),
+    );
     return {
       mode: this.mode,
       stageIndex: this.stageIndex,
@@ -451,13 +485,20 @@ export class PlayScene implements Scene {
       bossKills: this.runBossKills,
       pointsEarned: this.runPoints,
       loot: this.loot,
-      fragments: { ...this.runFragments },
+      fragments: {
+        ...this.runFragments,
+        detailed: { ...this.runFragments.detailed },
+      },
+      killsByKind: { ...this.runKillsByKind },
+      abilityIds,
+      durationSec: this.runElapsedSec,
       noPowerRun: this.picks.length === 0,
     };
   }
 
   update(dt: number): void {
     if (this.ended) return;
+    this.runElapsedSec += dt;
 
     // Tick primal skills.
     const timeStopActive = this.activeSkills.some(
@@ -633,6 +674,7 @@ export class PlayScene implements Scene {
     removeDeadEnemies(this.world);
     decayHitFlash(this.world, dt);
     tickShake(dt);
+    this.tickFragmentPickups(dt);
 
     if (this.developerInvincible) {
       const avatar = this.world.get(this.avatarId);
@@ -670,14 +712,20 @@ export class PlayScene implements Scene {
     drawWorld(this.g, this.world, this.theme, {
       showEnemyHp: this.developerShowEnemyHp,
     });
+    this.drawFragmentPickups();
   }
 
   // ── Private ─────────────────────────────────────────────────────────────
 
   private onEnemyKilled(eid: EntityId): void {
     const ec = this.world.get(eid);
-    if (!ec?.enemy) return;
+    if (!ec?.enemy || !ec.pos) return;
     const kind = ec.enemy.kind;
+    this.runKillsByKind[kind] = (this.runKillsByKind[kind] ?? 0) + 1;
+    if (kind === 'boss') {
+      const bossKind = bossKindForStage(this.stageIndex);
+      this.runKillsByKind[bossKind] = (this.runKillsByKind[bossKind] ?? 0) + 1;
+    }
     const pts = killPointsForEnemy(kind, this.mode, this.stageIndex);
     this.runPoints += pts;
     this.runKills += 1;
@@ -694,10 +742,12 @@ export class PlayScene implements Scene {
       this.mode,
       this.stageIndex,
       this.rng,
+      bossKindForStage(this.stageIndex),
     );
-    this.runFragments.basic += frags.basic;
-    this.runFragments.elite += frags.elite;
-    this.runFragments.boss += frags.boss;
+    for (const [id, count] of Object.entries(frags.detailed)) {
+      if (count <= 0) continue;
+      this.spawnFragmentPickups(id as FragmentId, count, ec.pos.x, ec.pos.y);
+    }
 
     if (kind === 'boss') {
       this.runBossKills += 1;
@@ -917,6 +967,103 @@ export class PlayScene implements Scene {
     }
   }
 
+  private spawnFragmentPickups(
+    id: FragmentId,
+    count: number,
+    x: number,
+    y: number,
+  ): void {
+    for (let i = 0; i < count; i++) {
+      const angle = this.rng() * Math.PI * 2;
+      const speed = 24 + this.rng() * 32;
+      this.fragmentPickups.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        pulse: this.rng() * Math.PI * 2,
+        id,
+        category: fragmentCategory(id),
+      });
+    }
+  }
+
+  private tickFragmentPickups(dt: number): void {
+    if (this.fragmentPickups.length === 0) return;
+    const avatar = this.world.get(this.avatarId);
+    if (!avatar?.pos || !avatar.avatar) return;
+    const absorbRadius = 18;
+    const magnetRadius = 44 * (avatar.avatar.pickupRadiusMul ?? 1);
+    for (let i = this.fragmentPickups.length - 1; i >= 0; i--) {
+      const drop = this.fragmentPickups[i]!;
+      const dx = avatar.pos.x - drop.x;
+      const dy = avatar.pos.y - drop.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist <= absorbRadius) {
+        this.collectFragment(drop.id, drop.category);
+        this.fragmentPickups.splice(i, 1);
+        continue;
+      }
+      if (dist <= magnetRadius && dist > 0.001) {
+        const pull = (170 + (magnetRadius - dist) * 4) * dt;
+        drop.vx += (dx / dist) * pull;
+        drop.vy += (dy / dist) * pull;
+      } else {
+        drop.vx *= 1 - Math.min(0.4, dt * 3.2);
+        drop.vy *= 1 - Math.min(0.4, dt * 3.2);
+      }
+      drop.x += drop.vx * dt;
+      drop.y += drop.vy * dt;
+      drop.pulse += dt * 6;
+    }
+  }
+
+  private collectFragment(id: FragmentId, category: FragmentCategory): void {
+    this.runFragments[category] += 1;
+    this.runFragments.detailed[id] += 1;
+    this.cb.updateFragments?.(this.getRunFragments());
+  }
+
+  private drawFragmentPickups(): void {
+    this.fragmentG.clear();
+    for (const drop of this.fragmentPickups) {
+      const pulse = 0.4 + Math.abs(Math.sin(drop.pulse)) * 0.6;
+      const r = 3 + pulse;
+      if (drop.category === 'basic') {
+        this.fragmentG.circle(drop.x, drop.y, r);
+        this.fragmentG.fill({ color: 0x111111, alpha: 0.9 });
+        this.fragmentG.circle(drop.x, drop.y, r + 2);
+        this.fragmentG.stroke({ color: 0x666666, width: 1, alpha: 0.45 });
+      } else if (drop.category === 'elite') {
+        this.fragmentG.poly([
+          drop.x,
+          drop.y - r - 1,
+          drop.x + r + 1,
+          drop.y,
+          drop.x,
+          drop.y + r + 1,
+          drop.x - r - 1,
+          drop.y,
+        ]);
+        this.fragmentG.fill({ color: 0xd81b60, alpha: 0.9 });
+      } else {
+        this.fragmentG.poly([
+          drop.x,
+          drop.y - r - 2,
+          drop.x + r + 2,
+          drop.y - 1,
+          drop.x + r - 1,
+          drop.y + r + 2,
+          drop.x - r + 1,
+          drop.y + r + 2,
+          drop.x - r - 2,
+          drop.y - 1,
+        ]);
+        this.fragmentG.fill({ color: 0x1f4dff, alpha: 0.92 });
+      }
+    }
+  }
+
   private updateHud(): void {
     const c = this.world.get(this.avatarId);
     const hp = c?.avatar?.hp ?? 0;
@@ -929,6 +1076,7 @@ export class PlayScene implements Scene {
       this.runPoints,
       this.draftTokens,
     );
+    this.cb.updateFragments?.(this.getRunFragments());
   }
 
   private onPointerDown(ev: PointerEvent): void {

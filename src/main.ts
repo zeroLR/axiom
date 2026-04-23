@@ -26,6 +26,7 @@ import { EndgameScene, type EndgameUnlocks } from './scenes/endgame';
 import { PlayScene, type PointerMapper, type GameMode } from './scenes/play';
 import { SceneStack } from './scenes/scene';
 import { MainMenuScene, type MenuAction } from './scenes/mainMenu';
+import { CodexScene } from './scenes/codex';
 import { StageSelectScene } from './scenes/stageSelect';
 import { ShopScene } from './scenes/shop';
 import { EquipmentScene } from './scenes/equipment';
@@ -64,6 +65,7 @@ import { diffUnlocks } from './game/unlocks';
 import { MAX_SKILL_LEVEL } from './game/data/types';
 import { unlockAchievement } from './game/achievements';
 import type { RunResult } from './game/rewards';
+import { FRAGMENT_META } from './game/fragments';
 import {
   applyStartingShapeLoadout,
   resolveSelectedStartingShape,
@@ -72,6 +74,7 @@ import {
 import {
   setIconHtml,
   CARD_GLYPHS,
+  FRAGMENT_GLYPHS,
   SHOP_GLYPHS,
   SKILL_GLYPHS,
 } from './icons';
@@ -167,6 +170,7 @@ async function boot(): Promise<void> {
   const hudPts = document.getElementById('hud-pts');
   const hudTokens = document.getElementById('hud-tokens');
   const hudSeed = document.getElementById('hud-seed');
+  const hudFragments = document.getElementById('hud-fragments');
   const btnRestart = document.getElementById('btn-restart');
   const btnPause = document.getElementById('btn-pause');
   const btnComments = document.getElementById('btn-comments');
@@ -237,6 +241,8 @@ async function boot(): Promise<void> {
   let pendingUnlocks: EndgameUnlocks | null = null;
   /** Pending fragment tally from the latest settled run (set by settleRun, read by endgame). */
   let pendingFragments: import('./game/rewards').FragmentTally | null = null;
+  /** Settled run payload consumed by endgame summary UI. */
+  let pendingRunResult: RunResult | null = null;
   let developerModeUnlocked = settings.developerMode ?? false;
 
   function syncRunControlButtons(): void {
@@ -324,6 +330,30 @@ async function boot(): Promise<void> {
     if (hudWave) hudWave.textContent = `W: ${waveIdx}/${totalWaves}`;
     if (hudPts) hudPts.textContent = `${points}pts`;
     if (hudTokens) hudTokens.textContent = `⟐ ${tokens}`;
+  }
+
+  function renderFragmentHud(
+    fragments: import('./game/rewards').FragmentTally,
+  ): void {
+    if (!hudFragments) return;
+    hudFragments.innerHTML = '';
+    const rows = FRAGMENT_META.filter((meta) => fragments.detailed[meta.id] > 0).slice(0, 5);
+    for (const meta of rows) {
+      const chip = document.createElement('div');
+      chip.className = 'fragment-chip';
+      const glyph = document.createElement('span');
+      glyph.className = 'fragment-chip-glyph';
+      const svg = FRAGMENT_GLYPHS[meta.id];
+      if (svg) setIconHtml(glyph, svg);
+      else glyph.textContent = '•';
+      chip.appendChild(glyph);
+      const val = document.createElement('span');
+      val.className = 'fragment-chip-count';
+      val.textContent = `×${fragments.detailed[meta.id]}`;
+      chip.appendChild(val);
+      hudFragments.appendChild(chip);
+    }
+    hudFragments.hidden = rows.length === 0;
   }
 
   /** Refresh synergy HUD chips based on current avatar state. */
@@ -2719,6 +2749,11 @@ async function boot(): Promise<void> {
     setPaused(false);
     pendingUnlocks = null;
     pendingFragments = null;
+    pendingRunResult = null;
+    if (hudFragments) {
+      hudFragments.innerHTML = '';
+      hudFragments.hidden = true;
+    }
 
     // Snapshot stats before run so we can compute unlock diff at settle.
     statsBeforeRun = {
@@ -2782,6 +2817,7 @@ async function boot(): Promise<void> {
       rng,
       {
         updateHud,
+        updateFragments: (fragments) => renderFragmentHud(fragments),
         onWaveCleared: (cleared) => {
           playSfx('draft');
           const label =
@@ -2823,9 +2859,17 @@ async function boot(): Promise<void> {
               'dead',
               play.currentWave1(),
               total,
-              () => showMainMenu(),
-              pendingUnlocks ?? undefined,
-              pendingFragments ?? undefined,
+              {
+                onRetry: () => startRun(mode, stageIndex, developMode),
+                onMenu: () => showMainMenu(),
+              },
+              {
+                unlocks: pendingUnlocks ?? undefined,
+                fragments: pendingFragments ?? undefined,
+                durationSec: pendingRunResult?.durationSec,
+                killsByKind: pendingRunResult?.killsByKind,
+                abilityIds: pendingRunResult?.abilityIds,
+              },
             ),
           );
         },
@@ -2833,14 +2877,27 @@ async function boot(): Promise<void> {
           currentRun = null;
           setPaused(false);
           const total = play.totalWaves();
+          const hasNextStage =
+            mode === 'normal' && stageIndex + 1 < STAGE_WAVES.length;
           stack.push(
             new EndgameScene(
               'won',
               total,
               total,
-              () => showMainMenu(),
-              pendingUnlocks ?? undefined,
-              pendingFragments ?? undefined,
+              {
+                onRetry: () => startRun(mode, stageIndex, developMode),
+                onNext: hasNextStage
+                  ? () => startRun('normal', stageIndex + 1, false)
+                  : undefined,
+                onMenu: () => showMainMenu(),
+              },
+              {
+                unlocks: pendingUnlocks ?? undefined,
+                fragments: pendingFragments ?? undefined,
+                durationSec: pendingRunResult?.durationSec,
+                killsByKind: pendingRunResult?.killsByKind,
+                abilityIds: pendingRunResult?.abilityIds,
+              },
             ),
           );
         },
@@ -2955,7 +3012,18 @@ async function boot(): Promise<void> {
     profile.fragments.basic += result.fragments.basic;
     profile.fragments.elite += result.fragments.elite;
     profile.fragments.boss += result.fragments.boss;
+    for (const meta of FRAGMENT_META) {
+      profile.fragments.detailed[meta.id] += result.fragments.detailed[meta.id] ?? 0;
+    }
     pendingFragments = result.fragments;
+    pendingRunResult = result;
+
+    if (result.killsByKind) {
+      for (const [kind, count] of Object.entries(result.killsByKind)) {
+        const k = kind as EnemyKind;
+        profile.stats.enemyKills[k] = (profile.stats.enemyKills[k] ?? 0) + (count ?? 0);
+      }
+    }
 
     // Survival best
     if (result.mode === 'survival') {
@@ -3035,6 +3103,10 @@ async function boot(): Promise<void> {
       hudSkills.classList.remove('developer-hud');
     }
     clearCardHud();
+    if (hudFragments) {
+      hudFragments.innerHTML = '';
+      hudFragments.hidden = true;
+    }
     if (hudSynergy) hudSynergy.innerHTML = '';
 
     const menu = new MainMenuScene(
@@ -3074,6 +3146,7 @@ async function boot(): Promise<void> {
                 getProfile: () => profile,
                 getEquipment: () => equipment,
                 getShopUnlocks: () => shopUnlocks,
+                getEnemyKillCount: (kind) => profile.stats.enemyKills[kind] ?? 0,
                 onPurchase: async (item) => {
                   if (profile.points < item.price) return;
                   profile.points -= item.price;
@@ -3093,6 +3166,33 @@ async function boot(): Promise<void> {
                     saveEquipment(equipment),
                     saveShopUnlocks(shopUnlocks),
                   ]);
+                },
+                onBuyFragment: async (id, price) => {
+                  if (profile.points < price) return;
+                  profile.points -= price;
+                  const category = id.startsWith('boss-')
+                    ? 'boss'
+                    : id.startsWith('elite-')
+                      ? 'elite'
+                      : 'basic';
+                  profile.fragments[category] += 1;
+                  profile.fragments.detailed[id] += 1;
+                  await saveProfile(profile);
+                },
+                onSellFragment: async (id, gain) => {
+                  if ((profile.fragments.detailed[id] ?? 0) <= 0) return;
+                  const category = id.startsWith('boss-')
+                    ? 'boss'
+                    : id.startsWith('elite-')
+                      ? 'elite'
+                      : 'basic';
+                  profile.fragments[category] = Math.max(0, profile.fragments[category] - 1);
+                  profile.fragments.detailed[id] = Math.max(
+                    0,
+                    profile.fragments.detailed[id] - 1,
+                  );
+                  profile.points += gain;
+                  await saveProfile(profile);
                 },
                 onBack: () => {
                   stack.pop();
@@ -3179,6 +3279,20 @@ async function boot(): Promise<void> {
                 },
                 notify: (msg, type) => showNotification(msg, type),
               }),
+            );
+            break;
+
+          case 'codex':
+            stack.pop();
+            stack.push(
+              new CodexScene(
+                () => profile.stats,
+                () => skillTree,
+                () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+              ),
             );
             break;
 

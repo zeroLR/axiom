@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { checkRunAchievements, type AchievementCheckParams } from '../src/app/achievementChecker';
 import type { RunResult } from '../src/game/rewards';
-import type { PlayerStats, EquipmentLoadout } from '../src/game/data/types';
+import {
+  defaultEnemyKills,
+  type PlayerStats,
+  type EquipmentLoadout,
+} from '../src/game/data/types';
+import { emptyFragmentDetailRecord } from '../src/game/fragments';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -10,6 +15,7 @@ function makeStats(overrides: Partial<PlayerStats> = {}): PlayerStats {
     totalRuns: 1,
     totalKills: 0,
     totalBossKills: 0,
+    enemyKills: defaultEnemyKills(),
     bestSurvivalWave: 0,
     normalCleared: [false, false, false],
     totalPointsEarned: 0,
@@ -30,7 +36,7 @@ function makeResult(overrides: Partial<RunResult> = {}): RunResult {
     bossKills: 0,
     pointsEarned: 0,
     loot: [],
-    fragments: { basic: 0, elite: 0, boss: 0 },
+    fragments: { basic: 0, elite: 0, boss: 0, detailed: emptyFragmentDetailRecord() },
     noPowerRun: false,
     ...overrides,
   };

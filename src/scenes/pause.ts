@@ -3,8 +3,10 @@ import type { CardEntry, CardInventory } from '../game/cardLevels';
 import type { PlayScene } from './play';
 import { createOverlayTitle, initOverlay } from './ui';
 import { CARD_GLYPHS, setIconHtml } from '../icons';
+import { FRAGMENT_GLYPHS } from '../icons';
 import { createBonusGrid } from './components/bonusGrid';
 import { createPauseCardTag } from './components/cardTag';
+import { FRAGMENT_META } from '../game/fragments';
 
 export interface PauseOverlayOptions {
   play: PlayScene;
@@ -183,6 +185,40 @@ export function renderPauseOverlay(opts: PauseOverlayOptions): void {
     statusPanel.appendChild(hint);
   }
   inner.appendChild(statusPanel);
+
+  const fragments = opts.play.getRunFragments();
+  const fragmentRows = FRAGMENT_META.filter(
+    (meta) => fragments.detailed[meta.id] > 0,
+  );
+  const fragList = document.createElement('div');
+  fragList.className = 'pause-fragment-list';
+  if (fragmentRows.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'card-text';
+    empty.textContent = 'no fragments collected yet';
+    fragList.appendChild(empty);
+  } else {
+    for (const meta of fragmentRows) {
+      const row = document.createElement('div');
+      row.className = 'pause-fragment-row';
+      const glyph = document.createElement('span');
+      glyph.className = 'pause-card-tag-glyph';
+      const svg = FRAGMENT_GLYPHS[meta.id];
+      if (svg) setIconHtml(glyph, svg);
+      else glyph.textContent = '•';
+      row.appendChild(glyph);
+      const name = document.createElement('span');
+      name.className = 'pause-bonus-key';
+      name.textContent = meta.label;
+      row.appendChild(name);
+      const count = document.createElement('span');
+      count.className = 'pause-bonus-value';
+      count.textContent = `×${fragments.detailed[meta.id]}`;
+      row.appendChild(count);
+      fragList.appendChild(row);
+    }
+  }
+  inner.appendChild(createPausePanel('fragments', fragList));
 
   const resumeBtn = document.createElement('button');
   resumeBtn.type = 'button';

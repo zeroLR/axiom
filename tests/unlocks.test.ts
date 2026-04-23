@@ -9,13 +9,14 @@ import {
 } from "../src/game/unlocks";
 import { POOL, type Card } from "../src/game/cards";
 import { PRIMAL_SKILLS, type PrimalSkillDef } from "../src/game/skills";
-import type { PlayerStats } from "../src/game/data/types";
+import { defaultEnemyKills, type PlayerStats } from "../src/game/data/types";
 
 function makeStats(normalCleared: boolean[]): PlayerStats {
   return {
     totalRuns: 0,
     totalKills: 0,
     totalBossKills: 0,
+    enemyKills: defaultEnemyKills(),
     bestSurvivalWave: 0,
     normalCleared,
     totalPointsEarned: 0,
