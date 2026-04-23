@@ -92,6 +92,10 @@ export async function loadProfile(): Promise<PlayerProfile> {
       ...base.stats,
       ...raw.stats,
       totalPointsEarned: raw.stats?.totalPointsEarned ?? base.stats.totalPointsEarned,
+      // Expand normalCleared to cover all 5 stages (forward-compat migration).
+      normalCleared: base.stats.normalCleared.map(
+        (b, i) => (raw.stats?.normalCleared?.[i] ?? b),
+      ),
     },
   };
 }

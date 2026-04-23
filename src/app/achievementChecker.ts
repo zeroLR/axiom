@@ -62,6 +62,10 @@ export function checkRunAchievements(
   if (result.mode === 'survival' && result.wavesCleared >= 32) ids.push('survival32');
   if (result.mode === 'normal' && result.stageIndex === 2 && normalCleared)
     ids.push('clearStage3');
+  if (result.mode === 'normal' && result.stageIndex === 3 && normalCleared)
+    ids.push('clearStage4');
+  if (result.mode === 'normal' && result.stageIndex === 4 && normalCleared)
+    ids.push('clearStage5');
 
   // ── Style ─────────────────────────────────────────────────────────────────
   if (

@@ -85,6 +85,8 @@ export function spawnEnemy(
     orthogon: 'orthogon',
     jets: 'jets',
     mirror: 'mirror',
+    lattice: 'lattice',
+    rift: 'rift',
   };
   const namedBossKey = namedBossId[kind];
   if (namedBossKey) {
@@ -167,9 +169,9 @@ export function spawnEnemy(
       wobblePhase: rng() * Math.PI * 2,
       // Kind-specific fields
       shield: def.spawnBehavior === 'shielded' ? 1 : undefined,
-      dashCooldown: def.spawnBehavior === 'dash' ? 2 + rng() * 2 : undefined,
-      shootCooldown: def.spawnBehavior === 'shoot' ? 1.5 + rng() : undefined,
-      orbitAngle: def.spawnBehavior === 'orbit' ? rng() * Math.PI * 2 : undefined,
+      dashCooldown: (def.spawnBehavior === 'dash' || def.spawnBehavior === 'lance') ? 2 + rng() * 2 : undefined,
+      shootCooldown: (def.spawnBehavior === 'shoot' || def.spawnBehavior === 'tri-shoot' || def.spawnBehavior === 'burst8' || def.spawnBehavior === 'homing-orbit') ? 1.5 + rng() : undefined,
+      orbitAngle: (def.spawnBehavior === 'orbit' || def.spawnBehavior === 'spiral' || def.spawnBehavior === 'homing-orbit') ? rng() * Math.PI * 2 : undefined,
       isElite: elite || undefined,
     },
     hp: { value: hp },
@@ -203,9 +205,9 @@ export function spawnEnemyAt(
       maxSpeed: stats.maxSpeed,
       wobblePhase: rng() * Math.PI * 2,
       shield: def.spawnBehavior === 'shielded' ? 1 : undefined,
-      dashCooldown: def.spawnBehavior === 'dash' ? 2 + rng() * 2 : undefined,
-      shootCooldown: def.spawnBehavior === 'shoot' ? 1.5 + rng() : undefined,
-      orbitAngle: def.spawnBehavior === 'orbit' ? rng() * Math.PI * 2 : undefined,
+      dashCooldown: (def.spawnBehavior === 'dash' || def.spawnBehavior === 'lance') ? 2 + rng() * 2 : undefined,
+      shootCooldown: (def.spawnBehavior === 'shoot' || def.spawnBehavior === 'tri-shoot' || def.spawnBehavior === 'burst8' || def.spawnBehavior === 'homing-orbit') ? 1.5 + rng() : undefined,
+      orbitAngle: (def.spawnBehavior === 'orbit' || def.spawnBehavior === 'spiral' || def.spawnBehavior === 'homing-orbit') ? rng() * Math.PI * 2 : undefined,
       isElite: elite || undefined,
     },
     hp: { value: hp },

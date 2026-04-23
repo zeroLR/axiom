@@ -256,6 +256,20 @@ function enemyColor(kind: EnemyKind, dark: boolean): number {
         return 0xff80ab;
       case 'mirror':
         return 0xff80ab;
+      case 'spiral':
+        return 0xb2ff59;
+      case 'lance':
+        return 0xffd740;
+      case 'prism':
+        return 0x80d8ff;
+      case 'octo':
+        return 0x69f0ae;
+      case 'shade':
+        return 0xea80fc;
+      case 'lattice':
+        return 0x80cbc4;
+      case 'rift':
+        return 0xce93d8;
     }
   }
   switch (kind) {
@@ -283,6 +297,20 @@ function enemyColor(kind: EnemyKind, dark: boolean): number {
       return 0xffd1e1;
     case 'mirror':
       return 0xffd1e1;
+    case 'spiral':
+      return 0xf1f8e9;
+    case 'lance':
+      return 0xfff8e1;
+    case 'prism':
+      return 0xe3f2fd;
+    case 'octo':
+      return 0xe8f5e9;
+    case 'shade':
+      return 0xf3e5f5;
+    case 'lattice':
+      return 0xe0f2f1;
+    case 'rift':
+      return 0xede7f6;
   }
 }
 
@@ -330,6 +358,27 @@ function drawEnemyShape(
     case 'mirror':
       drawPolygon(g, x, y, r, 6);
       break;
+    case 'spiral':
+      drawPolygon(g, x, y, r, 7);
+      break;
+    case 'lance':
+      drawLance(g, x, y, r);
+      break;
+    case 'prism':
+      drawPolygon(g, x, y, r, 3);
+      break;
+    case 'octo':
+      drawPolygon(g, x, y, r, 8);
+      break;
+    case 'shade':
+      drawStar(g, x, y, r, 4);
+      break;
+    case 'lattice':
+      drawPolygon(g, x, y, r, 6);
+      break;
+    case 'rift':
+      drawPolygon(g, x, y, r, 6);
+      break;
   }
 }
 
@@ -340,6 +389,10 @@ function bossColor(pattern: string | undefined, dark: boolean): number {
       return dark ? 0xb0bec5 : 0xeceff1; // steel grey
     case 'jets':
       return dark ? 0x81d4fa : 0xb3e5fc; // sky blue
+    case 'lattice':
+      return dark ? 0x80cbc4 : 0xe0f2f1; // teal
+    case 'rift':
+      return dark ? 0xce93d8 : 0xf3e5f5; // deep purple
     default:
       return dark ? 0xff80ab : 0xffd1e1; // pink (mirror)
   }
@@ -359,6 +412,12 @@ function drawBossShape(
       break;
     case 'jets':
       drawBossJets(g, x, y, r);
+      break;
+    case 'lattice':
+      drawBossLattice(g, x, y, r);
+      break;
+    case 'rift':
+      drawPolygon(g, x, y, r, 8);
       break;
     default:
       drawPolygon(g, x, y, r, 6);
@@ -454,6 +513,43 @@ function drawCross(g: Graphics, cx: number, cy: number, r: number): void {
   g.lineTo(cx - r, cy + w);
   g.lineTo(cx - r, cy - w);
   g.lineTo(cx - w, cy - w);
+  g.closePath();
+}
+
+/** Lance: narrow elongated diamond (spear-head shape). */
+function drawLance(g: Graphics, cx: number, cy: number, r: number): void {
+  g.moveTo(cx, cy - r);          // top point
+  g.lineTo(cx + r * 0.35, cy);   // right mid (narrow)
+  g.lineTo(cx, cy + r);          // bottom point
+  g.lineTo(cx - r * 0.35, cy);   // left mid
+  g.closePath();
+}
+
+/** Lattice: hashtag/grid cross shape (two vertical + two horizontal bars). */
+function drawBossLattice(g: Graphics, cx: number, cy: number, r: number): void {
+  const bw = r * 0.22;  // bar half-width
+  const bi = r * 0.38;  // bar offset from center
+  // Vertical bars
+  g.moveTo(cx - bi - bw, cy - r);
+  g.lineTo(cx - bi + bw, cy - r);
+  g.lineTo(cx - bi + bw, cy + r);
+  g.lineTo(cx - bi - bw, cy + r);
+  g.closePath();
+  g.moveTo(cx + bi - bw, cy - r);
+  g.lineTo(cx + bi + bw, cy - r);
+  g.lineTo(cx + bi + bw, cy + r);
+  g.lineTo(cx + bi - bw, cy + r);
+  g.closePath();
+  // Horizontal bars
+  g.moveTo(cx - r, cy - bi - bw);
+  g.lineTo(cx + r, cy - bi - bw);
+  g.lineTo(cx + r, cy - bi + bw);
+  g.lineTo(cx - r, cy - bi + bw);
+  g.closePath();
+  g.moveTo(cx - r, cy + bi - bw);
+  g.lineTo(cx + r, cy + bi - bw);
+  g.lineTo(cx + r, cy + bi + bw);
+  g.lineTo(cx - r, cy + bi + bw);
   g.closePath();
 }
 

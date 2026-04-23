@@ -63,7 +63,7 @@ import { ALL_ENEMY_KINDS } from '../game/enemies/kinds';
 export type GameMode = 'normal' | 'survival';
 
 // Stage 1 / Stage 2 / Stage 3 normal-mode enemy strength multipliers.
-const NORMAL_STAGE_STRENGTH_MUL: readonly number[] = [1, 1.5, 2.5];
+const NORMAL_STAGE_STRENGTH_MUL: readonly number[] = [1, 1.5, 2.0, 3.0, 4.0];
 
 /** Overload skill fire-rate multiplier (0.33 = triple fire rate). */
 const OVERLOAD_PERIOD_MUL = 0.33;
@@ -123,9 +123,16 @@ function defaultEnemySpawnConfig(): Record<EnemyKind, DeveloperEnemySpawn> {
     diamond: { enabled: false, count: 1 },
     cross: { enabled: false, count: 1 },
     crescent: { enabled: false, count: 1 },
+    spiral: { enabled: false, count: 1 },
+    lance: { enabled: false, count: 1 },
+    prism: { enabled: false, count: 1 },
+    octo: { enabled: false, count: 1 },
+    shade: { enabled: false, count: 1 },
     orthogon: { enabled: false, count: 1 },
     jets: { enabled: false, count: 1 },
     mirror: { enabled: false, count: 1 },
+    lattice: { enabled: false, count: 1 },
+    rift: { enabled: false, count: 1 },
   };
 }
 

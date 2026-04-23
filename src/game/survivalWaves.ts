@@ -8,8 +8,8 @@ import type { EnemyKind } from "./world";
 import type { SpawnGroup, WaveSpec } from "./waves";
 import type { Rng } from "./rng";
 
-/** Extended enemy pool for survival waves (all types). */
-const BASE_KINDS: EnemyKind[] = ["circle", "square", "star", "pentagon", "diamond", "hexagon", "cross", "crescent"];
+/** Extended enemy pool for survival waves (all regular types). */
+const BASE_KINDS: EnemyKind[] = ["circle", "square", "star", "pentagon", "diamond", "hexagon", "cross", "crescent", "spiral", "lance", "prism", "octo", "shade"];
 
 /** Is this wave index (1-based) a boss wave? */
 export function isBossWave(wave1: number): boolean {
