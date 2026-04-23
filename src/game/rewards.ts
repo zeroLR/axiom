@@ -15,14 +15,21 @@ export const BASE_KILL_POINTS: Record<EnemyKind, number> = {
   diamond: 3,
   cross: 4,
   crescent: 3,
+  spiral: 3,
+  lance: 3,
+  prism: 5,
+  octo: 6,
+  shade: 5,
   boss: 50,
   orthogon: 50,
   jets: 50,
   mirror: 50,
+  lattice: 50,
+  rift: 50,
 };
 
-/** Stage 1 / Stage 2 / Stage 3 normal-mode point multipliers. */
-export const NORMAL_STAGE_POINT_MUL: readonly number[] = [1, 2, 3];
+/** Stage 1–5 normal-mode point multipliers. */
+export const NORMAL_STAGE_POINT_MUL: readonly number[] = [1, 2, 3, 4, 5];
 
 /** Backward-compatible alias for base points. */
 export const KILL_POINTS = BASE_KILL_POINTS;

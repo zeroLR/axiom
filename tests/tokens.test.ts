@@ -20,12 +20,12 @@ describe("draft token constants", () => {
 
 describe("elite kind classification", () => {
   it("flags tier-2+ kinds as elite", () => {
-    const elites: EnemyKind[] = ["star", "pentagon", "hexagon", "cross"];
+    const elites: EnemyKind[] = ["star", "pentagon", "hexagon", "cross", "prism", "octo", "shade"];
     for (const k of elites) expect(isEliteKind(k)).toBe(true);
   });
 
   it("leaves tier-1 / trivial kinds un-elite", () => {
-    const mundane: EnemyKind[] = ["circle", "square", "diamond", "crescent", "boss"];
+    const mundane: EnemyKind[] = ["circle", "square", "diamond", "crescent", "spiral", "lance", "boss"];
     for (const k of mundane) expect(isEliteKind(k)).toBe(false);
   });
 });

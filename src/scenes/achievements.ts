@@ -22,7 +22,7 @@ interface AchievementCategory {
 
 const CATEGORIES: readonly AchievementCategory[] = [
   { label: "Progress", ids: ["firstBossKill", "firstPrimalSkill", "kill100", "kill1000", "clear3Stages"] },
-  { label: "Difficulty", ids: ["noPowerNormalClear", "noPowerSurvival16", "survival32", "clearStage3"] },
+  { label: "Difficulty", ids: ["noPowerNormalClear", "noPowerSurvival16", "survival32", "clearStage3", "clearStage4", "clearStage5"] },
   { label: "Style", ids: ["allWeapons", "fullEquipment", "maxSkillLevel", "own5Skins"] },
   { label: "Speed", ids: ["speedStage1", "speed5Waves", "bossRush3"] },
 ];

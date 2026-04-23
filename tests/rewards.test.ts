@@ -14,17 +14,21 @@ describe("rewards", () => {
     expect(BASE_KILL_POINTS.boss).toBe(max);
   });
 
-  it("normal stage point multipliers are 1x, 2x, 3x", () => {
-    expect(NORMAL_STAGE_POINT_MUL).toEqual([1, 2, 3]);
+  it("normal stage point multipliers are 1x through 5x", () => {
+    expect(NORMAL_STAGE_POINT_MUL).toEqual([1, 2, 3, 4, 5]);
     expect(normalStagePointMultiplier(0)).toBe(1);
     expect(normalStagePointMultiplier(1)).toBe(2);
     expect(normalStagePointMultiplier(2)).toBe(3);
+    expect(normalStagePointMultiplier(3)).toBe(4);
+    expect(normalStagePointMultiplier(4)).toBe(5);
   });
 
   it("kill points scale by stage in normal mode", () => {
     expect(killPointsForEnemy("square", "normal", 0)).toBe(2);
     expect(killPointsForEnemy("square", "normal", 1)).toBe(4);
     expect(killPointsForEnemy("square", "normal", 2)).toBe(6);
+    expect(killPointsForEnemy("square", "normal", 3)).toBe(8);
+    expect(killPointsForEnemy("square", "normal", 4)).toBe(10);
   });
 
   it("survival mode keeps base kill points", () => {

@@ -38,7 +38,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: "clear3Stages",
     name: "Trailblazer",
-    description: "Clear all 3 normal-mode stages.",
+    description: "Clear the first 3 normal-mode stages.",
     glyph: "★",
   },
   // ── Difficulty ──
@@ -65,6 +65,18 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     name: "Stage 3 Victor",
     description: "Clear normal-mode Stage 3.",
     glyph: "▲",
+  },
+  {
+    id: "clearStage4",
+    name: "Stage 4 Victor",
+    description: "Clear normal-mode Stage 4.",
+    glyph: "◆",
+  },
+  {
+    id: "clearStage5",
+    name: "Axiom Complete",
+    description: "Clear all 5 normal-mode stages.",
+    glyph: "⊗",
   },
   // ── Style ──
   {

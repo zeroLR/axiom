@@ -7,7 +7,7 @@ export interface EnemyStats {
   radius: number;
 }
 
-export type EnemySpawnBehavior = "shielded" | "dash" | "shoot" | "orbit";
+export type EnemySpawnBehavior = "shielded" | "dash" | "shoot" | "orbit" | "spiral" | "lance" | "tri-shoot" | "burst8" | "homing-orbit";
 
 export interface EnemyDef {
   kind: EnemyKind;
@@ -61,6 +61,37 @@ export const ENEMY_REGISTRY: Record<EnemyKind, EnemyDef> = {
     stats: { hp: 5, maxSpeed: 78, contactDamage: 1, radius: 9 },
     spawnBehavior: "orbit",
   },
+  // ── Stage 4 enemies ───────────────────────────────────────────────────────
+  spiral: {
+    kind: "spiral",
+    stats: { hp: 6, maxSpeed: 68, contactDamage: 1, radius: 10 },
+    spawnBehavior: "spiral",
+  },
+  lance: {
+    kind: "lance",
+    stats: { hp: 5, maxSpeed: 52, contactDamage: 2, radius: 8 },
+    spawnBehavior: "lance",
+  },
+  prism: {
+    kind: "prism",
+    stats: { hp: 12, maxSpeed: 52, contactDamage: 1, radius: 11 },
+    isElite: true,
+    spawnBehavior: "tri-shoot",
+  },
+  // ── Stage 5 enemies ───────────────────────────────────────────────────────
+  octo: {
+    kind: "octo",
+    stats: { hp: 22, maxSpeed: 30, contactDamage: 1, radius: 14 },
+    isElite: true,
+    spawnBehavior: "burst8",
+  },
+  shade: {
+    kind: "shade",
+    stats: { hp: 16, maxSpeed: 60, contactDamage: 1, radius: 11 },
+    isElite: true,
+    spawnBehavior: "homing-orbit",
+  },
+  // ── Named bosses ──────────────────────────────────────────────────────────
   orthogon: {
     kind: "orthogon",
     stats: { hp: 135, maxSpeed: 45, contactDamage: 1, radius: 22 },
@@ -72,5 +103,13 @@ export const ENEMY_REGISTRY: Record<EnemyKind, EnemyDef> = {
   mirror: {
     kind: "mirror",
     stats: { hp: 400, maxSpeed: 50, contactDamage: 1, radius: 22 },
+  },
+  lattice: {
+    kind: "lattice",
+    stats: { hp: 320, maxSpeed: 38, contactDamage: 1, radius: 24 },
+  },
+  rift: {
+    kind: "rift",
+    stats: { hp: 460, maxSpeed: 42, contactDamage: 1, radius: 24 },
   },
 };

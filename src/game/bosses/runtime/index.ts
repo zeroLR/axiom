@@ -2,8 +2,10 @@ import { spawnEnemyShot } from "../../entities";
 import type { Rng } from "../../rng";
 import type { Components, EntityId, World } from "../../world";
 import { updateJetsPattern } from "./jets";
+import { updateLatticePattern } from "./lattice";
 import { updateMirrorBossAbilities } from "./mirror";
 import { updateOrthogonPattern } from "./orthogon";
+import { updateRiftPattern } from "./rift";
 
 /** Fan half-spread (radians) between adjacent projectiles. */
 export const BOSS_FAN_SPREAD = 0.22;
@@ -80,6 +82,12 @@ export function updateBossWeapon(
         break;
       case "jets":
         updateJetsPattern(world, c, ax, ay, rng, dt, fireAimedFan);
+        break;
+      case "lattice":
+        updateLatticePattern(world, c, ax, ay, rng, dt, fireAimedFan);
+        break;
+      case "rift":
+        updateRiftPattern(world, c, ax, ay, rng, dt, fireAimedFan);
         break;
       default:
         updateStandardPattern(world, c, ax, ay, rng, dt);

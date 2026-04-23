@@ -23,8 +23,8 @@ describe("achievements", () => {
     }
   });
 
-  it("has 16 achievement definitions", () => {
-    expect(ACHIEVEMENTS).toHaveLength(16);
+  it("has 18 achievement definitions", () => {
+    expect(ACHIEVEMENTS).toHaveLength(18);
   });
 
   it("achievement IDs are unique", () => {
@@ -32,10 +32,10 @@ describe("achievements", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("default state includes all 16 achievement IDs", () => {
+  it("default state includes all 18 achievement IDs", () => {
     const state = defaultAchievementState();
     const ids = Object.keys(state);
-    expect(ids).toHaveLength(16);
+    expect(ids).toHaveLength(18);
     for (const def of ACHIEVEMENTS) {
       expect(ids).toContain(def.id);
     }

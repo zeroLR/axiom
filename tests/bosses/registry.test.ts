@@ -3,22 +3,24 @@ import { BOSS_REGISTRY, bossForStage } from "../../src/game/bosses/registry";
 import type { BossId, BossSpec } from "../../src/game/bosses/types";
 
 describe("Boss registry", () => {
-  it("contains all three boss ids", () => {
-    const ids: BossId[] = ["orthogon", "jets", "mirror"];
+  it("contains all five boss ids", () => {
+    const ids: BossId[] = ["orthogon", "jets", "mirror", "lattice", "rift"];
     for (const id of ids) {
       expect(BOSS_REGISTRY[id]).toBeDefined();
       expect(BOSS_REGISTRY[id].id).toBe(id);
     }
   });
 
-  it("maps stages 0–2 to orthogon, jets, mirror", () => {
+  it("maps stages 0–4 to orthogon, jets, mirror, lattice, rift", () => {
     expect(bossForStage(0).id).toBe("orthogon");
     expect(bossForStage(1).id).toBe("jets");
     expect(bossForStage(2).id).toBe("mirror");
+    expect(bossForStage(3).id).toBe("lattice");
+    expect(bossForStage(4).id).toBe("rift");
   });
 
   it("falls back to mirror for out-of-range stage indices", () => {
-    expect(bossForStage(3).id).toBe("mirror");
+    expect(bossForStage(5).id).toBe("mirror");
     expect(bossForStage(-1).id).toBe("mirror");
   });
 
@@ -50,7 +52,7 @@ describe("Boss registry", () => {
       expect(spec.maxSpeed).toBeGreaterThan(0);
       expect(spec.weapon).toBeDefined();
       expect(spec.weapon.period).toBeGreaterThan(0);
-      expect(["standard", "orthogon", "jets"]).toContain(spec.patternKind);
+      expect(["standard", "orthogon", "jets", "lattice", "rift"]).toContain(spec.patternKind);
     }
   });
 

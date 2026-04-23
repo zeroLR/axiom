@@ -12,9 +12,16 @@ export type EnemyKind =
   | 'diamond'
   | 'cross'
   | 'crescent'
+  | 'spiral'
+  | 'lance'
+  | 'prism'
+  | 'octo'
+  | 'shade'
   | 'orthogon'
   | 'jets'
-  | 'mirror';
+  | 'mirror'
+  | 'lattice'
+  | 'rift';
 
 export interface Pos {
   x: number;
@@ -111,7 +118,7 @@ export interface Enemy {
 
   // ── Boss AI state (set by BossDef.install) ──────────────────────────────
   /** Weapon pattern kind for dispatch in `bossWeapon.ts`. */
-  bossPattern?: 'standard' | 'orthogon' | 'jets';
+  bossPattern?: 'standard' | 'orthogon' | 'jets' | 'lattice' | 'rift';
   /** Current boss AI phase/move index, cycling through the pattern sequence. */
   bossPhase?: number;
   /** General-purpose boss AI timer (seconds remaining for current action). */

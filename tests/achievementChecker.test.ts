@@ -210,6 +210,38 @@ describe('checkRunAchievements', () => {
     expect(ids).not.toContain('clearStage3');
   });
 
+  // ── clearStage4 ───────────────────────────────────────────────────────────
+
+  it('grants clearStage4 when normal mode stage 3 cleared', () => {
+    const ids = checkRunAchievements(
+      makeParams(makeResult({ mode: 'normal', stageIndex: 3, wavesCleared: 10 }), {}, {}, ['triangle'], 10),
+    );
+    expect(ids).toContain('clearStage4');
+  });
+
+  it('does not grant clearStage4 for lower stages', () => {
+    const ids = checkRunAchievements(
+      makeParams(makeResult({ mode: 'normal', stageIndex: 2, wavesCleared: 8 })),
+    );
+    expect(ids).not.toContain('clearStage4');
+  });
+
+  // ── clearStage5 ───────────────────────────────────────────────────────────
+
+  it('grants clearStage5 when normal mode stage 4 cleared', () => {
+    const ids = checkRunAchievements(
+      makeParams(makeResult({ mode: 'normal', stageIndex: 4, wavesCleared: 12 }), {}, {}, ['triangle'], 12),
+    );
+    expect(ids).toContain('clearStage5');
+  });
+
+  it('does not grant clearStage5 for lower stages', () => {
+    const ids = checkRunAchievements(
+      makeParams(makeResult({ mode: 'normal', stageIndex: 3, wavesCleared: 10 }), {}, {}, ['triangle'], 10),
+    );
+    expect(ids).not.toContain('clearStage5');
+  });
+
   // ── fullEquipment ─────────────────────────────────────────────────────────
 
   it('grants fullEquipment when all slots filled with maxSlots >= 3', () => {

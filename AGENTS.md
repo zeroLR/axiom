@@ -120,7 +120,7 @@ Version SHA (v0.0.1-beta-): <short-sha>
 ```
 
 **目前版本**
-Version SHA (v0.0.1-beta-): 8b7614c
+Version SHA (v0.0.1-beta-): 87fffd6
 
 ---
 

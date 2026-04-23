@@ -30,7 +30,7 @@ export interface PlayerStats {
   totalKills: number;
   totalBossKills: number;
   bestSurvivalWave: number;
-  normalCleared: boolean[];  // indexed 0..2 for 3 stages
+  normalCleared: boolean[];  // indexed 0..4 for 5 stages
   /** Cumulative points earned across all runs; used for progression unlocks. */
   totalPointsEarned: number;
 }
@@ -46,7 +46,7 @@ export function defaultPlayerProfile(): PlayerProfile {
       totalKills: 0,
       totalBossKills: 0,
       bestSurvivalWave: 0,
-      normalCleared: [false, false, false],
+      normalCleared: [false, false, false, false, false],
       totalPointsEarned: 0,
     },
   };
@@ -134,6 +134,8 @@ export type AchievementId =
   | "fullEquipment"
   | "maxSkillLevel"
   | "own5Skins"
+  | "clearStage4"
+  | "clearStage5"
   // ── Speed ──
   | "speedStage1"
   | "speed5Waves"
@@ -159,6 +161,8 @@ export function defaultAchievementState(): AchievementState {
     noPowerSurvival16:   { unlocked: false, unlockedAt: null },
     survival32:          { unlocked: false, unlockedAt: null },
     clearStage3:         { unlocked: false, unlockedAt: null },
+    clearStage4:         { unlocked: false, unlockedAt: null },
+    clearStage5:         { unlocked: false, unlockedAt: null },
     // Style
     allWeapons:          { unlocked: false, unlockedAt: null },
     fullEquipment:       { unlocked: false, unlockedAt: null },
