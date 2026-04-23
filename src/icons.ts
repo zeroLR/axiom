@@ -50,6 +50,11 @@ export const iconSkills = wrap(
   `<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="5"/>`,
 );
 
+/** Talents: branching path nodes. */
+export const iconTalents = wrap(
+  `<circle cx="6" cy="18" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><line x1="7.5" y1="16.5" x2="10.5" y2="13.5"/><line x1="13.5" y1="10.5" x2="16.5" y2="7.5"/>`,
+);
+
 /** Achievements: pentagon (badge). */
 export const iconAchievements = wrap(
   `<polygon points="12,2 22.5,9.5 18.5,22 5.5,22 1.5,9.5"/>`,

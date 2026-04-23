@@ -1,5 +1,7 @@
 # Axiom Adjustment Log
 
+- **ROADMAP 成長（天賦）系統上線 (v0.0.1-beta-89765ec):** 完成 Talent Growth roadmap 子項。(1) 新增 `src/game/content/talents.ts` 定義三條天賦支線（生存/輸出/資源效率）與節點成本、前置條件、每級加成 schema。(2) 新增 `src/game/talents.ts` 提供升級、重置（消耗 basic/elite 素材並退還已投入 points）、加成彙總與投入點數計算邏輯。(3) `PlayerProfile` 新增 `talents` 持久化狀態，`storage.loadProfile()` 補上舊存檔遷移預設值。(4) 新增 `TalentScene` 並於主選單加入 Talents 入口，可升級/重置並顯示即時加成與資源。(5) run 啟動時套用生存/輸出天賦至 avatar 基礎屬性；run 結算套用資源效率天賦到 points 與 fragments 收益，採保守比例以維持前期構築壓力。驗證結果：`npm test` 與 `npm run build` 通過。
+
 - **Fragment 材料上限與溢出點數轉換 (v0.0.1-beta-5f069a7):** 完成 Fragment Drop roadmap 子項。(1) `fragments.ts` 新增 `FRAGMENT_MATERIAL_CAP=9999` 與 `applyFragmentGainWithCap()`，統一處理單一素材上限與溢出點數轉換（依該素材 `sellPrice` 計算）。(2) `main.ts` 結算入帳改為逐素材套用 cap，超出份額自動折算為 points；Shop 的碎片購買也套用相同規則，滿倉時不再增加素材而改為回收點數。(3) `tests/rewards.test.ts` 新增 cap 與 overflow 轉點測試，覆蓋 9999 上限與 boss 素材轉換邏輯。(4) `ROADMAP.md` 同步標記「材料上限與溢出轉換規則」完成，並註記保底機制目前暫不設計。驗證結果：`npm test` 與 `npm run build` 通過。
 
 - **Boss 擊殺後開獎結算流程 (v0.0.1-beta-f29d5cf):** 修正 boss 擊殺後直接結算導致無法取得 boss 碎片的流程。(1) `play.ts` 新增 boss 死亡演出時間窗（約 1.1s）與殘留碎片自動收取，避免最後一波立即跳轉遺失掉落；boss 碎片改由擊殺後「開獎」流程發放。(2) `rewards.ts` 新增 `rollBossChestReward()`（白70%/藍20%/深紅10%）與對應碎片/晶核機率（藍 10%、深紅 60%）；`RunResult` 新增 `bossChestReward` 結算資料欄位。(3) 新增 `scenes/bossReward.ts` 與 `style.css` 開獎視窗/晶核盒演出，玩家確認後才進入 `EndgameScene`。(4) `main.ts` 串接結算前開獎，將開獎所得 boss 專屬碎片與晶核正確入帳並反映於結算統計。(5) `ROADMAP.md` 同步勾選已完成的 Fragment Drop 子項（普通碎片、Boss 碎片、結算彙總、兌換介面）。驗證結果：`npm test`（312/312）與 `npm run build` 皆通過。

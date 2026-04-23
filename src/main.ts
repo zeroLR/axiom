@@ -33,6 +33,7 @@ import { ShopScene } from './scenes/shop';
 import { EquipmentScene } from './scenes/equipment';
 import { StartShapeSelectScene } from './scenes/startShapeSelect';
 import { SkillTreeScene } from './scenes/skillTree';
+import { TalentScene } from './scenes/talent';
 import { AchievementsScene } from './scenes/achievements';
 import { SettingsScene } from './scenes/settings';
 import {
@@ -120,6 +121,17 @@ import { setScreenShakeEnabled } from './game/screenShake';
 import { playMusic, setMusicVolume, stopMusic, isMusicPlaying } from './game/music';
 import type { RunContext } from './app/runContext';
 import { checkRunAchievements } from './app/achievementChecker';
+import { applyEffectToWorld } from './game/effectEngine';
+import {
+  TALENT_NODES,
+  type TalentLevelDef,
+} from './game/content/talents';
+import {
+  resetTalentGrowth,
+  talentBonuses,
+  talentLevel,
+  upgradeTalent,
+} from './game/talents';
 import { renderPauseOverlay } from './scenes/pause';
 import { closeOverlay } from './scenes/ui';
 import { createSkillButton } from './scenes/components/skillButton';
@@ -252,6 +264,64 @@ async function boot(): Promise<void> {
   /** Settled run payload consumed by endgame summary UI. */
   let pendingRunResult: RunResult | null = null;
   let developerModeUnlocked = settings.developerMode ?? false;
+
+  function sumTalentBonus(
+    levels: number,
+    defs: TalentLevelDef[],
+  ): number {
+    let total = 0;
+    const count = Math.min(levels, defs.length);
+    for (let i = 0; i < count; i++) total += defs[i]!.bonus;
+    return total;
+  }
+
+  function applyTalentAvatarBonuses(): void {
+    const state = profile.talents;
+    const hpAdd = sumTalentBonus(
+      talentLevel(state, 'survivalVitality'),
+      TALENT_NODES.survivalVitality.levels,
+    );
+    const iframeAdd = sumTalentBonus(
+      talentLevel(state, 'survivalPhase'),
+      TALENT_NODES.survivalPhase.levels,
+    );
+    const damageAdd = sumTalentBonus(
+      talentLevel(state, 'offenseVector'),
+      TALENT_NODES.offenseVector.levels,
+    );
+    const critAdd = sumTalentBonus(
+      talentLevel(state, 'offenseCritical'),
+      TALENT_NODES.offenseCritical.levels,
+    );
+    if (hpAdd > 0) {
+      applyEffectToWorld(
+        { kind: 'maxHpAdd', value: hpAdd },
+        play.world,
+        play.avatarId,
+      );
+    }
+    if (iframeAdd > 0) {
+      applyEffectToWorld(
+        { kind: 'iframeAdd', value: iframeAdd },
+        play.world,
+        play.avatarId,
+      );
+    }
+    if (damageAdd > 0) {
+      applyEffectToWorld(
+        { kind: 'damageAdd', value: damageAdd },
+        play.world,
+        play.avatarId,
+      );
+    }
+    if (critAdd > 0) {
+      applyEffectToWorld(
+        { kind: 'critAdd', value: critAdd },
+        play.world,
+        play.avatarId,
+      );
+    }
+  }
 
   function syncRunControlButtons(): void {
     const runActive = currentRun !== null;
@@ -2968,6 +3038,7 @@ async function boot(): Promise<void> {
       applyStartingShapeLoadout(play.world, play.avatarId, startingShape);
       // Apply equipment loadout at run start.
       applyEquipment(equipment, play.world, play.avatarId);
+      applyTalentAvatarBonuses();
 
       // Seed the card inventory with equipped equipment cards (they count as Lv 1).
       for (const cardId of equipment.equipped) {
@@ -3034,6 +3105,29 @@ async function boot(): Promise<void> {
       result.fragments.boss += result.bossChestReward.bossFragments;
       result.fragments.detailed[stageBossFragmentId] += result.bossChestReward.bossFragments;
       if (result.bossChestReward.core > 0) skillTree.cores += result.bossChestReward.core;
+    }
+
+    const talentMeta = talentBonuses(profile.talents);
+    if (talentMeta.fragmentRewardMul > 0) {
+      for (const meta of FRAGMENT_META) {
+        const base = result.fragments.detailed[meta.id] ?? 0;
+        if (base <= 0) continue;
+        const boosted = Math.max(
+          base,
+          Math.round(base * (1 + talentMeta.fragmentRewardMul)),
+        );
+        const delta = boosted - base;
+        if (delta > 0) {
+          result.fragments.detailed[meta.id] += delta;
+          result.fragments[meta.category] += delta;
+        }
+      }
+    }
+    if (talentMeta.pointRewardMul > 0) {
+      result.pointsEarned = Math.max(
+        0,
+        Math.round(result.pointsEarned * (1 + talentMeta.pointRewardMul)),
+      );
     }
 
     // Update profile
@@ -3308,6 +3402,30 @@ async function boot(): Promise<void> {
                     }
                   }
                   await saveSkillTree(skillTree);
+                },
+                onBack: () => {
+                  stack.pop();
+                  showMainMenu();
+                },
+                notify: (msg, type) => showNotification(msg, type),
+              }),
+            );
+            break;
+
+          case 'talentGrowth':
+            stack.pop();
+            stack.push(
+              new TalentScene({
+                getProfile: () => profile,
+                onUpgrade: async (id) => {
+                  const result = upgradeTalent(profile, id);
+                  if (result.ok) await saveProfile(profile);
+                  return result;
+                },
+                onReset: async () => {
+                  const result = resetTalentGrowth(profile);
+                  if (result.ok) await saveProfile(profile);
+                  return result;
                 },
                 onBack: () => {
                   stack.pop();

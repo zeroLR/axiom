@@ -2,7 +2,7 @@ import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import {
   iconPlay, iconInfinity, iconShop, iconEquipment,
-  iconSkills, iconAchievements, iconExport, iconImport, iconSkins, iconSettings, iconCodex,
+  iconSkills, iconTalents, iconAchievements, iconExport, iconImport, iconSkins, iconSettings, iconCodex,
   iconSpan,
 } from "../icons";
 import { initOverlay, closeOverlay, createOverlayTitle, createOverlaySub } from "./ui";
@@ -18,6 +18,7 @@ export type MenuAction =
   | { kind: "equipment" }
   | { kind: "startShape" }
   | { kind: "skillTree" }
+  | { kind: "talentGrowth" }
   | { kind: "codex" }
   | { kind: "achievements" }
   | { kind: "settings" }
@@ -81,6 +82,7 @@ export class MainMenuScene implements Scene {
     this.addBtn(row, iconShop, "Shop", "shop", "menu-btn");
     this.addBtn(row, iconEquipment, "Equipment", "equipment", "menu-btn");
     this.addBtn(row, iconSkills, "Skills", "skillTree", "menu-btn");
+    this.addBtn(row, iconTalents, "Talents", "talentGrowth", "menu-btn");
     this.addBtn(row, iconCodex, "Codex", "codex", "menu-btn");
     this.addBtn(row, iconAchievements, "Achievements", "achievements", "menu-btn");
     inner.appendChild(row);
