@@ -1927,6 +1927,20 @@ select.developer-form-input {
   font-weight: 700;
 }
 
+.talent-ring-guide {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-opacity: 0.18;
+  stroke-width: 1;
+}
+
+.talent-sector-guide {
+  stroke: var(--chrome);
+  stroke-opacity: 0.12;
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+
 .talent-radial-line--offense {
   stroke: var(--branch-offense);
 }
