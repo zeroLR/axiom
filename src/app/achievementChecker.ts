@@ -4,7 +4,7 @@
 // The caller is responsible for filtering out already-unlocked IDs (via
 // `unlockAchievement`) and persisting the updated AchievementState.
 
-import type { AchievementId, EquipmentLoadout, PlayerStats } from '../game/data/types';
+import type { AchievementId, PlayerStats } from '../game/data/types';
 import type { RunResult } from '../game/rewards';
 
 export interface AchievementCheckParams {
@@ -15,8 +15,6 @@ export interface AchievementCheckParams {
    * normalCleared, etc. are already updated by the caller before invoking this).
    */
   stats: PlayerStats;
-  /** Current equipment loadout (equipped.length, maxSlots). */
-  equipment: EquipmentLoadout;
   /** All skin IDs currently owned by the player. */
   ownedSkins: string[];
   /**
@@ -35,7 +33,7 @@ export interface AchievementCheckParams {
 export function checkRunAchievements(
   params: AchievementCheckParams,
 ): AchievementId[] {
-  const { result, stats, equipment, ownedSkins, normalStageWaveTarget } =
+  const { result, stats, ownedSkins, normalStageWaveTarget } =
     params;
 
   const ids: AchievementId[] = [];
@@ -68,11 +66,6 @@ export function checkRunAchievements(
     ids.push('clearStage5');
 
   // ── Style ─────────────────────────────────────────────────────────────────
-  if (
-    equipment.equipped.length >= equipment.maxSlots &&
-    equipment.maxSlots >= 3
-  )
-    ids.push('fullEquipment');
   if (ownedSkins.length >= 5) ids.push('own5Skins');
 
   return ids;

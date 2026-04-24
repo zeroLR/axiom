@@ -2,7 +2,7 @@ import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import { SHOP_ITEMS, type ShopItem } from "../game/data/shop";
 import type { EnemyKind } from "../game/world";
-import type { PlayerProfile, EquipmentLoadout, ShopUnlocks } from "../game/data/types";
+import type { PlayerProfile, ShopUnlocks } from "../game/data/types";
 import {
   FRAGMENT_META,
   type FragmentId,
@@ -20,7 +20,6 @@ import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, create
 
 export interface ShopCallbacks {
   getProfile: () => PlayerProfile;
-  getEquipment: () => EquipmentLoadout;
   getShopUnlocks: () => ShopUnlocks;
   getEnemyKillCount: (kind: EnemyKind) => number;
   onPurchase: (item: ShopItem) => void;
@@ -83,10 +82,9 @@ export class ShopScene implements Scene {
   render(_alpha: number): void {}
 
   private renderDefaultShop(list: HTMLElement): void {
-    const filteredItems = SHOP_ITEMS.filter((item) => {
-      if (this.activeTab === "skin") return item.category === "skin";
-      return item.category === "equipCard" || item.category === "slotExpand";
-    });
+    const filteredItems = SHOP_ITEMS.filter((item) =>
+      this.activeTab === "skin" ? item.category === "skin" : false,
+    );
 
     for (const item of filteredItems) {
       const profile = this.cb.getProfile();
@@ -211,9 +209,6 @@ export class ShopScene implements Scene {
   }
 
   private isPurchased(item: ShopItem): boolean {
-    const profile = this.cb.getProfile();
-    if (item.category === "skin") return profile.ownedSkins.includes(item.id);
-    const shopUnlocks = this.cb.getShopUnlocks();
-    return shopUnlocks.purchased.includes(item.id);
+    return this.cb.getProfile().ownedSkins.includes(item.id);
   }
 }

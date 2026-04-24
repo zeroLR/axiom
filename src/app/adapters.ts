@@ -8,7 +8,6 @@ import type { SfxName } from '../game/audio';
 import type { MusicCategory } from '../game/music';
 import type {
   PlayerProfile,
-  EquipmentLoadout,
   SkillTreeState,
   AchievementState,
   ShopUnlocks,
@@ -22,8 +21,6 @@ import type { DevelopModeSaveSlot } from '../game/storage';
 export interface IStorageAdapter {
   loadProfile(): Promise<PlayerProfile>;
   saveProfile(p: PlayerProfile): Promise<void>;
-  loadEquipment(): Promise<EquipmentLoadout>;
-  saveEquipment(e: EquipmentLoadout): Promise<void>;
   loadSkillTree(): Promise<SkillTreeState>;
   saveSkillTree(s: SkillTreeState): Promise<void>;
   loadAchievements(): Promise<AchievementState>;

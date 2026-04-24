@@ -1,4 +1,3 @@
-import type { EquipEffectKind } from "../effectEngine";
 import type { EnemyKind } from "../world";
 import {
   emptyFragmentDetailRecord,
@@ -173,12 +172,31 @@ export function defaultFusionState(): FusionState {
 // ── Talent Growth ────────────────────────────────────────────────────────────
 
 export type TalentId =
-  | "survivalVitality"
-  | "survivalPhase"
-  | "offenseVector"
-  | "offenseCritical"
-  | "efficiencyPoints"
-  | "efficiencyFragments";
+  // survival (24)
+  | "survivalVitality" | "survivalPhase"
+  | "survivalHp2" | "survivalHp3" | "survivalHp4" | "survivalHp5" | "survivalHp6"
+  | "survivalIframe2" | "survivalIframe3" | "survivalIframe4"
+  | "survivalSpeed1" | "survivalSpeed2" | "survivalSpeed3" | "survivalSpeed4"
+  | "survivalPickup1" | "survivalPickup2" | "survivalPickup3" | "survivalPickup4"
+  | "survivalCoreHp1" | "survivalCoreHp2" | "survivalCoreHp3"
+  | "survivalCoreIframe" | "survivalCoreSpeed" | "survivalCorePickup"
+  // offense (24)
+  | "offenseVector" | "offenseCritical"
+  | "offenseDamage2" | "offenseDamage3" | "offenseDamage4" | "offenseDamage5" | "offenseDamage6"
+  | "offenseCrit2" | "offenseCrit3" | "offenseCrit4"
+  | "offensePeriod1" | "offensePeriod2" | "offensePeriod3" | "offensePeriod4"
+  | "offenseProjSpeed1" | "offenseProjSpeed2" | "offenseProjSpeed3" | "offenseProjSpeed4"
+  | "offenseCoreDamage" | "offenseCoreCrit" | "offenseCorePeriod"
+  | "offenseCoreProjSpeed" | "offenseCoreProjectiles" | "offenseCorePierce"
+  // efficiency (24)
+  | "efficiencyPoints" | "efficiencyFragments"
+  | "efficiencyPoints2" | "efficiencyPoints3" | "efficiencyPoints4"
+  | "efficiencyPoints5" | "efficiencyPoints6" | "efficiencyPoints7" | "efficiencyPoints8" | "efficiencyPoints9"
+  | "efficiencyFragments2" | "efficiencyFragments3" | "efficiencyFragments4"
+  | "efficiencyFragments5" | "efficiencyFragments6" | "efficiencyFragments7"
+  | "efficiencyFragments8" | "efficiencyFragments9"
+  | "efficiencySkillPt1" | "efficiencySkillPt2" | "efficiencySkillPt3"
+  | "efficiencySkillPt4" | "efficiencySkillPt5" | "efficiencySkillPt6";
 
 export interface TalentState {
   levels: Record<TalentId, number>;
@@ -187,40 +205,33 @@ export interface TalentState {
 export function defaultTalentState(): TalentState {
   return {
     levels: {
-      survivalVitality: 0,
-      survivalPhase: 0,
-      offenseVector: 0,
-      offenseCritical: 0,
-      efficiencyPoints: 0,
-      efficiencyFragments: 0,
+      // survival
+      survivalVitality: 0, survivalPhase: 0,
+      survivalHp2: 0, survivalHp3: 0, survivalHp4: 0, survivalHp5: 0, survivalHp6: 0,
+      survivalIframe2: 0, survivalIframe3: 0, survivalIframe4: 0,
+      survivalSpeed1: 0, survivalSpeed2: 0, survivalSpeed3: 0, survivalSpeed4: 0,
+      survivalPickup1: 0, survivalPickup2: 0, survivalPickup3: 0, survivalPickup4: 0,
+      survivalCoreHp1: 0, survivalCoreHp2: 0, survivalCoreHp3: 0,
+      survivalCoreIframe: 0, survivalCoreSpeed: 0, survivalCorePickup: 0,
+      // offense
+      offenseVector: 0, offenseCritical: 0,
+      offenseDamage2: 0, offenseDamage3: 0, offenseDamage4: 0, offenseDamage5: 0, offenseDamage6: 0,
+      offenseCrit2: 0, offenseCrit3: 0, offenseCrit4: 0,
+      offensePeriod1: 0, offensePeriod2: 0, offensePeriod3: 0, offensePeriod4: 0,
+      offenseProjSpeed1: 0, offenseProjSpeed2: 0, offenseProjSpeed3: 0, offenseProjSpeed4: 0,
+      offenseCoreDamage: 0, offenseCoreCrit: 0, offenseCorePeriod: 0,
+      offenseCoreProjSpeed: 0, offenseCoreProjectiles: 0, offenseCorePierce: 0,
+      // efficiency
+      efficiencyPoints: 0, efficiencyFragments: 0,
+      efficiencyPoints2: 0, efficiencyPoints3: 0, efficiencyPoints4: 0,
+      efficiencyPoints5: 0, efficiencyPoints6: 0, efficiencyPoints7: 0, efficiencyPoints8: 0, efficiencyPoints9: 0,
+      efficiencyFragments2: 0, efficiencyFragments3: 0, efficiencyFragments4: 0,
+      efficiencyFragments5: 0, efficiencyFragments6: 0, efficiencyFragments7: 0,
+      efficiencyFragments8: 0, efficiencyFragments9: 0,
+      efficiencySkillPt1: 0, efficiencySkillPt2: 0, efficiencySkillPt3: 0,
+      efficiencySkillPt4: 0, efficiencySkillPt5: 0, efficiencySkillPt6: 0,
     },
   };
-}
-
-// ── Equipment ───────────────────────────────────────────────────────────────
-
-/** A purchasable enhancement card that can be equipped before a run. */
-export interface EquipmentCard {
-  id: string;
-  name: string;
-  glyph: string;
-  text: string;
-  /** Effect applied at run start (same shape as in-run Card effects). */
-  effectKind: EquipEffectKind;
-  effectValue: number;
-}
-
-export interface EquipmentLoadout {
-  /** Max number of equippable card slots (starts at 3, expandable). */
-  maxSlots: number;
-  /** IDs of cards currently equipped (length ≤ maxSlots). */
-  equipped: string[];
-  /** IDs of all owned equipment cards. */
-  ownedCards: string[];
-}
-
-export function defaultEquipmentLoadout(): EquipmentLoadout {
-  return { maxSlots: 3, equipped: [], ownedCards: [] };
 }
 
 // ── Skill Tree ──────────────────────────────────────────────────────────────
@@ -355,7 +366,6 @@ export function defaultGameSettings(): GameSettings {
 export interface SaveData {
   version: number;
   profile: PlayerProfile;
-  equipment: EquipmentLoadout;
   skillTree: SkillTreeState;
   achievements: AchievementState;
   shop: ShopUnlocks;

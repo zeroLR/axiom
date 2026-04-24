@@ -30,7 +30,6 @@ import { MainMenuScene, type MenuAction } from './scenes/mainMenu';
 import { CodexScene } from './scenes/codex';
 import { StageSelectScene } from './scenes/stageSelect';
 import { ShopScene } from './scenes/shop';
-import { EquipmentScene } from './scenes/equipment';
 import { ClassCreationScene } from './scenes/classCreation';
 import { SkillTreeScene } from './scenes/skillTree';
 import { TalentScene } from './scenes/talent';
@@ -45,12 +44,6 @@ import { STAGE_WAVES } from './game/stageWaves';
 import { STAGE_CONFIGS } from './game/content/stages';
 import { WAVES } from './game/waves';
 import { survivalWaveSpec } from './game/survivalWaves';
-import { applyEquipment } from './game/equipment';
-import { equipCard, unequipCard } from './game/equipment';
-import {
-  mapEquipmentToRunCardId,
-  listUnmappedEquipmentCards,
-} from './game/equipment';
 import {
   createActiveSkillStates,
   PRIMAL_SKILLS,
@@ -82,14 +75,11 @@ import {
   setIconHtml,
   CARD_GLYPHS,
   FRAGMENT_GLYPHS,
-  SHOP_GLYPHS,
   SKILL_GLYPHS,
 } from './icons';
 import {
   loadProfile,
   saveProfile,
-  loadEquipment,
-  saveEquipment,
   loadSkillTree,
   saveSkillTree,
   loadAchievements,
@@ -108,7 +98,6 @@ import {
 } from './game/storage';
 import type {
   PlayerProfile,
-  EquipmentLoadout,
   SkillTreeState,
   AchievementState,
   ShopUnlocks,
@@ -123,7 +112,8 @@ import type { RunContext } from './app/runContext';
 import { checkRunAchievements } from './app/achievementChecker';
 import { applyEffectToWorld } from './game/effectEngine';
 import {
-  AVATAR_TALENT_EFFECT_KINDS,
+  AVATAR_TALENT_EFFECT_KINDS_ADD,
+  AVATAR_TALENT_EFFECT_KINDS_MUL,
   resetTalentGrowth,
   talentBonuses,
   upgradeTalent,
@@ -162,8 +152,6 @@ async function boot(): Promise<void> {
   const storageAdapter: IStorageAdapter = {
     loadProfile,
     saveProfile,
-    loadEquipment,
-    saveEquipment,
     loadSkillTree,
     saveSkillTree,
     loadAchievements,
@@ -207,7 +195,6 @@ async function boot(): Promise<void> {
 
   // ── Load persistent state ───────────────────────────────────────────────
   let profile: PlayerProfile = await loadProfile();
-  let equipment: EquipmentLoadout = await loadEquipment();
   let skillTree: SkillTreeState = await loadSkillTree();
   let achievements: AchievementState = await loadAchievements();
   let shopUnlocks: ShopUnlocks = await loadShopUnlocks();
@@ -275,14 +262,15 @@ async function boot(): Promise<void> {
 
   function applyTalentAvatarBonuses(): void {
     const bonuses = talentBonuses(profile.talents);
-    for (const kind of AVATAR_TALENT_EFFECT_KINDS) {
+    for (const kind of AVATAR_TALENT_EFFECT_KINDS_ADD) {
       const value = bonuses[kind];
       if (value <= 0) continue;
-      applyEffectToWorld(
-        { kind, value },
-        play.world,
-        play.avatarId,
-      );
+      applyEffectToWorld({ kind, value }, play.world, play.avatarId);
+    }
+    for (const kind of AVATAR_TALENT_EFFECT_KINDS_MUL) {
+      const delta = bonuses[kind];
+      if (delta === 0) continue;
+      applyEffectToWorld({ kind, value: 1 + delta }, play.world, play.avatarId);
     }
   }
 
@@ -2757,31 +2745,8 @@ async function boot(): Promise<void> {
       container.appendChild(chip);
     }
 
-    const unmappedEquipment = currentRun?.developMode
-      ? []
-      : listUnmappedEquipmentCards(equipment.equipped);
-    for (const eqCard of unmappedEquipment) {
-      const chip = document.createElement('span');
-      chip.className = 'card-chip';
-      chip.title = `${eqCard.name} (equipment)`;
 
-      const glyphSpan = document.createElement('span');
-      glyphSpan.className = 'card-chip-glyph';
-      const svgGlyph = SHOP_GLYPHS[eqCard.id];
-      if (svgGlyph) setIconHtml(glyphSpan, svgGlyph);
-      else glyphSpan.textContent = eqCard.glyph;
-
-      const lvSpan = document.createElement('span');
-      lvSpan.className = 'card-chip-lv';
-      lvSpan.textContent = 'E';
-
-      chip.appendChild(glyphSpan);
-      chip.appendChild(lvSpan);
-      container.appendChild(chip);
-    }
-
-    container.hidden =
-      runInventory.size === 0 && unmappedEquipment.length === 0;
+    container.hidden = runInventory.size === 0;
   }
 
   function summarizeRunEnhances(): Array<{ id: string; level: number }> {
@@ -3025,19 +2990,8 @@ async function boot(): Promise<void> {
 
     if (!developMode) {
       applyStartingShapeLoadout(play.world, play.avatarId, startingShape);
-      // Apply equipment loadout at run start.
-      applyEquipment(equipment, play.world, play.avatarId);
       applyTalentAvatarBonuses();
       applyClassPassiveBonuses();
-
-      // Seed the card inventory with equipped equipment cards (they count as Lv 1).
-      for (const cardId of equipment.equipped) {
-        const runCardId = mapEquipmentToRunCardId(cardId) ?? cardId;
-        const poolCard = POOL_BY_ID.get(runCardId);
-        if (poolCard && !runInventory.has(runCardId)) {
-          runInventory.add(poolCard);
-        }
-      }
     }
 
     app.stage.addChild(play.root);
@@ -3197,7 +3151,6 @@ async function boot(): Promise<void> {
     const toUnlock = checkRunAchievements({
       result,
       stats: profile.stats,
-      equipment,
       ownedSkins: profile.ownedSkins,
       normalStageWaveTarget,
     });
@@ -3291,7 +3244,6 @@ async function boot(): Promise<void> {
             stack.push(
               new ShopScene({
                 getProfile: () => profile,
-                getEquipment: () => equipment,
                 getShopUnlocks: () => shopUnlocks,
                 getEnemyKillCount: (kind) => profile.stats.enemyKills[kind] ?? 0,
                 onPurchase: async (item) => {
@@ -3300,17 +3252,11 @@ async function boot(): Promise<void> {
                   if (item.category === 'skin') {
                     if (!profile.ownedSkins.includes(item.id))
                       profile.ownedSkins.push(item.id);
-                  } else if (item.category === 'equipCard') {
-                    if (!equipment.ownedCards.includes(item.id))
-                      equipment.ownedCards.push(item.id);
-                  } else if (item.category === 'slotExpand') {
-                    equipment.maxSlots += 1;
                   }
                   if (!shopUnlocks.purchased.includes(item.id))
                     shopUnlocks.purchased.push(item.id);
                   await Promise.all([
                     saveProfile(profile),
-                    saveEquipment(equipment),
                     saveShopUnlocks(shopUnlocks),
                   ]);
                 },
@@ -3332,32 +3278,6 @@ async function boot(): Promise<void> {
                     profile.fragments.detailed[id] - 1,
                   );
                   profile.points += gain;
-                  await saveProfile(profile);
-                },
-                onBack: () => {
-                  stack.pop();
-                  showMainMenu();
-                },
-              }),
-            );
-            break;
-
-          case 'equipment':
-            stack.pop();
-            stack.push(
-              new EquipmentScene({
-                getLoadout: () => equipment,
-                getProfile: () => profile,
-                onEquip: async (cardId) => {
-                  equipCard(equipment, cardId);
-                  await saveEquipment(equipment);
-                },
-                onUnequip: async (cardId) => {
-                  unequipCard(equipment, cardId);
-                  await saveEquipment(equipment);
-                },
-                onActivateSkin: async (skinId) => {
-                  profile.activeSkin = skinId;
                   await saveProfile(profile);
                 },
                 onBack: () => {
@@ -3462,8 +3382,11 @@ async function boot(): Promise<void> {
               new TalentScene({
                 getProfile: () => profile,
                 onUpgrade: async (id) => {
-                  const result = upgradeTalent(profile, id);
-                  if (result.ok) await saveProfile(profile);
+                  const result = upgradeTalent(profile, id, skillTree);
+                  if (result.ok) {
+                    await saveProfile(profile);
+                    if (result.skillPointsGranted) await saveSkillTree(skillTree);
+                  }
                   return result;
                 },
                 onReset: async () => {
@@ -3560,7 +3483,6 @@ async function boot(): Promise<void> {
                 await importSaveData(data);
                 // Reload state
                 profile = await loadProfile();
-                equipment = await loadEquipment();
                 skillTree = await loadSkillTree();
                 achievements = await loadAchievements();
                 shopUnlocks = await loadShopUnlocks();
