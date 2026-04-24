@@ -1920,27 +1920,27 @@ select.developer-form-input {
   stroke: var(--branch-efficiency);
 }
 
-/* Upgrade bottom sheet */
+/* Upgrade sheet wrapper – reveals sheet below the canvas via max-height animation */
+.talent-sheet-wrapper {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 280ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.talent-sheet-wrapper.open {
+  max-height: 420px;
+}
+
+/* Upgrade sheet – normal block element, no absolute positioning */
 .talent-upgrade-sheet {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   background: var(--bg);
-  border-top: 1px solid var(--chrome);
-  border-radius: 16px 16px 0 0;
+  border: 1px solid var(--chrome);
+  border-radius: 14px;
   padding: 14px 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 9px;
-  transform: translateY(100%);
-  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.08);
-  z-index: 10;
-}
-
-.talent-upgrade-sheet.open {
-  transform: translateY(0);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
 }
 
 .talent-upgrade-sheet-header {
