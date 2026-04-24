@@ -227,6 +227,12 @@ body {
   color: var(--fg);
 }
 
+.talent-tag--icon-btn {
+  padding: 5px 9px;
+  font-size: 15px;
+  line-height: 1;
+}
+
 .talent-branch-section {
   display: flex;
   flex-direction: column;

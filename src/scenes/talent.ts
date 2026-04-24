@@ -26,6 +26,7 @@ import {
   glyphRecursion,
   glyphSharpShot,
   glyphStar4,
+  iconReset,
   iconTalents,
   iconSpan,
 } from "../icons";
@@ -36,7 +37,7 @@ const CANVAS_SIZE = 1200;
 const CANVAS_CX = CANVAS_SIZE / 2;
 const CANVAS_CY = CANVAS_SIZE / 2;
 // Ring radius per depth level (0 = innermost). Level 6+ clamps to last entry.
-const RING_RADII = [105, 195, 290, 385, 470, 550, 550] as const;
+const RING_RADII = [180, 265, 345, 420, 490, 555, 555] as const;
 const SECTOR_HALF_RAD = (54 * Math.PI) / 180;
 const SECTOR_CENTER: Record<TalentBranch, number> = {
   offense:    -Math.PI / 2,          // top
@@ -213,7 +214,66 @@ export class TalentScene implements Scene {
       }
     }
 
+    this.spreadBranchRingNodes(positions, depths);
     return positions;
+  }
+
+  // ── Spread pass: push same-branch same-ring nodes apart ────────────────────
+
+  private spreadBranchRingNodes(
+    positions: Map<TalentId, { x: number; y: number }>,
+    depths: Map<TalentId, number>,
+  ): void {
+    const MIN_ARC_PX = 64;
+
+    type NodeRef = { id: TalentId; angle: number };
+    const groups = new Map<string, { r: number; branch: TalentBranch; nodes: NodeRef[] }>();
+
+    for (const id of TALENT_IDS) {
+      const depth = Math.min(depths.get(id) ?? 0, RING_RADII.length - 1);
+      const branch = TALENT_NODES[id].branch;
+      const key = `${branch}:${depth}`;
+      if (!groups.has(key)) {
+        groups.set(key, { r: RING_RADII[depth]!, branch, nodes: [] });
+      }
+      const pos = positions.get(id)!;
+      groups.get(key)!.nodes.push({
+        id,
+        angle: Math.atan2(pos.y - CANVAS_CY, pos.x - CANVAS_CX),
+      });
+    }
+
+    for (const { r, branch, nodes } of groups.values()) {
+      if (nodes.length <= 1) continue;
+      const minAngle = MIN_ARC_PX / r;
+      nodes.sort((a, b) => a.angle - b.angle);
+
+      for (let iter = 0; iter < 120; iter++) {
+        let moved = false;
+        for (let i = 0; i < nodes.length - 1; i++) {
+          const gap = nodes[i + 1]!.angle - nodes[i]!.angle;
+          if (gap < minAngle) {
+            const push = (minAngle - gap) / 2;
+            nodes[i]!.angle -= push;
+            nodes[i + 1]!.angle += push;
+            moved = true;
+          }
+        }
+        if (!moved) break;
+      }
+
+      // Re-center spread group back to branch sector center
+      const mean = nodes.reduce((s, n) => s + n.angle, 0) / nodes.length;
+      const shift = SECTOR_CENTER[branch] - mean;
+      for (const n of nodes) n.angle += shift;
+
+      for (const { id, angle } of nodes) {
+        positions.set(id, {
+          x: Math.round(CANVAS_CX + r * Math.cos(angle)),
+          y: Math.round(CANVAS_CY + r * Math.sin(angle)),
+        });
+      }
+    }
   }
 
   // ── Radial view ────────────────────────────────────────────────────────────
@@ -565,8 +625,10 @@ export class TalentScene implements Scene {
 
     const resetBtn = document.createElement("button");
     resetBtn.type = "button";
-    resetBtn.className = "talent-tag talent-tag--action";
-    resetBtn.textContent = "reset tree";
+    resetBtn.className = "talent-tag talent-tag--action talent-tag--icon-btn";
+    resetBtn.setAttribute("aria-label", "reset tree");
+    resetBtn.title = "reset tree";
+    resetBtn.appendChild(iconSpan(iconReset));
     resetBtn.addEventListener("click", () => { void this.handleReset(); });
     row.appendChild(resetBtn);
 

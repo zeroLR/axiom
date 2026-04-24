@@ -100,6 +100,11 @@ export const iconEnhance = wrap(
   `<polyline points="6,18 12,12 18,18"/><polyline points="6,13 12,7 18,13"/>`,
 );
 
+/** Reset / rotate-counterclockwise arrow. */
+export const iconReset = wrap(
+  `<polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/>`,
+);
+
 /** Settings: gear / cog. */
 export const iconSettings = wrap(
   `<circle cx="12" cy="12" r="3"/><path d="M12,2v2M12,20v2M4.22,4.22l1.42,1.42M18.36,18.36l1.42,1.42M2,12h2M20,12h2M4.22,19.78l1.42-1.42M18.36,5.64l1.42-1.42"/>`,
