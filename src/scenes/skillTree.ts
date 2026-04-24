@@ -9,7 +9,7 @@ import {
   skillCooldown,
   type PrimalSkillDef,
 } from "../game/skills";
-import { SKILL_GLYPHS, setIconHtml } from "../icons";
+import { SKILL_GLYPHS, iconLock, setIconHtml } from "../icons";
 import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, createBodyScroll, createCardList, createBackButton } from "./ui";
 import type { NotifyType } from "../app/notificationService";
 
@@ -65,7 +65,7 @@ export class SkillTreeScene implements Scene {
       const glyph = document.createElement("span");
       glyph.className = "card-glyph";
       if (!isUnlocked) {
-        glyph.textContent = "🔒";
+        setIconHtml(glyph, iconLock);
       } else {
         const skillSvg = SKILL_GLYPHS[def.id];
         if (skillSvg) setIconHtml(glyph, skillSvg);

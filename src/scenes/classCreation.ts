@@ -12,6 +12,7 @@ import {
   MAX_CHARACTER_SLOTS,
   MAX_CLASS_TIER,
 } from "../game/content/classes";
+import { PRIMAL_SKILLS } from "../game/skills";
 import {
   type ClassActionResult,
   activeCharacterSlot,
@@ -551,6 +552,15 @@ export class ClassCreationScene implements Scene {
             btn.appendChild(bPassive);
           }
 
+          if (node.unlocksSkill) {
+            const skillName = PRIMAL_SKILLS[node.unlocksSkill]?.name ?? node.unlocksSkill;
+            const skillLine = document.createElement("div");
+            skillLine.className = "cc-branch-btn-passive";
+            skillLine.style.color = "var(--accent)";
+            skillLine.textContent = `Unlocks skill: ${skillName}`;
+            btn.appendChild(skillLine);
+          }
+
           btn.addEventListener("click", () => {
             this.pendingBranch = branch;
             renderBranchOptions();
@@ -647,6 +657,15 @@ export class ClassCreationScene implements Scene {
           passiveEl.appendChild(this.createTag(singlePassiveLine(p.kind, p.value), "accent"));
         });
         modal.appendChild(passiveEl);
+
+        if (t1Node.unlocksSkill) {
+          const skillName = PRIMAL_SKILLS[t1Node.unlocksSkill]?.name ?? t1Node.unlocksSkill;
+          const skillRow = document.createElement("div");
+          skillRow.className = "talent-tag-row";
+          skillRow.style.marginTop = "4px";
+          skillRow.appendChild(this.createTag(`Unlocks skill: ${skillName}`, "accent"));
+          modal.appendChild(skillRow);
+        }
 
         const req = t1Node.promotionReq;
         if (req) {
