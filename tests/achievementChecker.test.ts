@@ -4,7 +4,6 @@ import type { RunResult } from '../src/game/rewards';
 import {
   defaultEnemyKills,
   type PlayerStats,
-  type EquipmentLoadout,
 } from '../src/game/data/types';
 import { emptyFragmentDetailRecord } from '../src/game/fragments';
 
@@ -21,10 +20,6 @@ function makeStats(overrides: Partial<PlayerStats> = {}): PlayerStats {
     totalPointsEarned: 0,
     ...overrides,
   };
-}
-
-function makeEquipment(overrides: Partial<EquipmentLoadout> = {}): EquipmentLoadout {
-  return { maxSlots: 3, equipped: [], ownedCards: [], ...overrides };
 }
 
 function makeResult(overrides: Partial<RunResult> = {}): RunResult {
@@ -45,14 +40,12 @@ function makeResult(overrides: Partial<RunResult> = {}): RunResult {
 function makeParams(
   result: RunResult,
   statsOverrides: Partial<PlayerStats> = {},
-  equipOverrides: Partial<EquipmentLoadout> = {},
   ownedSkins: string[] = ['triangle'],
   normalStageWaveTarget = 8,
 ): AchievementCheckParams {
   return {
     result,
     stats: makeStats(statsOverrides),
-    equipment: makeEquipment(equipOverrides),
     ownedSkins,
     normalStageWaveTarget,
   };
@@ -221,7 +214,7 @@ describe('checkRunAchievements', () => {
 
   it('grants clearStage4 when normal mode stage 3 cleared', () => {
     const ids = checkRunAchievements(
-      makeParams(makeResult({ mode: 'normal', stageIndex: 3, wavesCleared: 10 }), {}, {}, ['triangle'], 10),
+      makeParams(makeResult({ mode: 'normal', stageIndex: 3, wavesCleared: 10 }), {}, ['triangle'], 10),
     );
     expect(ids).toContain('clearStage4');
   });
@@ -237,53 +230,30 @@ describe('checkRunAchievements', () => {
 
   it('grants clearStage5 when normal mode stage 4 cleared', () => {
     const ids = checkRunAchievements(
-      makeParams(makeResult({ mode: 'normal', stageIndex: 4, wavesCleared: 12 }), {}, {}, ['triangle'], 12),
+      makeParams(makeResult({ mode: 'normal', stageIndex: 4, wavesCleared: 12 }), {}, ['triangle'], 12),
     );
     expect(ids).toContain('clearStage5');
   });
 
   it('does not grant clearStage5 for lower stages', () => {
     const ids = checkRunAchievements(
-      makeParams(makeResult({ mode: 'normal', stageIndex: 3, wavesCleared: 10 }), {}, {}, ['triangle'], 10),
+      makeParams(makeResult({ mode: 'normal', stageIndex: 3, wavesCleared: 10 }), {}, ['triangle'], 10),
     );
     expect(ids).not.toContain('clearStage5');
-  });
-
-  // ── fullEquipment ─────────────────────────────────────────────────────────
-
-  it('grants fullEquipment when all slots filled with maxSlots >= 3', () => {
-    const ids = checkRunAchievements(
-      makeParams(makeResult(), {}, { maxSlots: 3, equipped: ['a', 'b', 'c'], ownedCards: [] }),
-    );
-    expect(ids).toContain('fullEquipment');
-  });
-
-  it('does not grant fullEquipment if maxSlots < 3', () => {
-    const ids = checkRunAchievements(
-      makeParams(makeResult(), {}, { maxSlots: 2, equipped: ['a', 'b'], ownedCards: [] }),
-    );
-    expect(ids).not.toContain('fullEquipment');
-  });
-
-  it('does not grant fullEquipment if slots not all filled', () => {
-    const ids = checkRunAchievements(
-      makeParams(makeResult(), {}, { maxSlots: 3, equipped: ['a', 'b'], ownedCards: [] }),
-    );
-    expect(ids).not.toContain('fullEquipment');
   });
 
   // ── own5Skins ─────────────────────────────────────────────────────────────
 
   it('grants own5Skins when ownedSkins.length >= 5', () => {
     const ids = checkRunAchievements(
-      makeParams(makeResult(), {}, {}, ['a', 'b', 'c', 'd', 'e']),
+      makeParams(makeResult(), {}, ['a', 'b', 'c', 'd', 'e']),
     );
     expect(ids).toContain('own5Skins');
   });
 
   it('does not grant own5Skins with fewer than 5 skins', () => {
     const ids = checkRunAchievements(
-      makeParams(makeResult(), {}, {}, ['a', 'b', 'c', 'd']),
+      makeParams(makeResult(), {}, ['a', 'b', 'c', 'd']),
     );
     expect(ids).not.toContain('own5Skins');
   });
@@ -306,7 +276,6 @@ describe('checkRunAchievements', () => {
           totalBossKills: 3,
           normalCleared: [true, true, true],
         },
-        { maxSlots: 3, equipped: ['a', 'b', 'c'], ownedCards: [] },
         ['a', 'b', 'c', 'd', 'e'],
       ),
     );

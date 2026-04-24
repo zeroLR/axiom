@@ -10,13 +10,11 @@ import {
   defaultTalentState,
   defaultCharactersState,
   defaultFusionState,
-  defaultEquipmentLoadout,
   defaultSkillTreeState,
   defaultAchievementState,
   defaultShopUnlocks,
   defaultGameSettings,
   type PlayerProfile,
-  type EquipmentLoadout,
   type SkillTreeState,
   type AchievementState,
   type ShopUnlocks,
@@ -30,7 +28,6 @@ const DB_NAME = "axiom";
 const DB_VERSION = 2; // IndexedDB schema version (bump to trigger onupgradeneeded)
 const STORES = [
   "profile",
-  "equipment",
   "skillTree",
   "achievements",
   "shop",
@@ -147,13 +144,6 @@ export async function saveProfile(p: PlayerProfile): Promise<void> {
   return putStore("profile", p);
 }
 
-export async function loadEquipment(): Promise<EquipmentLoadout> {
-  return getStore("equipment", defaultEquipmentLoadout());
-}
-export async function saveEquipment(e: EquipmentLoadout): Promise<void> {
-  return putStore("equipment", e);
-}
-
 export async function loadSkillTree(): Promise<SkillTreeState> {
   const raw = await getStore("skillTree", defaultSkillTreeState());
   // Migrate: ensure all skill IDs exist (handles v1 → v2 upgrade).
@@ -256,16 +246,15 @@ export async function saveDevelopModeSlots(slots: DevelopModeSaveSlot[]): Promis
 // ── Export / Import ─────────────────────────────────────────────────────────
 
 export async function exportSaveData(): Promise<SaveData> {
-  const [profile, equipment, skillTree, achievements, shop, settings] =
+  const [profile, skillTree, achievements, shop, settings] =
     await Promise.all([
       loadProfile(),
-      loadEquipment(),
       loadSkillTree(),
       loadAchievements(),
       loadShopUnlocks(),
       loadSettings(),
     ]);
-  return { version: SCHEMA_VERSION, profile, equipment, skillTree, achievements, shop, settings };
+  return { version: SCHEMA_VERSION, profile, skillTree, achievements, shop, settings };
 }
 
 export function downloadSaveData(data: SaveData): void {
@@ -285,8 +274,7 @@ export function parseSaveData(json: string): SaveData | null {
     const obj = JSON.parse(json) as Record<string, unknown>;
     if (typeof obj !== "object" || obj === null) return null;
     if (typeof obj.version !== "number") return null;
-    // Minimal shape check — trust the version field for forward compat.
-    if (!obj.profile || !obj.equipment || !obj.skillTree || !obj.achievements || !obj.shop || !obj.settings) {
+    if (!obj.profile || !obj.skillTree || !obj.achievements || !obj.shop || !obj.settings) {
       return null;
     }
     return obj as unknown as SaveData;
@@ -298,7 +286,6 @@ export function parseSaveData(json: string): SaveData | null {
 export async function importSaveData(data: SaveData): Promise<void> {
   await Promise.all([
     saveProfile(data.profile),
-    saveEquipment(data.equipment),
     saveSkillTree(data.skillTree),
     saveAchievements(data.achievements),
     saveShopUnlocks(data.shop),

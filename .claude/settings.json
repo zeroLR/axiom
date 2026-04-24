@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR/axiom\" && npx tsc --noEmit 2>&1 | tail -20"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx tsc --noEmit 2>&1 | tail -20"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR/axiom\" && npx vitest run --reporter=dot 2>&1 | tail -30"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx vitest run --reporter=dot 2>&1 | tail -30"
           }
         ]
       }

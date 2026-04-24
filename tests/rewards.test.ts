@@ -82,28 +82,24 @@ describe("rewards", () => {
       const reward = rollBossChestReward(rng);
       expect(["white", "blue", "crimson"]).toContain(reward.tier);
       expect(reward.bossFragments).toBeGreaterThan(0);
-      expect([0, 1]).toContain(reward.core);
     }
   });
 
-  it("rollBossChestReward tier ranges and core chances are respected", () => {
+  it("rollBossChestReward tier ranges are respected", () => {
     const white = rollBossChestReward(() => 0.2);
     expect(white.tier).toBe("white");
-    expect(white.core).toBe(0);
     expect(white.bossFragments).toBeGreaterThanOrEqual(3);
     expect(white.bossFragments).toBeLessThanOrEqual(5);
 
-    const blueWithCore = rollBossChestReward(createSequentialRng([0.8, 0.4, 0.05]));
-    expect(blueWithCore.tier).toBe("blue");
-    expect(blueWithCore.core).toBe(1);
-    expect(blueWithCore.bossFragments).toBeGreaterThanOrEqual(6);
-    expect(blueWithCore.bossFragments).toBeLessThanOrEqual(9);
+    const blue = rollBossChestReward(createSequentialRng([0.8, 0.4]));
+    expect(blue.tier).toBe("blue");
+    expect(blue.bossFragments).toBeGreaterThanOrEqual(6);
+    expect(blue.bossFragments).toBeLessThanOrEqual(9);
 
-    const crimsonNoCore = rollBossChestReward(createSequentialRng([0.95, 0.2, 0.9]));
-    expect(crimsonNoCore.tier).toBe("crimson");
-    expect(crimsonNoCore.core).toBe(0);
-    expect(crimsonNoCore.bossFragments).toBeGreaterThanOrEqual(10);
-    expect(crimsonNoCore.bossFragments).toBeLessThanOrEqual(14);
+    const crimson = rollBossChestReward(createSequentialRng([0.95, 0.2]));
+    expect(crimson.tier).toBe("crimson");
+    expect(crimson.bossFragments).toBeGreaterThanOrEqual(10);
+    expect(crimson.bossFragments).toBeLessThanOrEqual(14);
   });
 });
 

@@ -67,7 +67,7 @@ export const BOSS_WAVE_BONUS = 5;
 
 // ── Boss loot rolls ─────────────────────────────────────────────────────────
 
-export type LootKind = 'points' | 'skin' | 'skillPoints' | 'core';
+export type LootKind = 'points' | 'skin' | 'skillPoints';
 
 export interface LootDrop {
   kind: LootKind;
@@ -82,7 +82,6 @@ export type BossChestTier = 'white' | 'blue' | 'crimson';
 export interface BossChestReward {
   tier: BossChestTier;
   bossFragments: number;
-  core: number;
 }
 
 interface LootEntry {
@@ -94,10 +93,9 @@ interface LootEntry {
 }
 
 const BOSS_LOOT_TABLE: LootEntry[] = [
-  { kind: 'points', label: '+100 points', value: 100, weight: 40 },
-  { kind: 'skin', label: 'Boss skin shard', value: 0, weight: 55 },
-  { kind: 'skillPoints', label: '+30 skill pts', value: 30, weight: 75 },
-  { kind: 'core', label: 'Primal core ✧', value: 1, weight: 100 },
+  { kind: 'points', label: '+100 points', value: 100, weight: 45 },
+  { kind: 'skin', label: 'Boss skin shard', value: 0, weight: 60 },
+  { kind: 'skillPoints', label: '+30 skill pts', value: 30, weight: 100 },
 ];
 
 /** Roll one loot drop from the boss loot table. */
@@ -116,24 +114,12 @@ export function rollBossLoot(rng: Rng): LootDrop {
 export function rollBossChestReward(rng: Rng): BossChestReward {
   const rarityRoll = rng();
   if (rarityRoll < 0.7) {
-    return {
-      tier: 'white',
-      bossFragments: 3 + Math.floor(rng() * 3), // 3–5
-      core: 0,
-    };
+    return { tier: 'white', bossFragments: 3 + Math.floor(rng() * 3) }; // 3–5
   }
   if (rarityRoll < 0.9) {
-    return {
-      tier: 'blue',
-      bossFragments: 6 + Math.floor(rng() * 4), // 6–9
-      core: rng() < 0.1 ? 1 : 0,
-    };
+    return { tier: 'blue', bossFragments: 6 + Math.floor(rng() * 4) }; // 6–9
   }
-  return {
-    tier: 'crimson',
-    bossFragments: 10 + Math.floor(rng() * 5), // 10–14
-    core: rng() < 0.6 ? 1 : 0,
-  };
+  return { tier: 'crimson', bossFragments: 10 + Math.floor(rng() * 5) }; // 10–14
 }
 
 // ── Fragment drop system ─────────────────────────────────────────────────────

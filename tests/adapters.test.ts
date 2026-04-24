@@ -17,8 +17,6 @@ function makeMockStorage(
   return {
     loadProfile: vi.fn().mockResolvedValue({ stats: {}, activeStartShape: 'triangle' }),
     saveProfile: vi.fn().mockResolvedValue(undefined),
-    loadEquipment: vi.fn().mockResolvedValue({ maxSlots: 3, equipped: [], ownedCards: [] }),
-    saveEquipment: vi.fn().mockResolvedValue(undefined),
     loadSkillTree: vi.fn().mockResolvedValue({ cores: 0, skillPoints: 0, skills: {} }),
     saveSkillTree: vi.fn().mockResolvedValue(undefined),
     loadAchievements: vi.fn().mockResolvedValue({}),
