@@ -69,9 +69,9 @@ export class TalentScene implements Scene {
   private readonly cb: TalentSceneCallbacks;
 
   private selectedId: TalentId | null = null;
+  private zoom = 0.55;
   private panX = 0;
   private panY = 0;
-  private zoom = 0.55;
   private didDrag = false;
   private panZoomAbort: AbortController | null = null;
   private _animFromPan: { x: number; y: number } | null = null;
@@ -79,6 +79,9 @@ export class TalentScene implements Scene {
   constructor(cb: TalentSceneCallbacks) {
     this.root = new Container();
     this.cb = cb;
+    // Center the canvas in the viewport at the initial zoom level
+    this.panX = CANVAS_CX * (1 - this.zoom);
+    this.panY = CANVAS_CY * (1 - this.zoom);
   }
 
   enter(): void {
@@ -98,7 +101,6 @@ export class TalentScene implements Scene {
     }
     content.appendChild(sheetWrapper);
 
-    content.appendChild(this.createBottomBar(profile));
     inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
 
@@ -145,34 +147,72 @@ export class TalentScene implements Scene {
     const depths = this.computeDepths();
     const positions = new Map<TalentId, { x: number; y: number }>();
 
-    // Group nodes by (branch, clampedDepth)
-    const groups = new Map<string, TalentId[]>();
+    // Group ids by branch
+    const branchMap = new Map<TalentBranch, TalentId[]>();
     for (const id of TALENT_IDS) {
-      const def = TALENT_NODES[id];
-      const depth = Math.min(depths.get(id) ?? 0, RING_RADII.length - 1);
-      const key = `${def.branch}:${depth}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(id);
+      const b = TALENT_NODES[id].branch;
+      if (!branchMap.has(b)) branchMap.set(b, []);
+      branchMap.get(b)!.push(id);
     }
 
-    for (const [key, ids] of groups) {
-      const colonIdx = key.indexOf(":");
-      const branch = key.slice(0, colonIdx) as TalentBranch;
-      const depth = parseInt(key.slice(colonIdx + 1), 10);
+    for (const [branch, ids] of branchMap) {
       const sectorCenter = SECTOR_CENTER[branch];
-      const r = RING_RADII[depth] ?? RING_RADII[RING_RADII.length - 1]!;
-      const n = ids.length;
-      ids.forEach((id, i) => {
-        const angle =
-          n === 1
-            ? sectorCenter
-            : sectorCenter + ((i / (n - 1)) * 2 - 1) * SECTOR_HALF_RAD;
+      const idSet = new Set(ids);
+
+      // Build per-branch dependency tree
+      const children = new Map<TalentId, TalentId[]>();
+      const roots: TalentId[] = [];
+      for (const id of ids) children.set(id, []);
+      for (const id of ids) {
+        const req = TALENT_NODES[id].requires;
+        if (req && idSet.has(req.id)) {
+          children.get(req.id)!.push(id);
+        } else {
+          roots.push(id);
+        }
+      }
+
+      // Count leaf nodes in each subtree (leaf = no children within this branch)
+      const leafCount = new Map<TalentId, number>();
+      const countLeaves = (id: TalentId): number => {
+        const kids = children.get(id) ?? [];
+        if (kids.length === 0) { leafCount.set(id, 1); return 1; }
+        const n = kids.reduce((s, k) => s + countLeaves(k), 0);
+        leafCount.set(id, n);
+        return n;
+      };
+      for (const root of roots) countLeaves(root);
+
+      // Recursively place a subtree within the angular slice [a0, a1]
+      const layout = (id: TalentId, a0: number, a1: number): void => {
+        const depth = Math.min(depths.get(id) ?? 0, RING_RADII.length - 1);
+        const r = RING_RADII[depth]!;
+        const angle = (a0 + a1) / 2;
         positions.set(id, {
           x: CANVAS_CX + r * Math.cos(angle),
           y: CANVAS_CY + r * Math.sin(angle),
         });
-      });
+        const kids = children.get(id) ?? [];
+        if (kids.length === 0) return;
+        const total = kids.reduce((s, k) => s + (leafCount.get(k) ?? 1), 0);
+        let cursor = a0;
+        for (const kid of kids) {
+          const slice = ((leafCount.get(kid) ?? 1) / total) * (a1 - a0);
+          layout(kid, cursor, cursor + slice);
+          cursor += slice;
+        }
+      };
+
+      // Distribute root nodes across the full sector proportionally to subtree size
+      const totalLeaves = roots.reduce((s, r) => s + (leafCount.get(r) ?? 1), 0);
+      let cursor = sectorCenter - SECTOR_HALF_RAD;
+      for (const root of roots) {
+        const slice = ((leafCount.get(root) ?? 1) / totalLeaves) * (SECTOR_HALF_RAD * 2);
+        layout(root, cursor, cursor + slice);
+        cursor += slice;
+      }
     }
+
     return positions;
   }
 
@@ -311,8 +351,8 @@ export class TalentScene implements Scene {
       const newId = this.selectedId === id ? null : id;
       if (newId !== null) {
         this._animFromPan = { x: this.panX, y: this.panY };
-        this.panX = -(x - CANVAS_CX) * this.zoom;
-        this.panY = -(y - CANVAS_CY) * this.zoom;
+        this.panX = CANVAS_CX - x * this.zoom;
+        this.panY = CANVAS_CY - y * this.zoom;
       }
       this.selectedId = newId;
       this.enter();
@@ -522,32 +562,14 @@ export class TalentScene implements Scene {
     row.appendChild(this.createTag(`pts ${profile.points}`));
     row.appendChild(this.createTag(`basic ${profile.fragments.basic}`));
     row.appendChild(this.createTag(`elite ${profile.fragments.elite}`));
-    return row;
-  }
-
-  private createBottomBar(profile: PlayerProfile): HTMLElement {
-    const row = document.createElement("div");
-    row.className = "talent-bottom-bar";
-
-    const pointsCard = document.createElement("div");
-    pointsCard.className = "talent-points-card";
-    const label = document.createElement("div");
-    label.className = "talent-points-label";
-    label.textContent = "points available";
-    const value = document.createElement("div");
-    value.className = "talent-points-value";
-    value.textContent = `${profile.points}`;
-    pointsCard.append(label, value);
 
     const resetBtn = document.createElement("button");
     resetBtn.type = "button";
-    resetBtn.className = "menu-btn talent-reset-btn";
-    resetBtn.textContent = "reset tree (free)";
-    resetBtn.addEventListener("click", () => {
-      void this.handleReset();
-    });
+    resetBtn.className = "talent-tag talent-tag--action";
+    resetBtn.textContent = "reset tree";
+    resetBtn.addEventListener("click", () => { void this.handleReset(); });
+    row.appendChild(resetBtn);
 
-    row.append(pointsCard, resetBtn);
     return row;
   }
 
