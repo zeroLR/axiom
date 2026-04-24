@@ -1,13 +1,10 @@
 import type { PrimalSkillId, SkillTreeState } from "./data/types";
 import { MAX_SKILL_LEVEL } from "./data/types";
-import type { Rng } from "./rng";
 import {
   PRIMAL_SKILLS,
   SKILL_IDS,
   type PrimalSkillDef,
 } from "./content/skills";
-import type { PlayerStats } from "./data/types";
-import { isSkillUnlocked } from "./unlocks";
 
 export { MAX_SKILL_LEVEL };
 export { PRIMAL_SKILLS, SKILL_IDS };
@@ -29,34 +26,6 @@ export function skillCooldown(def: PrimalSkillDef, level: number): number {
   return Math.max(5, def.baseCooldown - def.cooldownPerLevel * level);
 }
 
-// ── Draw / gacha ────────────────────────────────────────────────────────────
-
-export type DrawResult =
-  | { type: "new"; skillId: PrimalSkillId }
-  | { type: "duplicate"; skillId: PrimalSkillId; pointsAwarded: number };
-
-/** Spend one core to draw a random primal skill. Returns null if 0 cores.
- *  When `stats` is provided, only boss-unlocked skills are in the draw pool. */
-export function drawPrimalSkill(state: SkillTreeState, rng: Rng, stats?: PlayerStats): DrawResult | null {
-  if (state.cores <= 0) return null;
-
-  const available = stats
-    ? SKILL_IDS.filter((id) => isSkillUnlocked(PRIMAL_SKILLS[id], stats))
-    : SKILL_IDS;
-  if (available.length === 0) return null;
-
-  state.cores -= 1;
-  const id = available[Math.floor(rng() * available.length)]!;
-  if (!state.skills[id].unlocked) {
-    state.skills[id].unlocked = true;
-    return { type: "new", skillId: id };
-  }
-  // Duplicate → convert to skill points.
-  const pts = 15;
-  state.skillPoints += pts;
-  return { type: "duplicate", skillId: id, pointsAwarded: pts };
-}
-
 // ── Runtime state (per-run, not persisted) ──────────────────────────────────
 
 export interface ActiveSkillState {
@@ -72,11 +41,12 @@ export interface ActiveSkillState {
   maxCooldown: number;
 }
 
-export function createActiveSkillStates(tree: SkillTreeState): ActiveSkillState[] {
+/** Build per-run skill states from class-unlocked skill IDs and persistent upgrade levels. */
+export function createActiveSkillStates(unlockedSkillIds: readonly PrimalSkillId[], tree: SkillTreeState): ActiveSkillState[] {
   const result: ActiveSkillState[] = [];
-  for (const id of SKILL_IDS) {
+  for (const id of unlockedSkillIds) {
     const entry = tree.skills[id];
-    if (!entry.unlocked) continue;
+    if (!entry) continue;
     const def = PRIMAL_SKILLS[id];
     result.push({
       id,

@@ -1,4 +1,4 @@
-import type { ClassLineageId, StartingShapeId } from "../data/types";
+import type { ClassLineageId, PrimalSkillId, StartingShapeId } from "../data/types";
 import type { FragmentId } from "../fragments";
 
 // ── Class node identifier ─────────────────────────────────────────────────────
@@ -60,6 +60,8 @@ export interface ClassNodeDef {
   description: string;
   /** Incremental passives granted by this node. */
   passives: ClassPassive[];
+  /** Primal skill unlocked when this node is activated (T1 and select T2 nodes only). */
+  unlocksSkill?: PrimalSkillId;
   /** Null for T0 (always available once lineage is chosen). */
   promotionReq: ClassPromotionReq | null;
 }
@@ -128,6 +130,7 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Acute Focus",
     description: "Gain baseline critical rate.",
     passives: [{ kind: "critAdd", value: 0.05 }],
+    unlocksSkill: "barrage",
     promotionReq: { pointCost: 200, fragmentId: "boss-orthogon", fragmentCost: 3, stageClear: 0 },
   },
   "axis-t2a": {
@@ -135,6 +138,7 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Precision Protocol",
     description: "Significantly enhance critical rate.",
     passives: [{ kind: "critAdd", value: 0.08 }],
+    unlocksSkill: "overload",
     promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
   },
   "axis-t2b": {
@@ -142,6 +146,7 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Force Amplifier",
     description: "Raw weapon damage increase.",
     passives: [{ kind: "damageAdd", value: 2 }],
+    unlocksSkill: "shadowClone",
     promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
   },
   "axis-t3aa": {
@@ -187,6 +192,7 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Parallel Strike",
     description: "One additional projectile per shot.",
     passives: [{ kind: "projectilesAdd", value: 1 }],
+    unlocksSkill: "axisFreeze",
     promotionReq: { pointCost: 200, fragmentId: "boss-orthogon", fragmentCost: 3, stageClear: 0 },
   },
   "wing-t2a": {
@@ -194,6 +200,7 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Cascade Fire",
     description: "Further increase fire rate.",
     passives: [{ kind: "periodMul", value: 0.92 }],
+    unlocksSkill: "timeStop",
     promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
   },
   "wing-t2b": {
@@ -246,6 +253,7 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Phase Buffer",
     description: "Extended hit invulnerability.",
     passives: [{ kind: "iframeAdd", value: 0.04 }],
+    unlocksSkill: "reflectShield",
     promotionReq: { pointCost: 200, fragmentId: "boss-orthogon", fragmentCost: 3, stageClear: 0 },
   },
   "mirror-t2a": {
@@ -253,6 +261,7 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Fortified Core",
     description: "Further increase max HP.",
     passives: [{ kind: "maxHpAdd", value: 3 }],
+    unlocksSkill: "lifestealPulse",
     promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
   },
   "mirror-t2b": {

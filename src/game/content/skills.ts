@@ -1,4 +1,3 @@
-import type { BossId } from "../bosses/types";
 import type { PrimalSkillId } from "../data/types";
 
 export interface PrimalSkillDef {
@@ -12,8 +11,6 @@ export interface PrimalSkillDef {
   durationPerLevel: number;
   /** Cooldown reduction per upgrade level. */
   cooldownPerLevel: number;
-  /** If set, this skill only appears after the given boss is defeated. */
-  unlockAfterBoss?: BossId;
 }
 
 export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
@@ -26,7 +23,6 @@ export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
     baseCooldown: 30,
     durationPerLevel: 0.8,
     cooldownPerLevel: 2,
-    unlockAfterBoss: "mirror",
   },
   shadowClone: {
     id: "shadowClone",
@@ -37,7 +33,6 @@ export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
     baseCooldown: 30,
     durationPerLevel: 0.5,
     cooldownPerLevel: 2,
-    unlockAfterBoss: "jets",
   },
   reflectShield: {
     id: "reflectShield",
@@ -78,7 +73,6 @@ export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
     baseCooldown: 30,
     durationPerLevel: 0.3,
     cooldownPerLevel: 2,
-    unlockAfterBoss: "orthogon",
   },
   overload: {
     id: "overload",
@@ -89,7 +83,6 @@ export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
     baseCooldown: 35,
     durationPerLevel: 0.4,
     cooldownPerLevel: 2,
-    unlockAfterBoss: "mirror",
   },
 };
 

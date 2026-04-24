@@ -59,11 +59,6 @@ export class BossRewardScene implements Scene {
     fragRow.innerHTML = `<span class="pause-bonus-key">boss fragments</span><span class="pause-bonus-value">+${this.reward.bossFragments}</span>`;
     rows.appendChild(fragRow);
 
-    const coreRow = document.createElement('div');
-    coreRow.className = 'pause-bonus-row';
-    coreRow.innerHTML = `<span class="pause-bonus-key">primal core</span><span class="pause-bonus-value">${this.reward.core > 0 ? '+1' : 'none'}</span>`;
-    rows.appendChild(coreRow);
-
     result.appendChild(rows);
     panel.appendChild(result);
     inner.appendChild(panel);

@@ -3,7 +3,6 @@ import {
   bossToStageIndex,
   isBossDefeated,
   isCardUnlocked,
-  isSkillUnlocked,
   filterUnlockedCards,
   diffUnlocks,
 } from "../src/game/unlocks";
@@ -70,24 +69,6 @@ describe("unlock system", () => {
     expect(isCardUnlocked(card, makeStats([true, true, false]))).toBe(true);
   });
 
-  // ── isSkillUnlocked ─────────────────────────────────────────────────────
-
-  it("ungated skills are always unlocked", () => {
-    const def: PrimalSkillDef = {
-      id: "barrage", name: "Barrage", glyph: "⁂",
-      description: "test", baseDuration: 2, baseCooldown: 25,
-      durationPerLevel: 0.3, cooldownPerLevel: 1.5,
-    };
-    expect(isSkillUnlocked(def, makeStats([false, false, false]))).toBe(true);
-  });
-
-  it("gated skills are locked until boss defeated", () => {
-    expect(isSkillUnlocked(PRIMAL_SKILLS.axisFreeze, makeStats([false, false, false]))).toBe(false);
-    expect(isSkillUnlocked(PRIMAL_SKILLS.axisFreeze, makeStats([true, false, false]))).toBe(true);
-    expect(isSkillUnlocked(PRIMAL_SKILLS.timeStop, makeStats([true, true, false]))).toBe(false);
-    expect(isSkillUnlocked(PRIMAL_SKILLS.timeStop, makeStats([true, true, true]))).toBe(true);
-  });
-
   // ── filterUnlockedCards ─────────────────────────────────────────────────
 
   it("filters pool to only unlocked cards", () => {
@@ -104,16 +85,17 @@ describe("unlock system", () => {
 
   // ── diffUnlocks ─────────────────────────────────────────────────────────
 
-  it("computes newly unlocked items after a boss defeat", () => {
+  it("computes newly unlocked cards after a boss defeat", () => {
     const before = makeStats([false, false, false]);
     const after = makeStats([true, false, false]);
     const allSkillDefs = Object.values(PRIMAL_SKILLS) as PrimalSkillDef[];
     const diff = diffUnlocks(before, after, POOL, allSkillDefs);
 
-    // Orthogon gates: axisLock, gridSnap, axisFreeze
+    // Orthogon gates: axisLock, gridSnap
     expect(diff.newCards).toContain("axisLock");
     expect(diff.newCards).toContain("gridSnap");
-    expect(diff.newSkills).toContain("axisFreeze");
+    // Skills are now class-gated, not boss-gated
+    expect(diff.newSkills).toHaveLength(0);
 
     // Jets/Mirror cards should NOT be in the diff
     expect(diff.newCards).not.toContain("contrail");
@@ -129,24 +111,23 @@ describe("unlock system", () => {
     expect(diff.newSkills).toHaveLength(0);
   });
 
-  it("reports Jets unlocks correctly", () => {
+  it("reports Jets card unlocks correctly", () => {
     const before = makeStats([true, false, false]);
     const after = makeStats([true, true, false]);
     const allSkillDefs = Object.values(PRIMAL_SKILLS) as PrimalSkillDef[];
     const diff = diffUnlocks(before, after, POOL, allSkillDefs);
     expect(diff.newCards).toContain("contrail");
     expect(diff.newCards).toContain("reboundPlus");
-    expect(diff.newSkills).toContain("shadowClone");
+    expect(diff.newSkills).toHaveLength(0);
   });
 
-  it("reports Mirror unlocks correctly", () => {
+  it("reports Mirror card unlocks correctly", () => {
     const before = makeStats([true, true, false]);
     const after = makeStats([true, true, true]);
     const allSkillDefs = Object.values(PRIMAL_SKILLS) as PrimalSkillDef[];
     const diff = diffUnlocks(before, after, POOL, allSkillDefs);
     expect(diff.newCards).toContain("recursion");
-    expect(diff.newSkills).toContain("timeStop");
-    expect(diff.newSkills).toContain("overload");
+    expect(diff.newSkills).toHaveLength(0);
   });
 
   // ── POOL integrity ────────────────────────────────────────────────────
@@ -166,12 +147,4 @@ describe("unlock system", () => {
     }
   });
 
-  // ── Skill gate integrity ──────────────────────────────────────────────
-
-  it("4 skills are boss-gated", () => {
-    const gated = Object.values(PRIMAL_SKILLS).filter((d) => d.unlockAfterBoss);
-    expect(gated).toHaveLength(4);
-    const ids = gated.map((d) => d.id).sort();
-    expect(ids).toEqual(["axisFreeze", "overload", "shadowClone", "timeStop"]);
-  });
 });

@@ -1,18 +1,15 @@
 import { Container } from "pixi.js";
 import type { Scene } from "./scene";
-import type { PlayerStats, SkillTreeState } from "../game/data/types";
+import type { PrimalSkillId, SkillTreeState } from "../game/data/types";
 import { MAX_SKILL_LEVEL } from "../game/data/types";
 import {
   PRIMAL_SKILLS,
-  drawPrimalSkill,
   upgradeCost,
   skillDuration,
   skillCooldown,
   type PrimalSkillDef,
 } from "../game/skills";
-import { isSkillUnlocked } from "../game/unlocks";
-import type { Rng } from "../game/rng";
-import { iconSpan, glyphStar4, SKILL_GLYPHS, setIconHtml } from "../icons";
+import { SKILL_GLYPHS, setIconHtml } from "../icons";
 import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, createBodyScroll, createCardList, createBackButton } from "./ui";
 import type { NotifyType } from "../app/notificationService";
 
@@ -20,11 +17,10 @@ import type { NotifyType } from "../app/notificationService";
 
 export interface SkillTreeCallbacks {
   getState: () => SkillTreeState;
-  getStats: () => PlayerStats;
-  getRng: () => Rng;
+  /** Returns skill IDs currently unlocked by the active character's class. */
+  getUnlockedSkillIds: () => PrimalSkillId[];
   onStateChanged: (state: SkillTreeState) => void;
   onBack: () => void;
-  /** Called to display a notification to the player (e.g. skill draw result). */
   notify: (message: string, type: NotifyType) => void;
 }
 
@@ -41,50 +37,24 @@ export class SkillTreeScene implements Scene {
     const { inner, content } = openOverlay();
 
     const state = this.cb.getState();
-    const stats = this.cb.getStats();
+    const unlockedIds = new Set(this.cb.getUnlockedSkillIds());
 
     content.appendChild(createOverlayTitle("primal skills"));
-
-    // Resources bar
-    content.appendChild(createOverlaySub(`cores: ${state.cores}  ·  skill pts: ${state.skillPoints}`));
-
-    // Draw button
-    if (state.cores > 0) {
-      const drawBtn = document.createElement("button");
-      drawBtn.type = "button";
-      drawBtn.className = "big-btn";
-      drawBtn.appendChild(iconSpan(glyphStar4));
-      drawBtn.append(" Draw skill (1 core)");
-      drawBtn.addEventListener("click", () => {
-        const rng = this.cb.getRng();
-        const result = drawPrimalSkill(state, rng, stats);
-        if (result) {
-          this.cb.onStateChanged(state);
-          this.enter(); // re-render
-          if (result.type === "new") {
-            this.cb.notify(`New skill unlocked: ${PRIMAL_SKILLS[result.skillId].name}!`, "success");
-          } else {
-            this.cb.notify(`Duplicate! +${result.pointsAwarded} skill points.`, "info");
-          }
-        }
-      });
-      content.appendChild(drawBtn);
-    }
+    content.appendChild(createOverlaySub(`skill pts: ${state.skillPoints}`));
 
     const body = createBodyScroll();
     content.appendChild(body);
 
-    // Skill list
     const list = createCardList();
 
     for (const def of Object.values(PRIMAL_SKILLS) as PrimalSkillDef[]) {
       const entry = state.skills[def.id];
-      const bossGated = !isSkillUnlocked(def, stats);
+      const isUnlocked = unlockedIds.has(def.id);
       const btn = document.createElement("div");
       btn.className = "card-btn";
       btn.style.flexDirection = "column";
       btn.style.alignItems = "flex-start";
-      if (bossGated) btn.style.opacity = "0.4";
+      if (!isUnlocked) btn.style.opacity = "0.4";
 
       const header = document.createElement("div");
       header.style.display = "flex";
@@ -94,7 +64,7 @@ export class SkillTreeScene implements Scene {
 
       const glyph = document.createElement("span");
       glyph.className = "card-glyph";
-      if (bossGated) {
+      if (!isUnlocked) {
         glyph.textContent = "🔒";
       } else {
         const skillSvg = SKILL_GLYPHS[def.id];
@@ -105,13 +75,12 @@ export class SkillTreeScene implements Scene {
 
       const nameSpan = document.createElement("span");
       nameSpan.className = "card-name";
-      if (bossGated) {
-        nameSpan.textContent = "??? — locked";
-      } else if (entry.unlocked) {
-        const isMaxed = entry.level >= MAX_SKILL_LEVEL;
-        nameSpan.textContent = isMaxed ? `${def.name} (MAX)` : `${def.name} (Lv.${entry.level})`;
-      } else {
+      if (!isUnlocked) {
         nameSpan.textContent = `${def.name} — locked`;
+      } else {
+        const isMaxed = entry && entry.level >= MAX_SKILL_LEVEL;
+        const level = entry?.level ?? 0;
+        nameSpan.textContent = isMaxed ? `${def.name} (MAX)` : `${def.name} (Lv.${level})`;
       }
       header.appendChild(nameSpan);
       btn.appendChild(header);
@@ -119,23 +88,18 @@ export class SkillTreeScene implements Scene {
       const desc = document.createElement("span");
       desc.className = "card-text";
       desc.style.marginTop = "4px";
-      if (bossGated) {
-        const bossName = def.unlockAfterBoss
-          ? def.unlockAfterBoss.toUpperCase()
-          : "???";
-        desc.textContent = `UNLOCKS: DEFEAT ${bossName}`;
-      } else if (entry.unlocked) {
+      if (!isUnlocked) {
+        desc.textContent = "UNLOCK VIA CLASS PROMOTION";
+      } else if (entry) {
         const dur = skillDuration(def, entry.level).toFixed(1);
         const cd = skillCooldown(def, entry.level).toFixed(1);
         desc.textContent = `${def.description}\nDuration: ${dur}s · Cooldown: ${cd}s`;
         desc.style.whiteSpace = "pre-line";
-      } else {
-        desc.textContent = "Draw from cores to unlock.";
       }
       btn.appendChild(desc);
 
-      // Upgrade button (only for boss-available, unlocked skills)
-      if (!bossGated && entry.unlocked && entry.level < MAX_SKILL_LEVEL) {
+      // Upgrade button (only for unlocked skills below max level)
+      if (isUnlocked && entry && entry.level < MAX_SKILL_LEVEL) {
         const cost = upgradeCost(entry.level);
         const canUpgrade = state.skillPoints >= cost;
         const upBtn = document.createElement("button");

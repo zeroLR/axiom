@@ -133,6 +133,7 @@ import {
   CLASS_PASSIVE_AVATAR_ADDITIVE_KINDS,
   classPassiveBonuses,
   createCharacterSlot,
+  getClassUnlockedSkills,
   lineageToStartingShape,
   promoteClass,
   resetCharacterClass,
@@ -257,7 +258,6 @@ async function boot(): Promise<void> {
   let currentRun: RunContext | null = null;
   let paused = false;
   let seed = 0;
-  let menuRng = createRng(42);
   let runInventory = new CardInventory();
   /** Snapshot of stats at run start, used to compute unlock diff at end. */
   let statsBeforeRun: import('./game/data/types').PlayerStats | null = null;
@@ -2852,12 +2852,15 @@ async function boot(): Promise<void> {
         ? (STAGE_WAVES[stageIndex] ?? WAVES)
         : [survivalWaveSpec(1, rng)]; // survival starts with wave 1
 
-    // In develop mode, start with no skills and default skin (bare avatar).
-    const activeSkills = developMode ? [] : createActiveSkillStates(skillTree);
-
     // Derive starting shape from the active character's lineage (class system).
     // Falls back to the legacy activeStartShape field if no character slot exists.
     const activeChar = activeCharacterSlot(profile.characters);
+
+    // In develop mode, start with no skills and default skin (bare avatar).
+    const activeSkills = developMode ? [] : createActiveSkillStates(
+      activeChar ? getClassUnlockedSkills(activeChar) : [],
+      skillTree,
+    );
     const startingShape = activeChar
       ? lineageToStartingShape(activeChar.lineage)
       : resolveSelectedStartingShape(profile);
@@ -3091,7 +3094,6 @@ async function boot(): Promise<void> {
       const stageBossFragmentId = `boss-${bossKindForStage(result.stageIndex)}` as const;
       result.fragments.boss += result.bossChestReward.bossFragments;
       result.fragments.detailed[stageBossFragmentId] += result.bossChestReward.bossFragments;
-      if (result.bossChestReward.core > 0) skillTree.cores += result.bossChestReward.core;
     }
 
     const talentMeta = talentBonuses(profile.talents);
@@ -3148,7 +3150,6 @@ async function boot(): Promise<void> {
 
     // Apply loot
     for (const drop of result.loot) {
-      if (drop.kind === 'core') skillTree.cores += drop.value;
       if (drop.kind === 'skillPoints') skillTree.skillPoints += drop.value;
     }
 
@@ -3379,6 +3380,12 @@ async function boot(): Promise<void> {
                     const activeChar = activeCharacterSlot(profile.characters);
                     if (activeChar) {
                       profile.activeStartShape = lineageToStartingShape(activeChar.lineage);
+                      // First skill unlock achievement: any class-unlocked skill now available
+                      if (getClassUnlockedSkills(activeChar).length > 0) {
+                        if (unlockAchievement(achievements, 'firstPrimalSkill')) {
+                          await saveAchievements(achievements);
+                        }
+                      }
                     }
                     await saveProfile(profile);
                   }
@@ -3421,21 +3428,17 @@ async function boot(): Promise<void> {
             stack.push(
               new SkillTreeScene({
                 getState: () => skillTree,
-                getStats: () => profile.stats,
-                getRng: () => menuRng,
+                getUnlockedSkillIds: () => {
+                  const slot = activeCharacterSlot(profile.characters);
+                  return slot ? getClassUnlockedSkills(slot) : [];
+                },
                 onStateChanged: async (state) => {
                   skillTree = state;
-                  // Check achievements
-                  const anyUnlocked = Object.values(skillTree.skills).some(
-                    (s) => s.unlocked,
-                  );
-                  if (anyUnlocked) {
-                    if (unlockAchievement(achievements, 'firstPrimalSkill')) {
-                      await saveAchievements(achievements);
-                    }
-                  }
-                  const anyMaxed = Object.values(skillTree.skills).some(
-                    (s) => s.unlocked && s.level >= MAX_SKILL_LEVEL,
+                  // Check maxSkillLevel achievement for class-unlocked skills
+                  const slot = activeCharacterSlot(profile.characters);
+                  const unlockedIds = slot ? getClassUnlockedSkills(slot) : [];
+                  const anyMaxed = unlockedIds.some(
+                    (id) => (skillTree.skills[id]?.level ?? 0) >= MAX_SKILL_LEVEL,
                   );
                   if (anyMaxed) {
                     if (unlockAchievement(achievements, 'maxSkillLevel')) {

@@ -42,14 +42,6 @@ export function filterUnlockedCards(pool: readonly Card[], stats: PlayerStats): 
   return pool.filter((c) => isCardUnlocked(c, stats));
 }
 
-// ── Skill gating ────────────────────────────────────────────────────────────
-
-/** A skill is unlocked if it has no gate, or the gate boss has been defeated. */
-export function isSkillUnlocked(def: PrimalSkillDef, stats: PlayerStats): boolean {
-  if (!def.unlockAfterBoss) return true;
-  return isBossDefeated(def.unlockAfterBoss, stats);
-}
-
 // ── Diff unlocks (for endgame banner) ───────────────────────────────────────
 
 export interface UnlockDiff {
@@ -61,16 +53,15 @@ export interface UnlockDiff {
 
 /**
  * Compute what the player just unlocked by comparing stats before and after a
- * run.  `allCards` / `allSkills` are the full pools to scan.
+ * run.  Skills are now unlocked via class promotion, so newSkills is always [].
  */
 export function diffUnlocks(
   statsBefore: PlayerStats,
   statsAfter: PlayerStats,
   allCards: readonly Card[],
-  allSkills: readonly PrimalSkillDef[],
+  _allSkills: readonly PrimalSkillDef[],
 ): UnlockDiff {
   const newCards: string[] = [];
-  const newSkills: string[] = [];
 
   for (const card of allCards) {
     if (!card.unlockAfterBoss) continue;
@@ -79,12 +70,5 @@ export function diffUnlocks(
     if (!wasBefore && isNow) newCards.push(card.id);
   }
 
-  for (const skill of allSkills) {
-    if (!skill.unlockAfterBoss) continue;
-    const wasBefore = isSkillUnlocked(skill, statsBefore);
-    const isNow = isSkillUnlocked(skill, statsAfter);
-    if (!wasBefore && isNow) newSkills.push(skill.id);
-  }
-
-  return { newCards, newSkills };
+  return { newCards, newSkills: [] };
 }

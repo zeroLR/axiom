@@ -11,6 +11,7 @@ import {
   type CharactersState,
   type ClassLineageId,
   type PlayerProfile,
+  type PrimalSkillId,
   type StartingShapeId,
 } from "./data/types";
 
@@ -68,6 +69,16 @@ export function getActiveNodeChain(slot: CharacterSlot): ClassNodeId[] {
     chain.push(`${lineage}-t3${b2}${b3}` as ClassNodeId);
   }
   return chain;
+}
+
+/** Returns all PrimalSkillIds unlocked by the slot's current class node chain. */
+export function getClassUnlockedSkills(slot: CharacterSlot): PrimalSkillId[] {
+  const skills: PrimalSkillId[] = [];
+  for (const nodeId of getActiveNodeChain(slot)) {
+    const skill = CLASS_NODES[nodeId]?.unlocksSkill;
+    if (skill) skills.push(skill);
+  }
+  return skills;
 }
 
 /** Returns the ClassNodeId that would be reached by promoting with given branch. */
