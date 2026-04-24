@@ -214,6 +214,19 @@ body {
   background: var(--chrome);
 }
 
+.talent-tag--action {
+  cursor: pointer;
+  appearance: none;
+  font: inherit;
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+.talent-tag--action:hover {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
 .talent-branch-section {
   display: flex;
   flex-direction: column;
