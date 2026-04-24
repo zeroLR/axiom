@@ -38,7 +38,7 @@ const CANVAS_CX = CANVAS_SIZE / 2;
 const CANVAS_CY = CANVAS_SIZE / 2;
 // Ring radius per depth level (0 = innermost). Level 6+ clamps to last entry.
 const RING_RADII = [180, 265, 345, 420, 490, 555, 555] as const;
-const SECTOR_HALF_RAD = (54 * Math.PI) / 180;
+const SECTOR_HALF_RAD = Math.PI / 3; // 60° → 3 branches × 120° = full 360°
 const SECTOR_CENTER: Record<TalentBranch, number> = {
   offense:    -Math.PI / 2,          // top
   survival:    Math.PI / 6,          // lower-right
@@ -148,132 +148,60 @@ export class TalentScene implements Scene {
     const depths = this.computeDepths();
     const positions = new Map<TalentId, { x: number; y: number }>();
 
-    // Group ids by branch
-    const branchMap = new Map<TalentBranch, TalentId[]>();
+    // Group by branch × depth
+    const branchDepthMap = new Map<string, TalentId[]>();
     for (const id of TALENT_IDS) {
-      const b = TALENT_NODES[id].branch;
-      if (!branchMap.has(b)) branchMap.set(b, []);
-      branchMap.get(b)!.push(id);
-    }
-
-    for (const [branch, ids] of branchMap) {
-      const sectorCenter = SECTOR_CENTER[branch];
-      const idSet = new Set(ids);
-
-      // Build per-branch dependency tree
-      const children = new Map<TalentId, TalentId[]>();
-      const roots: TalentId[] = [];
-      for (const id of ids) children.set(id, []);
-      for (const id of ids) {
-        const req = TALENT_NODES[id].requires;
-        if (req && idSet.has(req.id)) {
-          children.get(req.id)!.push(id);
-        } else {
-          roots.push(id);
-        }
-      }
-
-      // Count leaf nodes in each subtree (leaf = no children within this branch)
-      const leafCount = new Map<TalentId, number>();
-      const countLeaves = (id: TalentId): number => {
-        const kids = children.get(id) ?? [];
-        if (kids.length === 0) { leafCount.set(id, 1); return 1; }
-        const n = kids.reduce((s, k) => s + countLeaves(k), 0);
-        leafCount.set(id, n);
-        return n;
-      };
-      for (const root of roots) countLeaves(root);
-
-      // Recursively place a subtree within the angular slice [a0, a1]
-      const layout = (id: TalentId, a0: number, a1: number): void => {
-        const depth = Math.min(depths.get(id) ?? 0, RING_RADII.length - 1);
-        const r = RING_RADII[depth]!;
-        const angle = (a0 + a1) / 2;
-        positions.set(id, {
-          x: CANVAS_CX + r * Math.cos(angle),
-          y: CANVAS_CY + r * Math.sin(angle),
-        });
-        const kids = children.get(id) ?? [];
-        if (kids.length === 0) return;
-        const total = kids.reduce((s, k) => s + (leafCount.get(k) ?? 1), 0);
-        let cursor = a0;
-        for (const kid of kids) {
-          const slice = ((leafCount.get(kid) ?? 1) / total) * (a1 - a0);
-          layout(kid, cursor, cursor + slice);
-          cursor += slice;
-        }
-      };
-
-      // Distribute root nodes across the full sector proportionally to subtree size
-      const totalLeaves = roots.reduce((s, r) => s + (leafCount.get(r) ?? 1), 0);
-      let cursor = sectorCenter - SECTOR_HALF_RAD;
-      for (const root of roots) {
-        const slice = ((leafCount.get(root) ?? 1) / totalLeaves) * (SECTOR_HALF_RAD * 2);
-        layout(root, cursor, cursor + slice);
-        cursor += slice;
-      }
-    }
-
-    this.spreadBranchRingNodes(positions, depths);
-    return positions;
-  }
-
-  // ── Spread pass: push same-branch same-ring nodes apart ────────────────────
-
-  private spreadBranchRingNodes(
-    positions: Map<TalentId, { x: number; y: number }>,
-    depths: Map<TalentId, number>,
-  ): void {
-    const MIN_ARC_PX = 64;
-
-    type NodeRef = { id: TalentId; angle: number };
-    const groups = new Map<string, { r: number; branch: TalentBranch; nodes: NodeRef[] }>();
-
-    for (const id of TALENT_IDS) {
-      const depth = Math.min(depths.get(id) ?? 0, RING_RADII.length - 1);
       const branch = TALENT_NODES[id].branch;
+      const depth = depths.get(id) ?? 0;
       const key = `${branch}:${depth}`;
-      if (!groups.has(key)) {
-        groups.set(key, { r: RING_RADII[depth]!, branch, nodes: [] });
-      }
-      const pos = positions.get(id)!;
-      groups.get(key)!.nodes.push({
-        id,
-        angle: Math.atan2(pos.y - CANVAS_CY, pos.x - CANVAS_CX),
-      });
+      if (!branchDepthMap.has(key)) branchDepthMap.set(key, []);
+      branchDepthMap.get(key)!.push(id);
     }
 
-    for (const { r, branch, nodes } of groups.values()) {
-      if (nodes.length <= 1) continue;
-      const minAngle = MIN_ARC_PX / r;
-      nodes.sort((a, b) => a.angle - b.angle);
+    const maxDepth = Math.max(...Array.from(depths.values()));
+    const BRANCHES: TalentBranch[] = ["survival", "offense", "efficiency"];
 
-      for (let iter = 0; iter < 120; iter++) {
-        let moved = false;
-        for (let i = 0; i < nodes.length - 1; i++) {
-          const gap = nodes[i + 1]!.angle - nodes[i]!.angle;
-          if (gap < minAngle) {
-            const push = (minAngle - gap) / 2;
-            nodes[i]!.angle -= push;
-            nodes[i + 1]!.angle += push;
-            moved = true;
-          }
-        }
-        if (!moved) break;
-      }
+    // Process depth-first so parent positions are available for child sorting
+    for (let depth = 0; depth <= maxDepth; depth++) {
+      for (const branch of BRANCHES) {
+        const ids = branchDepthMap.get(`${branch}:${depth}`);
+        if (!ids || ids.length === 0) continue;
 
-      // Re-center spread group back to branch sector center
-      const mean = nodes.reduce((s, n) => s + n.angle, 0) / nodes.length;
-      const shift = SECTOR_CENTER[branch] - mean;
-      for (const n of nodes) n.angle += shift;
+        const r = RING_RADII[Math.min(depth, RING_RADII.length - 1)]!;
+        const sectorCenter = SECTOR_CENTER[branch];
 
-      for (const { id, angle } of nodes) {
-        positions.set(id, {
-          x: Math.round(CANVAS_CX + r * Math.cos(angle)),
-          y: Math.round(CANVAS_CY + r * Math.sin(angle)),
+        // Sort by parent angle to minimize edge crossings
+        ids.sort((a, b) => {
+          const parentA = TALENT_NODES[a].requires?.id;
+          const parentB = TALENT_NODES[b].requires?.id;
+          const posA = parentA ? positions.get(parentA) : undefined;
+          const posB = parentB ? positions.get(parentB) : undefined;
+          const angleA = posA
+            ? Math.atan2(posA.y - CANVAS_CY, posA.x - CANVAS_CX)
+            : sectorCenter;
+          const angleB = posB
+            ? Math.atan2(posB.y - CANVAS_CY, posB.x - CANVAS_CX)
+            : sectorCenter;
+          return angleA - angleB;
         });
+
+        const count = ids.length;
+        const totalArc = SECTOR_HALF_RAD * 2;
+
+        for (let i = 0; i < count; i++) {
+          const angle =
+            count === 1
+              ? sectorCenter
+              : sectorCenter - SECTOR_HALF_RAD + (i + 0.5) * (totalArc / count);
+          positions.set(ids[i]!, {
+            x: Math.round(CANVAS_CX + r * Math.cos(angle)),
+            y: Math.round(CANVAS_CY + r * Math.sin(angle)),
+          });
+        }
       }
     }
+
+    return positions;
   }
 
   // ── Radial view ────────────────────────────────────────────────────────────
@@ -342,6 +270,36 @@ export class TalentScene implements Scene {
     svg.setAttribute("viewBox", `0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`);
     svg.setAttribute("width", String(CANVAS_SIZE));
     svg.setAttribute("height", String(CANVAS_SIZE));
+
+    // Ring guide circles at each depth radius (drawn behind everything)
+    const drawnRadii = new Set<number>();
+    for (const r of RING_RADII) {
+      if (drawnRadii.has(r)) continue;
+      drawnRadii.add(r);
+      const circle = document.createElementNS(SVG_NS, "circle");
+      circle.setAttribute("cx", String(CANVAS_CX));
+      circle.setAttribute("cy", String(CANVAS_CY));
+      circle.setAttribute("r", String(r));
+      circle.setAttribute("class", "talent-ring-guide");
+      svg.appendChild(circle);
+    }
+
+    // Branch sector divider lines at the 3 sector boundaries
+    const boundaries = [
+      SECTOR_CENTER.offense + SECTOR_HALF_RAD,  // offense→survival
+      SECTOR_CENTER.survival + SECTOR_HALF_RAD, // survival→efficiency
+      SECTOR_CENTER.efficiency + SECTOR_HALF_RAD, // efficiency→offense
+    ];
+    const maxR = RING_RADII[RING_RADII.length - 1]!;
+    for (const angle of boundaries) {
+      const line = document.createElementNS(SVG_NS, "line");
+      line.setAttribute("x1", String(CANVAS_CX));
+      line.setAttribute("y1", String(CANVAS_CY));
+      line.setAttribute("x2", String(Math.round(CANVAS_CX + maxR * Math.cos(angle))));
+      line.setAttribute("y2", String(Math.round(CANVAS_CY + maxR * Math.sin(angle))));
+      line.setAttribute("class", "talent-sector-guide");
+      svg.appendChild(line);
+    }
 
     for (const id of TALENT_IDS) {
       const def = TALENT_NODES[id];
