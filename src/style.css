@@ -3,6 +3,12 @@
   --fg: #111111;
   --accent: #d81b60;
   --muted: #8a8a99;
+  --branch-survival: #2f56d9;
+  --branch-offense: var(--accent);
+  --branch-efficiency: #1e9e5a;
+  --lineage-axis: var(--accent);
+  --lineage-wing: #e08300;
+  --lineage-mirror: #2f56d9;
   --chrome: #f4f4f6;
   --tier-white: #f3f6ff;
   --tier-blue: #2f56d9;
@@ -1767,4 +1773,338 @@ select.developer-form-input {
   background: #fce4ec;
   color: #880e4f;
   border-color: #f48fb1;
+}
+
+/* ── Radial Talent Tree ────────────────────────────────────────────────────── */
+
+.talent-radial-wrap {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 260px;
+  overflow: hidden;
+  border: 1px solid var(--chrome);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  touch-action: none;
+  user-select: none;
+}
+
+.talent-radial-canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 0 0;
+}
+
+.talent-radial-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.talent-radial-center {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--fg);
+  background: var(--bg);
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  pointer-events: none;
+}
+
+.talent-radial-center .svg-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--fg);
+}
+
+.talent-radial-center .svg-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.talent-radial-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--node-color, var(--chrome));
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 10px;
+  text-align: center;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+  touch-action: manipulation;
+}
+
+.talent-radial-node.is-core {
+  width: 58px;
+  height: 58px;
+}
+
+.talent-radial-node.is-locked {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.talent-radial-node.is-maxed {
+  background: color-mix(in srgb, var(--node-color, var(--fg)) 14%, var(--bg));
+}
+
+.talent-radial-node.is-selected {
+  border-width: 3px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-color, var(--fg)) 28%, transparent);
+}
+
+.talent-radial-node:not(.is-locked):active {
+  opacity: 0.75;
+}
+
+.talent-radial-node-icon {
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  color: var(--node-color, var(--muted));
+}
+
+.talent-radial-node-icon .svg-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.talent-radial-node-icon .svg-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.talent-radial-node-level {
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.talent-radial-node.is-maxed .talent-radial-node-level {
+  color: var(--node-color, var(--muted));
+  font-weight: 700;
+}
+
+.talent-radial-line--offense {
+  stroke: var(--branch-offense);
+}
+
+.talent-radial-line--survival {
+  stroke: var(--branch-survival);
+}
+
+.talent-radial-line--efficiency {
+  stroke: var(--branch-efficiency);
+}
+
+/* Upgrade bottom sheet */
+.talent-upgrade-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--chrome);
+  border-radius: 16px 16px 0 0;
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  transform: translateY(100%);
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+.talent-upgrade-sheet.open {
+  transform: translateY(0);
+}
+
+.talent-upgrade-sheet-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.talent-upgrade-sheet-title {
+  flex: 1 1 auto;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.talent-upgrade-sheet-dismiss {
+  appearance: none;
+  background: var(--chrome);
+  border: none;
+  border-radius: 6px;
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  padding: 2px 8px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.talent-upgrade-sheet-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.talent-upgrade-sheet-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.talent-upgrade-sheet-actions > * {
+  flex: 1 1 0;
+}
+
+.talent-branch-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@keyframes talent-node-unlock {
+  0%   { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
+  65%  { transform: translate(-50%, -50%) scale(1.12); }
+  100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}
+
+/* ── Class Creation: Portrait & Radar ──────────────────────────────────────── */
+
+.cc-portrait-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 0 10px;
+}
+
+.cc-portrait-emblem {
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--cc-color, var(--fg));
+  background: color-mix(in srgb, var(--cc-color, var(--fg)) 9%, var(--bg));
+  font-size: 40px;
+  animation: cc-breathe 2.6s ease-in-out infinite;
+}
+
+.cc-portrait-emblem .svg-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--cc-color, var(--fg));
+}
+
+.cc-portrait-emblem .svg-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cc-portrait-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+
+.cc-portrait-tier {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--chrome);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.cc-portrait-flavor {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  max-width: 220px;
+}
+
+@keyframes cc-breathe {
+  0%, 100% {
+    box-shadow: 0 0 6px color-mix(in srgb, var(--cc-color, var(--accent)) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 22px color-mix(in srgb, var(--cc-color, var(--accent)) 65%, transparent);
+  }
+}
+
+.cc-stat-chips {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 0 0 6px;
+}
+
+.cc-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--chrome);
+  background: var(--bg);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.cc-stat-chip .svg-icon {
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+}
+
+.cc-stat-chip .svg-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cc-radar-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 4px;
+}
+
+.cc-radar-polygon {
+  fill-opacity: 0.3;
+  stroke-width: 1.5;
 }
