@@ -33,12 +33,19 @@ import {
 } from "./ui";
 import type { NotifyType } from "../app/notificationService";
 import {
+  glyphAegis,
+  glyphCrit,
+  glyphPhaseShift,
+  glyphRapid,
+  glyphSharpShot,
   iconClassCreate,
   iconLineageAxis,
   iconLineageMirror,
   iconLineageWing,
   iconSpan,
 } from "../icons";
+
+const SVG_NS = "http://www.w3.org/2000/svg";
 
 // ── Callbacks ─────────────────────────────────────────────────────────────────
 
@@ -153,8 +160,10 @@ export class ClassCreationScene implements Scene {
     body.appendChild(list);
 
     if (slot) {
-      // Lineage header
-      list.appendChild(this.createLineageHeader(slot));
+      // Portrait + stats header (replaces plain lineage header)
+      list.appendChild(this.createPortraitSection(slot));
+      list.appendChild(this.createStatChips(slot));
+      list.appendChild(this.createRadarWrap(slot));
 
       // Class tree
       list.appendChild(this.createClassTree(profile, slot));
@@ -270,46 +279,175 @@ export class ClassCreationScene implements Scene {
     return row;
   }
 
-  // ── Lineage header ──────────────────────────────────────────────────────────
+  // ── Portrait section ────────────────────────────────────────────────────────
 
-  private createLineageHeader(slot: CharacterSlot): HTMLElement {
+  private lineageCssColor(lineage: ClassLineageId): string {
+    switch (lineage) {
+      case "wing":   return "var(--lineage-wing)";
+      case "mirror": return "var(--lineage-mirror)";
+      default:       return "var(--lineage-axis)";
+    }
+  }
+
+  private createPortraitSection(slot: CharacterSlot): HTMLElement {
     const lineageDef = CLASS_LINEAGES.find((l) => l.id === slot.lineage)!;
+    const tierLabel = slot.tier === 0 ? "T0" : `T${slot.tier}`;
 
     const wrap = document.createElement("div");
+    wrap.className = "cc-portrait-wrap";
+    wrap.style.setProperty("--cc-color", this.lineageCssColor(slot.lineage));
 
-    const header = document.createElement("div");
-    header.className = "cc-lineage-header";
+    // Large animated emblem
+    const emblem = document.createElement("div");
+    emblem.className = "cc-portrait-emblem";
+    emblem.appendChild(iconSpan(lineageIcon(slot.lineage)));
+    wrap.appendChild(emblem);
 
-    const icon = iconSpan(lineageIcon(slot.lineage));
-    icon.style.fontSize = "1.6em";
-    header.appendChild(icon);
+    // Name + tier chip inline
+    const nameRow = document.createElement("div");
+    nameRow.style.cssText = "display:flex; align-items:center; gap:8px;";
+    const nameEl = document.createElement("span");
+    nameEl.className = "cc-portrait-name";
+    nameEl.textContent = lineageDef.name;
+    const tierChip = document.createElement("span");
+    tierChip.className = "cc-portrait-tier";
+    tierChip.textContent = tierLabel;
+    nameRow.append(nameEl, tierChip);
+    wrap.appendChild(nameRow);
 
-    const name = document.createElement("div");
-    name.className = "cc-lineage-name";
-    name.textContent = lineageDef.name;
-    header.appendChild(name);
-
-    const tierChip = document.createElement("div");
-    tierChip.className = "cc-lineage-tier";
-    tierChip.textContent = `T${slot.tier}`;
-    header.appendChild(tierChip);
-
-    wrap.appendChild(header);
-
+    // Flavor line
     const flavor = document.createElement("div");
-    flavor.className = "cc-lineage-flavor";
+    flavor.className = "cc-portrait-flavor";
     flavor.textContent = lineageDef.flavorLine;
     wrap.appendChild(flavor);
 
-    const shapeLine = document.createElement("div");
-    shapeLine.className = "talent-tag-row";
-    const shapeTag = this.createTag(`Shape: ${lineageToStartingShape(slot.lineage)}`);
-    shapeLine.appendChild(shapeTag);
-    const slotName = this.createTag(slot.name);
-    shapeLine.appendChild(slotName);
-    wrap.appendChild(shapeLine);
-
     return wrap;
+  }
+
+  // ── Stat chips ──────────────────────────────────────────────────────────────
+
+  private computeSlotStats(slot: CharacterSlot): {
+    dmg: number; crit: number; hp: number; firerate: number; proj: number;
+  } {
+    let dmg = 0, crit = 0, hp = 0, firerate = 0, proj = 0;
+    for (const nodeId of getActiveNodeChain(slot)) {
+      const node = CLASS_NODES[nodeId];
+      if (!node) continue;
+      for (const p of node.passives) {
+        if (p.kind === "damageAdd")      dmg      += p.value;
+        else if (p.kind === "critAdd")   crit     += p.value;
+        else if (p.kind === "maxHpAdd")  hp       += p.value;
+        else if (p.kind === "periodMul") firerate += (1 - p.value);
+        else if (p.kind === "projectilesAdd") proj += p.value;
+      }
+    }
+    return { dmg, crit, hp, firerate, proj };
+  }
+
+  private createStatChips(slot: CharacterSlot): HTMLElement {
+    const { dmg, crit, hp } = this.computeSlotStats(slot);
+    const row = document.createElement("div");
+    row.className = "cc-stat-chips";
+
+    const makeChip = (icon: string, text: string): HTMLElement => {
+      const chip = document.createElement("span");
+      chip.className = "cc-stat-chip";
+      chip.appendChild(iconSpan(icon));
+      chip.appendChild(document.createTextNode(text));
+      return chip;
+    };
+
+    row.appendChild(makeChip(glyphSharpShot, dmg > 0 ? `+${dmg} dmg` : "0 dmg"));
+    row.appendChild(makeChip(glyphCrit, crit > 0 ? `+${(crit * 100).toFixed(0)}% crit` : "0% crit"));
+    row.appendChild(makeChip(glyphAegis, hp > 0 ? `+${hp} HP` : "0 HP"));
+    return row;
+  }
+
+  // ── Radar chart ─────────────────────────────────────────────────────────────
+
+  private createRadarWrap(slot: CharacterSlot): HTMLElement {
+    const wrap = document.createElement("div");
+    wrap.className = "cc-radar-wrap";
+    wrap.style.setProperty("--cc-color", this.lineageCssColor(slot.lineage));
+    wrap.appendChild(this.createRadarSvg(slot));
+    return wrap;
+  }
+
+  private createRadarSvg(slot: CharacterSlot): SVGElement {
+    const { dmg, crit, hp, firerate, proj } = this.computeSlotStats(slot);
+    const SIZE = 88, CX = 44, CY = 44, MAX_R = 36;
+    const AXES = 5;
+    // Normalise scores [0, 1] against reasonable maxima for a single class
+    const scores = [
+      Math.min(dmg      / 5,    1),
+      Math.min(crit     / 0.23, 1),
+      Math.min(hp       / 10,   1),
+      Math.min(firerate / 0.12, 1),
+      Math.min(proj     / 2,    1),
+    ];
+    const labels = ["DMG", "CRIT", "HP", "RATE", "PROJ"];
+    const baseAngle = -Math.PI / 2;
+
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", `0 0 ${SIZE} ${SIZE}`);
+    svg.setAttribute("width", String(SIZE));
+    svg.setAttribute("height", String(SIZE));
+
+    // Background pentagon + axis lines
+    const bgPts = Array.from({ length: AXES }, (_, i) => {
+      const a = baseAngle + (2 * Math.PI * i) / AXES;
+      return `${(CX + MAX_R * Math.cos(a)).toFixed(1)},${(CY + MAX_R * Math.sin(a)).toFixed(1)}`;
+    }).join(" ");
+    const bgPoly = document.createElementNS(SVG_NS, "polygon");
+    bgPoly.setAttribute("points", bgPts);
+    bgPoly.setAttribute("fill", "none");
+    bgPoly.setAttribute("stroke-width", "1");
+    bgPoly.style.stroke = "var(--chrome)";
+    svg.appendChild(bgPoly);
+
+    for (let i = 0; i < AXES; i++) {
+      const a = baseAngle + (2 * Math.PI * i) / AXES;
+      const axLine = document.createElementNS(SVG_NS, "line");
+      axLine.setAttribute("x1", String(CX));
+      axLine.setAttribute("y1", String(CY));
+      axLine.setAttribute("x2", (CX + MAX_R * Math.cos(a)).toFixed(1));
+      axLine.setAttribute("y2", (CY + MAX_R * Math.sin(a)).toFixed(1));
+      axLine.setAttribute("stroke-width", "1");
+      axLine.style.stroke = "var(--chrome)";
+      svg.appendChild(axLine);
+    }
+
+    // Filled score polygon
+    const polyPts = scores.map((score, i) => {
+      const a = baseAngle + (2 * Math.PI * i) / AXES;
+      const r = Math.max(score * MAX_R, 2);
+      return `${(CX + r * Math.cos(a)).toFixed(1)},${(CY + r * Math.sin(a)).toFixed(1)}`;
+    }).join(" ");
+    const poly = document.createElementNS(SVG_NS, "polygon");
+    poly.setAttribute("points", polyPts);
+    poly.setAttribute("class", "cc-radar-polygon");
+    poly.style.fill = "var(--cc-color)";
+    poly.style.stroke = "var(--cc-color)";
+    svg.appendChild(poly);
+
+    // Axis labels
+    for (let i = 0; i < AXES; i++) {
+      const a = baseAngle + (2 * Math.PI * i) / AXES;
+      const lx = CX + (MAX_R + 8) * Math.cos(a);
+      const ly = CY + (MAX_R + 8) * Math.sin(a);
+      const text = document.createElementNS(SVG_NS, "text");
+      text.setAttribute("x", lx.toFixed(1));
+      text.setAttribute("y", ly.toFixed(1));
+      text.setAttribute("font-size", "5");
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "middle");
+      text.style.fill = "var(--muted)";
+      text.style.fontFamily = "ui-monospace, monospace";
+      text.textContent = labels[i]!;
+      svg.appendChild(text);
+    }
+
+    return svg;
   }
 
   // ── Class tree ──────────────────────────────────────────────────────────────
@@ -408,6 +546,17 @@ export class ClassCreationScene implements Scene {
     return !stageLocked;
   }
 
+  private passiveIcon(kind: string): string {
+    switch (kind) {
+      case "damageAdd":      return glyphSharpShot;
+      case "critAdd":        return glyphCrit;
+      case "maxHpAdd":       return glyphAegis;
+      case "iframeAdd":      return glyphPhaseShift;
+      case "periodMul":      return glyphRapid;
+      default:               return glyphSharpShot;
+    }
+  }
+
   private createTreeNode(
     name: string,
     desc: string,
@@ -430,10 +579,19 @@ export class ClassCreationScene implements Scene {
       el.appendChild(chip);
     }
 
-    const nameEl = document.createElement("div");
+    // Name row: small icon + name
+    const nameRow = document.createElement("div");
+    nameRow.style.cssText = "display:flex; align-items:center; gap:4px;";
+    if (passives.length > 0) {
+      const iconEl = iconSpan(this.passiveIcon(passives[0]!.kind));
+      iconEl.style.cssText = "width:12px; height:12px; flex:0 0 auto; opacity:0.55;";
+      nameRow.appendChild(iconEl);
+    }
+    const nameEl = document.createElement("span");
     nameEl.className = "cc-node-name";
     nameEl.textContent = name;
-    el.appendChild(nameEl);
+    nameRow.appendChild(nameEl);
+    el.appendChild(nameRow);
 
     if (passives.length > 0) {
       const passiveEl = document.createElement("div");

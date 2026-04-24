@@ -1,26 +1,20 @@
 import { Container } from "pixi.js";
 import type { Scene } from "./scene";
-import type { PlayerProfile, TalentId, TalentState } from "../game/data/types";
+import type { PlayerProfile, TalentId } from "../game/data/types";
 import {
-  TALENT_BRANCH_ORDER,
   TALENT_NODES,
   type TalentEffectKind,
   type TalentBranch,
 } from "../game/content/talents";
 import {
-  resetTalentGrowth,
   talentDefinition,
   talentLevel,
-  talentNodeBonus,
   talentPrerequisiteMessage,
-  upgradeTalent,
   type TalentActionResult,
 } from "../game/talents";
 import {
   closeOverlay,
   createBackButton,
-  createBodyScroll,
-  createCardList,
   createOverlayTitle,
   openOverlay,
 } from "./ui";
@@ -32,11 +26,31 @@ import {
   glyphRecursion,
   glyphSharpShot,
   glyphStar4,
-  iconBranchEfficiency,
-  iconBranchOffense,
-  iconBranchSurvival,
+  iconTalents,
   iconSpan,
 } from "../icons";
+
+// ── Layout constants ───────────────────────────────────────────────────────────
+
+const CANVAS_SIZE = 640;
+const CANVAS_CX = CANVAS_SIZE / 2;
+const CANVAS_CY = CANVAS_SIZE / 2;
+// Ring radius per depth level (0 = innermost). Level 6+ clamps to last entry.
+const RING_RADII = [60, 108, 158, 210, 262, 312, 312] as const;
+const SECTOR_HALF_RAD = (54 * Math.PI) / 180;
+const SECTOR_CENTER: Record<TalentBranch, number> = {
+  offense:    -Math.PI / 2,          // top
+  survival:    Math.PI / 6,          // lower-right
+  efficiency:  (5 * Math.PI) / 6,   // lower-left
+};
+const BRANCH_CSS_COLOR: Record<TalentBranch, string> = {
+  offense:    "var(--branch-offense)",
+  survival:   "var(--branch-survival)",
+  efficiency: "var(--branch-efficiency)",
+};
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// ── Callbacks ─────────────────────────────────────────────────────────────────
 
 export interface TalentSceneCallbacks {
   getProfile: () => PlayerProfile;
@@ -46,26 +60,20 @@ export interface TalentSceneCallbacks {
   notify: (message: string, type: NotifyType) => void;
 }
 
-interface DraftEvaluation {
-  changed: boolean;
-  reason?: string;
-  target: TalentState;
-  pointDelta: number;
-  basicDelta: number;
-  eliteDelta: number;
-  droppedNodes: TalentId[];
-}
-
 const TALENT_IDS = Object.keys(TALENT_NODES) as TalentId[];
-const TALENT_PROCESSING_LIMIT = 128;
+
+// ── Scene ─────────────────────────────────────────────────────────────────────
 
 export class TalentScene implements Scene {
   readonly root: Container;
   private readonly cb: TalentSceneCallbacks;
+
   private selectedId: TalentId | null = null;
-  private activeBranch: TalentBranch = "offense";
-  private draftLevel = 0;
-  private shouldFocusSelection = false;
+  private panX = 0;
+  private panY = 0;
+  private zoom = 0.60;
+  private didDrag = false;
+  private panZoomAbort: AbortController | null = null;
 
   constructor(cb: TalentSceneCallbacks) {
     this.root = new Container();
@@ -75,412 +83,408 @@ export class TalentScene implements Scene {
   enter(): void {
     const { inner, content } = openOverlay({ constrained: true });
     const profile = this.cb.getProfile();
-    if (this.selectedId) {
-      this.activeBranch = talentDefinition(this.selectedId).branch;
-    }
 
     content.appendChild(createOverlayTitle("talent tree"));
     content.appendChild(this.createResourceTags(profile));
-    content.appendChild(this.createBranchTabs());
-
-    const body = createBodyScroll();
-    content.appendChild(body);
-    const list = createCardList();
-    body.appendChild(list);
-
-    const nodeButtons = new Map<TalentId, HTMLButtonElement>();
-    const section = this.createBranchSection(profile, this.activeBranch, nodeButtons);
-    const shell = document.createElement("section");
-    shell.className = "talent-tree-shell";
-    shell.appendChild(section);
-    list.appendChild(shell);
-
-    if (this.selectedId && TALENT_NODES[this.selectedId]) {
-      this.draftLevel = Math.max(
-        0,
-        Math.min(
-          talentDefinition(this.selectedId).levels.length,
-          this.draftLevel,
-        ),
-      );
-      const modal = this.createTalentDetailModal(profile, this.selectedId);
-      list.appendChild(modal);
-      if (this.shouldFocusSelection) {
-        this.shouldFocusSelection = false;
-        const selectedBtn = nodeButtons.get(this.selectedId);
-        if (selectedBtn) {
-          selectedBtn.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
-        }
-        requestAnimationFrame(() => {
-          modal.classList.add("open");
-          modal.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        });
-      } else {
-        modal.classList.add("open");
-      }
-    }
-
+    content.appendChild(this.createRadialView(profile));
     content.appendChild(this.createBottomBar(profile));
     inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
 
   exit(): void {
+    if (this.panZoomAbort) {
+      this.panZoomAbort.abort();
+      this.panZoomAbort = null;
+    }
     closeOverlay({ constrained: true });
   }
 
   update(_dt: number): void {}
   render(_alpha: number): void {}
 
-  private createBranchSection(
-    profile: PlayerProfile,
-    branch: TalentBranch,
-    nodeButtons: Map<TalentId, HTMLButtonElement>,
-  ): HTMLElement {
-    const section = document.createElement("section");
-    section.className = "talent-branch-section";
+  // ── Depth & position computation ──────────────────────────────────────────
 
-    const track = document.createElement("div");
-    track.className = "talent-tree-track";
-    section.appendChild(track);
-
-    const ids = TALENT_IDS.filter((id) => TALENT_NODES[id].branch === branch);
-    ids.forEach((id, index) => {
-      const button = this.createTalentNodeButton(profile, id);
-      nodeButtons.set(id, button);
-      track.appendChild(button);
-      if (index < ids.length - 1) {
-        const connector = document.createElement("div");
-        connector.className = "talent-tree-link";
-        track.appendChild(connector);
+  private computeDepths(): Map<TalentId, number> {
+    const depths = new Map<TalentId, number>();
+    for (const id of TALENT_IDS) {
+      if (!TALENT_NODES[id].requires) depths.set(id, 0);
+    }
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const id of TALENT_IDS) {
+        const def = TALENT_NODES[id];
+        if (!def.requires) continue;
+        const parentDepth = depths.get(def.requires.id);
+        if (parentDepth === undefined) continue;
+        const newDepth = parentDepth + 1;
+        if (!depths.has(id) || depths.get(id)! > newDepth) {
+          depths.set(id, newDepth);
+          changed = true;
+        }
       }
-    });
-
-    return section;
+    }
+    for (const id of TALENT_IDS) {
+      if (!depths.has(id)) depths.set(id, 0);
+    }
+    return depths;
   }
 
-  private createTalentNodeButton(profile: PlayerProfile, id: TalentId): HTMLButtonElement {
+  private computeRadialPositions(): Map<TalentId, { x: number; y: number }> {
+    const depths = this.computeDepths();
+    const positions = new Map<TalentId, { x: number; y: number }>();
+
+    // Group nodes by (branch, clampedDepth)
+    const groups = new Map<string, TalentId[]>();
+    for (const id of TALENT_IDS) {
+      const def = TALENT_NODES[id];
+      const depth = Math.min(depths.get(id) ?? 0, RING_RADII.length - 1);
+      const key = `${def.branch}:${depth}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(id);
+    }
+
+    for (const [key, ids] of groups) {
+      const colonIdx = key.indexOf(":");
+      const branch = key.slice(0, colonIdx) as TalentBranch;
+      const depth = parseInt(key.slice(colonIdx + 1), 10);
+      const sectorCenter = SECTOR_CENTER[branch];
+      const r = RING_RADII[depth] ?? RING_RADII[RING_RADII.length - 1]!;
+      const n = ids.length;
+      ids.forEach((id, i) => {
+        const angle =
+          n === 1
+            ? sectorCenter
+            : sectorCenter + ((i / (n - 1)) * 2 - 1) * SECTOR_HALF_RAD;
+        positions.set(id, {
+          x: CANVAS_CX + r * Math.cos(angle),
+          y: CANVAS_CY + r * Math.sin(angle),
+        });
+      });
+    }
+    return positions;
+  }
+
+  // ── Radial view ────────────────────────────────────────────────────────────
+
+  private createRadialView(profile: PlayerProfile): HTMLElement {
+    const positions = this.computeRadialPositions();
+
+    const wrap = document.createElement("div");
+    wrap.className = "talent-radial-wrap";
+
+    // Canvas (pan/zoom target)
+    const canvas = document.createElement("div");
+    canvas.className = "talent-radial-canvas";
+    canvas.style.width = `${CANVAS_SIZE}px`;
+    canvas.style.height = `${CANVAS_SIZE}px`;
+    this.applyTransform(canvas);
+    wrap.appendChild(canvas);
+
+    // SVG connection lines (rendered behind nodes)
+    canvas.appendChild(this.createRadialSVG(positions, profile));
+
+    // Center icon
+    const center = document.createElement("div");
+    center.className = "talent-radial-center";
+    center.style.left = `${CANVAS_CX}px`;
+    center.style.top = `${CANVAS_CY}px`;
+    center.appendChild(iconSpan(iconTalents));
+    canvas.appendChild(center);
+
+    // Node buttons
+    for (const [id, pos] of positions) {
+      canvas.appendChild(this.createRadialNode(profile, id, pos.x, pos.y));
+    }
+
+    // Upgrade sheet (shown when a node is selected)
+    if (this.selectedId !== null) {
+      const sheet = this.createUpgradeSheet(profile, this.selectedId);
+      wrap.appendChild(sheet);
+      requestAnimationFrame(() => sheet.classList.add("open"));
+    }
+
+    // Pan/zoom interaction
+    this.attachPanZoom(wrap, canvas);
+
+    return wrap;
+  }
+
+  private applyTransform(canvas: HTMLElement): void {
+    canvas.style.transform = `translate(calc(-50% + ${this.panX}px), calc(-50% + ${this.panY}px)) scale(${this.zoom})`;
+  }
+
+  // ── SVG connection lines ───────────────────────────────────────────────────
+
+  private createRadialSVG(
+    positions: Map<TalentId, { x: number; y: number }>,
+    profile: PlayerProfile,
+  ): SVGElement {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("class", "talent-radial-svg");
+    svg.setAttribute("viewBox", `0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`);
+    svg.setAttribute("width", String(CANVAS_SIZE));
+    svg.setAttribute("height", String(CANVAS_SIZE));
+
+    for (const id of TALENT_IDS) {
+      const def = TALENT_NODES[id];
+      if (!def.requires) continue;
+      const from = positions.get(def.requires.id);
+      const to = positions.get(id);
+      if (!from || !to) continue;
+
+      const parentLevel = talentLevel(profile.talents, def.requires.id);
+      const isReachable = parentLevel >= def.requires.level;
+
+      const line = document.createElementNS(SVG_NS, "line");
+      line.setAttribute("x1", String(Math.round(from.x)));
+      line.setAttribute("y1", String(Math.round(from.y)));
+      line.setAttribute("x2", String(Math.round(to.x)));
+      line.setAttribute("y2", String(Math.round(to.y)));
+      line.setAttribute("class", `talent-radial-line--${def.branch}`);
+      line.setAttribute("stroke-width", "1.5");
+      line.setAttribute("stroke-opacity", isReachable ? "0.55" : "0.18");
+      line.setAttribute("stroke-linecap", "round");
+      svg.appendChild(line);
+    }
+
+    return svg;
+  }
+
+  // ── Node button ────────────────────────────────────────────────────────────
+
+  private createRadialNode(
+    profile: PlayerProfile,
+    id: TalentId,
+    x: number,
+    y: number,
+  ): HTMLButtonElement {
     const def = talentDefinition(id);
     const level = talentLevel(profile.talents, id);
     const maxLevel = def.levels.length;
     const locked = Boolean(talentPrerequisiteMessage(profile.talents, id));
-    const bonusText = this.formatNodeBonus(def.effectKind, talentNodeBonus(profile.talents, id));
+    const isMaxed = level >= maxLevel;
 
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "talent-tree-node";
-    btn.setAttribute(
-      "aria-label",
-      `${def.name}. Level ${level} of ${maxLevel}. Bonus ${bonusText}.${locked ? " Locked." : ""}`,
-    );
+    btn.className = "talent-radial-node";
+    btn.style.left = `${Math.round(x)}px`;
+    btn.style.top = `${Math.round(y)}px`;
+    btn.style.setProperty("--node-color", BRANCH_CSS_COLOR[def.branch]);
+    btn.setAttribute("aria-label", `${def.name} Lv${level}/${maxLevel}`);
+    btn.title = def.name;
+
+    if (def.isCore) btn.classList.add("is-core");
     if (locked) btn.classList.add("is-locked");
+    if (isMaxed) btn.classList.add("is-maxed");
     if (this.selectedId === id) btn.classList.add("is-selected");
-    if (level >= maxLevel && this.selectedId !== id) btn.classList.add("is-maxed");
 
     const iconWrap = document.createElement("span");
-    iconWrap.className = "talent-tree-node-icon";
+    iconWrap.className = "talent-radial-node-icon";
     iconWrap.appendChild(iconSpan(this.nodeIcon(def.effectKind)));
     btn.appendChild(iconWrap);
 
-    const name = document.createElement("span");
-    name.className = "talent-tree-node-name";
-    name.textContent = def.name;
-    btn.appendChild(name);
-
-    const bonus = document.createElement("div");
-    bonus.className = "talent-tree-node-bonus";
-    bonus.textContent = bonusText;
-    btn.appendChild(bonus);
-
     const levelChip = document.createElement("span");
-    levelChip.className = "talent-tree-node-level";
+    levelChip.className = "talent-radial-node-level";
     levelChip.textContent = `${level}/${maxLevel}`;
     btn.appendChild(levelChip);
 
     btn.addEventListener("click", () => {
-      this.selectedId = id;
-      this.draftLevel = level;
-      this.shouldFocusSelection = true;
+      if (this.didDrag) return;
+      this.selectedId = this.selectedId === id ? null : id;
       this.enter();
     });
 
     return btn;
   }
 
-  private createTalentDetailModal(profile: PlayerProfile, id: TalentId): HTMLElement {
+  // ── Upgrade bottom sheet ───────────────────────────────────────────────────
+
+  private createUpgradeSheet(profile: PlayerProfile, id: TalentId): HTMLElement {
     const def = talentDefinition(id);
-    const currentLevel = talentLevel(profile.talents, id);
+    const level = talentLevel(profile.talents, id);
     const maxLevel = def.levels.length;
+    const isMaxed = level >= maxLevel;
+    const prereqMsg = talentPrerequisiteMessage(profile.talents, id);
+    const nextLevelDef = def.levels[level];
 
-    const modal = document.createElement("section");
-    modal.className = "talent-detail-modal";
+    const sheet = document.createElement("div");
+    sheet.className = "talent-upgrade-sheet";
 
-    const title = document.createElement("div");
-    title.className = "card-name";
-    title.textContent = def.name;
-    modal.appendChild(title);
-
-    const desc = document.createElement("div");
-    desc.className = "card-text";
-    desc.textContent = def.description;
-    modal.appendChild(desc);
-
-    const tagRow = document.createElement("div");
-    tagRow.className = "talent-tag-row";
-    modal.appendChild(tagRow);
-
-    const warning = document.createElement("div");
-    warning.className = "card-text";
-    warning.style.whiteSpace = "pre-line";
-    modal.appendChild(warning);
-
-    const controls = document.createElement("div");
-    controls.className = "talent-detail-level-controls";
-    const minusBtn = document.createElement("button");
-    minusBtn.type = "button";
-    minusBtn.className = "menu-btn";
-    minusBtn.textContent = "-";
-    const levelTag = this.createTag("");
-    const plusBtn = document.createElement("button");
-    plusBtn.type = "button";
-    plusBtn.className = "menu-btn";
-    plusBtn.textContent = "+";
-    controls.append(minusBtn, levelTag, plusBtn);
-    modal.appendChild(controls);
-
-    const actions = document.createElement("div");
-    actions.className = "talent-detail-actions";
-    const cancelBtn = document.createElement("button");
-    cancelBtn.type = "button";
-    cancelBtn.className = "menu-btn";
-    cancelBtn.textContent = "Cancel";
-    const saveBtn = document.createElement("button");
-    saveBtn.type = "button";
-    saveBtn.className = "big-btn";
-    saveBtn.textContent = "Save changes";
-    actions.append(cancelBtn, saveBtn);
-    modal.appendChild(actions);
-
-    const refresh = (): void => {
-      const evaluation = this.evaluateDraft(profile, id, this.draftLevel);
-      const nextStep = this.evaluateDraft(
-        profile,
-        id,
-        Math.min(this.draftLevel + 1, maxLevel),
-      );
-      const prerequisiteMessage = talentPrerequisiteMessage(evaluation.target, id);
-
-      tagRow.innerHTML = "";
-      tagRow.appendChild(this.createTag(`Now Lv ${currentLevel}/${maxLevel}`));
-      tagRow.appendChild(this.createTag(`Draft Lv ${this.draftLevel}/${maxLevel}`, "accent"));
-      tagRow.appendChild(this.createTag(`Δ pts ${evaluation.pointDelta >= 0 ? "+" : ""}${evaluation.pointDelta}`));
-      tagRow.appendChild(this.createTag(`Δ basic ${evaluation.basicDelta >= 0 ? "+" : ""}${evaluation.basicDelta}`));
-      tagRow.appendChild(this.createTag(`Δ elite ${evaluation.eliteDelta >= 0 ? "+" : ""}${evaluation.eliteDelta}`));
-
-      const warnings: string[] = [];
-      if (prerequisiteMessage) warnings.push(prerequisiteMessage);
-      if (evaluation.reason) warnings.push(evaluation.reason);
-      if (evaluation.droppedNodes.length > 0) {
-        warnings.push(`Auto-reset dependent nodes: ${evaluation.droppedNodes.map((nodeId) => talentDefinition(nodeId).name).join(", ")}`);
-      }
-      warning.textContent = warnings.join("\n");
-      warning.style.display = warnings.length > 0 ? "block" : "none";
-
-      levelTag.textContent = `Lv ${this.draftLevel}`;
-      minusBtn.disabled = this.draftLevel <= 0;
-      plusBtn.disabled = this.draftLevel >= maxLevel || !nextStep.changed || Boolean(nextStep.reason);
-      saveBtn.disabled = !evaluation.changed || Boolean(evaluation.reason);
-    };
-
-    minusBtn.addEventListener("click", () => {
-      this.draftLevel = Math.max(0, this.draftLevel - 1);
-      refresh();
-    });
-
-    plusBtn.addEventListener("click", () => {
-      this.draftLevel = Math.min(maxLevel, this.draftLevel + 1);
-      refresh();
-    });
-
-    cancelBtn.addEventListener("click", () => {
+    // Header
+    const header = document.createElement("div");
+    header.className = "talent-upgrade-sheet-header";
+    const titleEl = document.createElement("div");
+    titleEl.className = "talent-upgrade-sheet-title";
+    titleEl.textContent = def.name;
+    const dismissBtn = document.createElement("button");
+    dismissBtn.type = "button";
+    dismissBtn.className = "talent-upgrade-sheet-dismiss";
+    dismissBtn.textContent = "×";
+    dismissBtn.addEventListener("click", () => {
       this.selectedId = null;
       this.enter();
     });
+    header.append(titleEl, dismissBtn);
+    sheet.appendChild(header);
 
-    saveBtn.addEventListener("click", async () => {
-      const result = await this.commitDraft(id, this.draftLevel);
-      this.cb.notify(
-        result.ok ? "Talent changes saved." : result.reason ?? "Failed to save talent changes.",
-        result.ok ? "success" : "error",
+    // Meta row: branch badge + level tag
+    const metaRow = document.createElement("div");
+    metaRow.className = "talent-upgrade-sheet-meta";
+    const branchBadge = document.createElement("span");
+    branchBadge.className = "talent-branch-badge";
+    branchBadge.style.color = BRANCH_CSS_COLOR[def.branch];
+    branchBadge.textContent = def.branch;
+    const levelTag = this.createTag(`Lv ${level}/${maxLevel}`);
+    metaRow.append(branchBadge, levelTag);
+    sheet.appendChild(metaRow);
+
+    // Description
+    const desc = document.createElement("div");
+    desc.className = "card-text";
+    desc.textContent = def.description;
+    sheet.appendChild(desc);
+
+    // State: maxed / locked / next level cost
+    if (isMaxed) {
+      sheet.appendChild(this.createTag("MAX LEVEL", "accent"));
+    } else if (prereqMsg) {
+      const lockMsg = document.createElement("div");
+      lockMsg.className = "card-text";
+      lockMsg.textContent = prereqMsg;
+      sheet.appendChild(lockMsg);
+    } else if (nextLevelDef) {
+      const costRow = document.createElement("div");
+      costRow.className = "talent-tag-row";
+      costRow.style.justifyContent = "flex-start";
+      costRow.appendChild(this.createTag(`${nextLevelDef.pointCost} pts`));
+      costRow.appendChild(
+        this.createTag(`${nextLevelDef.fragmentCost} ${def.fragmentKind}`),
       );
-      if (result.ok) {
-        this.shouldFocusSelection = false;
+      const bonusText = this.formatNodeBonus(def.effectKind, nextLevelDef.bonus);
+      costRow.appendChild(this.createTag(bonusText, "accent"));
+      sheet.appendChild(costRow);
+
+      // Confirm button
+      const actions = document.createElement("div");
+      actions.className = "talent-upgrade-sheet-actions";
+      const confirmBtn = document.createElement("button");
+      confirmBtn.type = "button";
+      confirmBtn.className = "big-btn";
+      confirmBtn.textContent = `Upgrade → Lv ${level + 1}`;
+      confirmBtn.addEventListener("click", async () => {
+        confirmBtn.disabled = true;
+        const result = await this.cb.onUpgrade(id);
+        this.cb.notify(
+          result.ok
+            ? `${def.name} → Lv ${level + 1}`
+            : (result.reason ?? "Upgrade failed."),
+          result.ok ? "success" : "error",
+        );
         this.enter();
-      }
-    });
+      });
+      actions.appendChild(confirmBtn);
+      sheet.appendChild(actions);
+    }
 
-    refresh();
-    return modal;
+    return sheet;
   }
 
-  private evaluateDraft(
-    profile: PlayerProfile,
-    id: TalentId,
-    draftLevel: number,
-  ): DraftEvaluation {
-    const target = this.buildTargetState(profile, id, draftLevel);
-    const changed = !this.sameState(profile.talents, target);
-    const simulation = this.simulateTarget(profile, target);
-    const droppedNodes = TALENT_IDS.filter(
-      (nodeId) =>
-        nodeId !== id &&
-        talentLevel(profile.talents, nodeId) > 0 &&
-        talentLevel(target, nodeId) === 0,
-    );
-    return {
-      changed,
-      reason: simulation.reason,
-      target,
-      pointDelta: simulation.pointDelta,
-      basicDelta: simulation.basicDelta,
-      eliteDelta: simulation.eliteDelta,
-      droppedNodes,
+  // ── Pan / zoom ─────────────────────────────────────────────────────────────
+
+  private attachPanZoom(viewport: HTMLElement, canvas: HTMLElement): void {
+    if (this.panZoomAbort) this.panZoomAbort.abort();
+    this.panZoomAbort = new AbortController();
+    const { signal } = this.panZoomAbort;
+
+    const update = (): void => {
+      canvas.style.transform = `translate(calc(-50% + ${this.panX}px), calc(-50% + ${this.panY}px)) scale(${this.zoom})`;
     };
+
+    // ── Touch (mobile) ───────────────────────────────────────────────────────
+    let touchStartX = 0, touchStartY = 0;
+    let touchStartPanX = 0, touchStartPanY = 0;
+    let pinchStartDist = 0, pinchStartZoom = 0;
+
+    viewport.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      this.didDrag = false;
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0]!.clientX;
+        touchStartY = e.touches[0]!.clientY;
+        touchStartPanX = this.panX;
+        touchStartPanY = this.panY;
+      } else if (e.touches.length === 2) {
+        pinchStartDist = Math.hypot(
+          e.touches[0]!.clientX - e.touches[1]!.clientX,
+          e.touches[0]!.clientY - e.touches[1]!.clientY,
+        );
+        pinchStartZoom = this.zoom;
+      }
+    }, { passive: false, signal });
+
+    viewport.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const dx = e.touches[0]!.clientX - touchStartX;
+        const dy = e.touches[0]!.clientY - touchStartY;
+        if (Math.abs(dx) + Math.abs(dy) > 4) this.didDrag = true;
+        this.panX = touchStartPanX + dx;
+        this.panY = touchStartPanY + dy;
+        update();
+      } else if (e.touches.length === 2 && pinchStartDist > 0) {
+        const dist = Math.hypot(
+          e.touches[0]!.clientX - e.touches[1]!.clientX,
+          e.touches[0]!.clientY - e.touches[1]!.clientY,
+        );
+        this.zoom = Math.max(0.3, Math.min(2.2, pinchStartZoom * (dist / pinchStartDist)));
+        update();
+      }
+    }, { passive: false, signal });
+
+    viewport.addEventListener("touchend", () => {
+      // didDrag remains set until next touchstart/mousedown
+    }, { signal });
+
+    // ── Mouse (desktop) ──────────────────────────────────────────────────────
+    let mouseDown = false;
+    let mouseStartX = 0, mouseStartY = 0;
+    let mouseStartPanX = 0, mouseStartPanY = 0;
+
+    viewport.addEventListener("mousedown", (e) => {
+      mouseDown = true;
+      this.didDrag = false;
+      mouseStartX = e.clientX;
+      mouseStartY = e.clientY;
+      mouseStartPanX = this.panX;
+      mouseStartPanY = this.panY;
+      e.preventDefault();
+    }, { signal });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!mouseDown) return;
+      const dx = e.clientX - mouseStartX;
+      const dy = e.clientY - mouseStartY;
+      if (Math.abs(dx) + Math.abs(dy) > 4) this.didDrag = true;
+      this.panX = mouseStartPanX + dx;
+      this.panY = mouseStartPanY + dy;
+      update();
+    }, { signal });
+
+    window.addEventListener("mouseup", () => {
+      mouseDown = false;
+    }, { signal });
+
+    // ── Mouse wheel zoom ─────────────────────────────────────────────────────
+    viewport.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.1 : 0.9;
+      this.zoom = Math.max(0.3, Math.min(2.2, this.zoom * factor));
+      update();
+    }, { passive: false, signal });
   }
 
-  private buildTargetState(
-    profile: PlayerProfile,
-    id: TalentId,
-    draftLevel: number,
-  ): TalentState {
-    const levels = { ...profile.talents.levels };
-    const maxLevel = talentDefinition(id).levels.length;
-    levels[id] = this.boundLevel(draftLevel, maxLevel);
-
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const nodeId of TALENT_IDS) {
-        const def = talentDefinition(nodeId);
-        const boundedLevel = this.boundLevel(levels[nodeId] ?? 0, def.levels.length);
-        if (levels[nodeId] !== boundedLevel) {
-          levels[nodeId] = boundedLevel;
-          changed = true;
-        }
-        if (levels[nodeId] <= 0 || !def.requires) continue;
-        if ((levels[def.requires.id] ?? 0) < def.requires.level) {
-          levels[nodeId] = 0;
-          changed = true;
-        }
-      }
-    }
-
-    return { levels };
-  }
-
-  private simulateTarget(
-    profile: PlayerProfile,
-    target: TalentState,
-  ): {
-    reason?: string;
-    pointDelta: number;
-    basicDelta: number;
-    eliteDelta: number;
-  } {
-    const clone = this.cloneProfile(profile);
-    if (this.needsReset(profile.talents, target)) {
-      const resetResult = resetTalentGrowth(clone);
-      if (!resetResult.ok) {
-        return {
-          reason: resetResult.reason ?? "Reset failed.",
-          pointDelta: 0,
-          basicDelta: 0,
-          eliteDelta: 0,
-        };
-      }
-    }
-
-    for (let attempt = 0; attempt < TALENT_PROCESSING_LIMIT; attempt++) {
-      let remaining = false;
-      let progressed = false;
-      for (const nodeId of TALENT_IDS) {
-        const current = talentLevel(clone.talents, nodeId);
-        const wanted = talentLevel(target, nodeId);
-        if (current >= wanted) continue;
-        remaining = true;
-        const result = upgradeTalent(clone, nodeId);
-        if (result.ok) progressed = true;
-      }
-      if (!remaining) {
-        return {
-          pointDelta: clone.points - profile.points,
-          basicDelta: clone.fragments.basic - profile.fragments.basic,
-          eliteDelta: clone.fragments.elite - profile.fragments.elite,
-        };
-      }
-      if (!progressed) {
-        return {
-          reason: "Draft cannot be applied with current resources or prerequisites.",
-          pointDelta: 0,
-          basicDelta: 0,
-          eliteDelta: 0,
-        };
-      }
-    }
-
-    return {
-      reason: "Draft exceeded processing limit.",
-      pointDelta: 0,
-      basicDelta: 0,
-      eliteDelta: 0,
-    };
-  }
-
-  private async commitDraft(id: TalentId, draftLevel: number): Promise<TalentActionResult> {
-    const profile = this.cb.getProfile();
-    const evaluation = this.evaluateDraft(profile, id, draftLevel);
-    if (!evaluation.changed) return { ok: false, reason: "No pending changes." };
-    if (evaluation.reason) return { ok: false, reason: evaluation.reason };
-
-    if (this.needsReset(profile.talents, evaluation.target)) {
-      const resetResult = await this.cb.onReset();
-      if (!resetResult.ok) return resetResult;
-    }
-
-    for (let attempt = 0; attempt < TALENT_PROCESSING_LIMIT; attempt++) {
-      const currentProfile = this.cb.getProfile();
-      let remaining = false;
-      let progressed = false;
-      for (const nodeId of TALENT_IDS) {
-        const current = talentLevel(currentProfile.talents, nodeId);
-        const wanted = talentLevel(evaluation.target, nodeId);
-        if (current >= wanted) continue;
-        remaining = true;
-        const result = await this.cb.onUpgrade(nodeId);
-        if (!result.ok) continue;
-        progressed = true;
-      }
-      if (!remaining) {
-        return { ok: true };
-      }
-      if (!progressed) {
-        return { ok: false, reason: "Unable to apply drafted levels." };
-      }
-    }
-
-    return { ok: false, reason: "Talent save exceeded processing limit." };
-  }
-
-  private async handleReset(): Promise<void> {
-    const result = await this.cb.onReset();
-    this.cb.notify(
-      result.ok ? "Talents reset, points refunded." : result.reason ?? "Reset failed.",
-      result.ok ? "success" : "error",
-    );
-    if (result.ok) {
-      this.selectedId = null;
-    }
-    this.enter();
-  }
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
   private createResourceTags(profile: PlayerProfile): HTMLElement {
     const row = document.createElement("div");
@@ -488,31 +492,6 @@ export class TalentScene implements Scene {
     row.appendChild(this.createTag(`pts ${profile.points}`));
     row.appendChild(this.createTag(`basic ${profile.fragments.basic}`));
     row.appendChild(this.createTag(`elite ${profile.fragments.elite}`));
-    return row;
-  }
-
-  private createBranchTabs(): HTMLElement {
-    const row = document.createElement("div");
-    row.className = "talent-branch-tabs";
-    for (const branch of TALENT_BRANCH_ORDER) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "talent-branch-tab";
-      if (branch === this.activeBranch) btn.classList.add("is-active");
-      btn.appendChild(iconSpan(this.branchIcon(branch)));
-      const label = document.createElement("span");
-      label.textContent = this.branchLabel(branch);
-      btn.appendChild(label);
-      btn.addEventListener("click", () => {
-        this.activeBranch = branch;
-        if (this.selectedId && talentDefinition(this.selectedId).branch !== branch) {
-          this.selectedId = null;
-        }
-        this.shouldFocusSelection = false;
-        this.enter();
-      });
-      row.appendChild(btn);
-    }
     return row;
   }
 
@@ -542,96 +521,51 @@ export class TalentScene implements Scene {
     return row;
   }
 
+  private async handleReset(): Promise<void> {
+    const result = await this.cb.onReset();
+    this.cb.notify(
+      result.ok ? "Talents reset, points refunded." : (result.reason ?? "Reset failed."),
+      result.ok ? "success" : "error",
+    );
+    if (result.ok) this.selectedId = null;
+    this.enter();
+  }
+
   private createTag(text: string, variant: "normal" | "accent" = "normal"): HTMLElement {
     const tag = document.createElement("span");
-    tag.className = `talent-tag ${variant === "accent" ? "talent-tag--accent" : ""}`.trim();
+    tag.className = `talent-tag${variant === "accent" ? " talent-tag--accent" : ""}`;
     tag.textContent = text;
     return tag;
   }
 
-  private formatNodeBonus(
-    effectKind: TalentEffectKind,
-    total: number,
-  ): string {
+  private formatNodeBonus(effectKind: TalentEffectKind, bonus: number): string {
     switch (effectKind) {
-      case "maxHpAdd":
-        return `+${Math.round(total)} HP`;
-      case "iframeAdd":
-        return `+${total.toFixed(2)}s iframe`;
-      case "damageAdd":
-        return `+${Math.round(total)} dmg`;
-      case "critAdd":
-        return `+${(total * 100).toFixed(0)}% crit`;
-      case "pointRewardMul":
-        return `+${(total * 100).toFixed(0)}% pts`;
-      case "fragmentRewardMul":
-        return `+${(total * 100).toFixed(0)}% frag`;
-      default:
-        return `${total}`;
+      case "maxHpAdd":         return `+${Math.round(bonus)} HP`;
+      case "iframeAdd":        return `+${bonus.toFixed(2)}s iframe`;
+      case "damageAdd":        return `+${Math.round(bonus)} dmg`;
+      case "critAdd":          return `+${(bonus * 100).toFixed(0)}% crit`;
+      case "pointRewardMul":   return `+${(bonus * 100).toFixed(0)}% pts`;
+      case "fragmentRewardMul": return `+${(bonus * 100).toFixed(0)}% frag`;
+      case "speedMul":         return `+${(bonus * 100).toFixed(0)}% spd`;
+      case "periodMul":        return `×${bonus.toFixed(2)} fire`;
+      case "pierceAdd":        return `+${bonus} pierce`;
+      case "projectilesAdd":   return `+${bonus} proj`;
+      case "projectileSpeedMul": return `+${(bonus * 100).toFixed(0)}% projspd`;
+      case "skillPointsAdd":   return `+${bonus} skill pts`;
+      case "pickupRadiusMul":  return `+${(bonus * 100).toFixed(0)}% pickup`;
+      default:                 return `+${bonus}`;
     }
-  }
-
-  private branchLabel(branch: TalentBranch): string {
-    const labels: Record<TalentBranch, string> = {
-      survival: "survival",
-      offense: "offense",
-      efficiency: "efficiency",
-    };
-    return labels[branch];
-  }
-
-  private branchIcon(branch: TalentBranch): string {
-    const icons: Record<TalentBranch, string> = {
-      survival: iconBranchSurvival,
-      offense: iconBranchOffense,
-      efficiency: iconBranchEfficiency,
-    };
-    return icons[branch];
   }
 
   private nodeIcon(effectKind: TalentEffectKind): string {
     switch (effectKind) {
-      case "maxHpAdd":
-        return glyphAegis;
-      case "iframeAdd":
-        return glyphPhaseShift;
-      case "damageAdd":
-        return glyphSharpShot;
-      case "critAdd":
-        return glyphCrit;
-      case "pointRewardMul":
-        return glyphStar4;
-      case "fragmentRewardMul":
-        return glyphRecursion;
-      default:
-        // Neutral fallback for forward-compatibility when new effect kinds are added.
-        return glyphStar4;
+      case "maxHpAdd":      return glyphAegis;
+      case "iframeAdd":     return glyphPhaseShift;
+      case "damageAdd":     return glyphSharpShot;
+      case "critAdd":       return glyphCrit;
+      case "pointRewardMul": return glyphStar4;
+      case "fragmentRewardMul": return glyphRecursion;
+      default:              return glyphStar4;
     }
-  }
-
-  private needsReset(current: TalentState, target: TalentState): boolean {
-    return TALENT_IDS.some((id) => talentLevel(target, id) < talentLevel(current, id));
-  }
-
-  private sameState(a: TalentState, b: TalentState): boolean {
-    return TALENT_IDS.every((id) => talentLevel(a, id) === talentLevel(b, id));
-  }
-
-  private cloneProfile(profile: PlayerProfile): PlayerProfile {
-    return {
-      ...profile,
-      ownedSkins: [...profile.ownedSkins],
-      stats: profile.stats,
-      fragments: {
-        ...profile.fragments,
-      },
-      talents: {
-        levels: { ...profile.talents.levels },
-      },
-    };
-  }
-
-  private boundLevel(value: number, maxLevel: number): number {
-    return Math.max(0, Math.min(maxLevel, Math.trunc(value)));
   }
 }
