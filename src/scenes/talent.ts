@@ -32,11 +32,11 @@ import {
 
 // ── Layout constants ───────────────────────────────────────────────────────────
 
-const CANVAS_SIZE = 640;
+const CANVAS_SIZE = 1200;
 const CANVAS_CX = CANVAS_SIZE / 2;
 const CANVAS_CY = CANVAS_SIZE / 2;
 // Ring radius per depth level (0 = innermost). Level 6+ clamps to last entry.
-const RING_RADII = [60, 108, 158, 210, 262, 312, 312] as const;
+const RING_RADII = [105, 195, 290, 385, 470, 550, 550] as const;
 const SECTOR_HALF_RAD = (54 * Math.PI) / 180;
 const SECTOR_CENTER: Record<TalentBranch, number> = {
   offense:    -Math.PI / 2,          // top
@@ -71,9 +71,10 @@ export class TalentScene implements Scene {
   private selectedId: TalentId | null = null;
   private panX = 0;
   private panY = 0;
-  private zoom = 0.60;
+  private zoom = 0.55;
   private didDrag = false;
   private panZoomAbort: AbortController | null = null;
+  private _animFromPan: { x: number; y: number } | null = null;
 
   constructor(cb: TalentSceneCallbacks) {
     this.root = new Container();
@@ -87,6 +88,16 @@ export class TalentScene implements Scene {
     content.appendChild(createOverlayTitle("talent tree"));
     content.appendChild(this.createResourceTags(profile));
     content.appendChild(this.createRadialView(profile));
+
+    // Upgrade sheet: floats below the canvas, outside the pan/zoom wrap
+    const sheetWrapper = document.createElement("div");
+    sheetWrapper.className = "talent-sheet-wrapper";
+    if (this.selectedId !== null) {
+      sheetWrapper.appendChild(this.createUpgradeSheet(profile, this.selectedId));
+      requestAnimationFrame(() => sheetWrapper.classList.add("open"));
+    }
+    content.appendChild(sheetWrapper);
+
     content.appendChild(this.createBottomBar(profile));
     inner.appendChild(createBackButton(() => this.cb.onBack()));
   }
@@ -197,11 +208,17 @@ export class TalentScene implements Scene {
       canvas.appendChild(this.createRadialNode(profile, id, pos.x, pos.y));
     }
 
-    // Upgrade sheet (shown when a node is selected)
-    if (this.selectedId !== null) {
-      const sheet = this.createUpgradeSheet(profile, this.selectedId);
-      wrap.appendChild(sheet);
-      requestAnimationFrame(() => sheet.classList.add("open"));
+    // Smooth pan animation from previous position when a node is selected
+    if (this._animFromPan) {
+      const { x: fromX, y: fromY } = this._animFromPan;
+      this._animFromPan = null;
+      const targetTransform = canvas.style.transform;
+      canvas.style.transform = `translate(calc(-50% + ${fromX}px), calc(-50% + ${fromY}px)) scale(${this.zoom})`;
+      requestAnimationFrame(() => {
+        canvas.style.transition = "transform 380ms cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+        canvas.style.transform = targetTransform;
+        setTimeout(() => { canvas.style.transition = ""; }, 400);
+      });
     }
 
     // Pan/zoom interaction
@@ -291,7 +308,13 @@ export class TalentScene implements Scene {
 
     btn.addEventListener("click", () => {
       if (this.didDrag) return;
-      this.selectedId = this.selectedId === id ? null : id;
+      const newId = this.selectedId === id ? null : id;
+      if (newId !== null) {
+        this._animFromPan = { x: this.panX, y: this.panY };
+        this.panX = -(x - CANVAS_CX) * this.zoom;
+        this.panY = -(y - CANVAS_CY) * this.zoom;
+      }
+      this.selectedId = newId;
       this.enter();
     });
 
@@ -398,6 +421,7 @@ export class TalentScene implements Scene {
     const { signal } = this.panZoomAbort;
 
     const update = (): void => {
+      canvas.style.transition = "";
       canvas.style.transform = `translate(calc(-50% + ${this.panX}px), calc(-50% + ${this.panY}px)) scale(${this.zoom})`;
     };
 
@@ -442,8 +466,14 @@ export class TalentScene implements Scene {
       }
     }, { passive: false, signal });
 
-    viewport.addEventListener("touchend", () => {
-      // didDrag remains set until next touchstart/mousedown
+    viewport.addEventListener("touchend", (e) => {
+      // Forward tap as click when no drag occurred (touchstart preventDefault blocks synthetic clicks)
+      if (!this.didDrag && e.changedTouches.length === 1) {
+        const t = e.changedTouches[0]!;
+        const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null;
+        const btn = el?.closest<HTMLButtonElement>("button");
+        if (btn) btn.click();
+      }
     }, { signal });
 
     // ── Mouse (desktop) ──────────────────────────────────────────────────────
