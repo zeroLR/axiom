@@ -9,7 +9,7 @@ import {
 // one import path and one schema version constant.
 
 /** Global schema version — bump when store shapes change. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 // ── Player Profile ──────────────────────────────────────────────────────────
 
@@ -33,6 +33,8 @@ export interface PlayerProfile {
   characters: CharactersState;
   /** Fusion / Mutation placeholder (not yet functional). */
   fusion: FusionState;
+  /** Boss-defeat trophy state (one signature passive equipped at a time). */
+  trophies: TrophyState;
 }
 
 /** Persistent storage for the three kinds of collectible fragment. */
@@ -90,6 +92,7 @@ export function defaultPlayerProfile(): PlayerProfile {
     talents: defaultTalentState(),
     characters: defaultCharactersState(),
     fusion: defaultFusionState(),
+    trophies: defaultTrophyState(),
     stats: {
       totalRuns: 0,
       totalKills: 0,
@@ -167,6 +170,36 @@ export interface FusionState {
 
 export function defaultFusionState(): FusionState {
   return { records: [] };
+}
+
+// ── Trophies ──────────────────────────────────────────────────────────────────
+
+/** Stable identifier for a Boss Trophy (one per current boss). */
+export type TrophyId =
+  | "axis-lock"
+  | "wing-dash"
+  | "mirror-echo"
+  | "grid-overlay"
+  | "void-blink";
+
+/** Persistent trophy progression: which trophies are unlocked and which one is equipped. */
+export interface TrophyState {
+  unlocked: Record<TrophyId, boolean>;
+  /** ID of the currently equipped trophy, or null when nothing is equipped. */
+  equipped: TrophyId | null;
+}
+
+export function defaultTrophyState(): TrophyState {
+  return {
+    unlocked: {
+      "axis-lock": false,
+      "wing-dash": false,
+      "mirror-echo": false,
+      "grid-overlay": false,
+      "void-blink": false,
+    },
+    equipped: null,
+  };
 }
 
 // ── Talent Growth ────────────────────────────────────────────────────────────

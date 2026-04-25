@@ -4,10 +4,11 @@
 // determine what is available.
 
 import type { BossId } from "./bosses/types";
-import type { PlayerStats } from "./data/types";
+import type { PlayerStats, TrophyId } from "./data/types";
 import type { Card } from "./cards";
 import type { PrimalSkillDef } from "./skills";
 import type { TalentNodeDef } from "./content/talents";
+import { TROPHIES } from "./content/trophies";
 
 // ── Mapping ─────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,8 @@ export interface UnlockDiff {
   newCards: string[];
   /** Skill IDs that became available because the boss was just defeated. */
   newSkills: string[];
+  /** Trophy IDs that became available because the boss was just defeated. */
+  newTrophies: TrophyId[];
 }
 
 /**
@@ -79,5 +82,12 @@ export function diffUnlocks(
     if (!wasBefore && isNow) newCards.push(card.id);
   }
 
-  return { newCards, newSkills: [] };
+  const newTrophies: TrophyId[] = [];
+  for (const trophy of TROPHIES) {
+    const wasBefore = isBossDefeated(trophy.fromBoss, statsBefore);
+    const isNow = isBossDefeated(trophy.fromBoss, statsAfter);
+    if (!wasBefore && isNow) newTrophies.push(trophy.id);
+  }
+
+  return { newCards, newSkills: [], newTrophies };
 }

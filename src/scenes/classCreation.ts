@@ -7,6 +7,9 @@ import type {
   SkillTreeState,
 } from "../game/data/types";
 import { MAX_SKILL_LEVEL } from "../game/data/types";
+import type { TrophyId } from "../game/data/types";
+import { TROPHIES, type TrophyDef } from "../game/content/trophies";
+import { isBossDefeated } from "../game/unlocks";
 import {
   CLASS_LINEAGES,
   CLASS_NODES,
@@ -68,6 +71,8 @@ export interface ClassCreationCallbacks {
   onCreateSlot: (lineage: ClassLineageId) => Promise<ClassActionResult>;
   onSelectSlot: (slotId: string) => void;
   onSkillStateChanged: (state: SkillTreeState) => Promise<void>;
+  /** Persist trophy state changes (e.g. equip/unequip). */
+  onTrophyStateChanged: () => Promise<void>;
   onBack: () => void;
   notify: (message: string, type: NotifyType) => void;
 }
@@ -203,6 +208,9 @@ export class ClassCreationScene implements Scene {
 
       // Skills section for this character slot
       list.appendChild(this.createSkillsSection(slot));
+
+      // Trophies section (boss-defeat unlocks; one equippable at a time)
+      list.appendChild(this.createTrophiesSection());
     } else {
       // No slots (shouldn't normally happen)
       const msg = createOverlaySub("No characters available. Create one to begin.");
@@ -1151,5 +1159,77 @@ export class ClassCreationScene implements Scene {
     tag.className = `talent-tag ${variant === "accent" ? "talent-tag--accent" : ""}`.trim();
     tag.textContent = text;
     return tag;
+  }
+
+  // ── Trophies ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Boss-trophy equip panel. Each entry is either:
+   *  - locked → muted card with "defeat <BOSS>" hint, click disabled
+   *  - unlocked → click toggles between equipped (highlighted) and stored
+   * Only one trophy is ever equipped at a time.
+   */
+  private createTrophiesSection(): HTMLElement {
+    const profile = this.cb.getProfile();
+    const section = document.createElement("section");
+    section.className = "menu-section";
+
+    const title = document.createElement("div");
+    title.className = "menu-section-title";
+    title.textContent = "boss trophies";
+    section.appendChild(title);
+
+    const list = document.createElement("div");
+    list.className = "card-list";
+
+    for (const def of TROPHIES) {
+      list.appendChild(this.createTrophyCard(profile, def));
+    }
+    section.appendChild(list);
+    return section;
+  }
+
+  private createTrophyCard(profile: PlayerProfile, def: TrophyDef): HTMLElement {
+    const unlocked = profile.trophies.unlocked[def.id]
+      ?? isBossDefeated(def.fromBoss, profile.stats);
+    const equipped = profile.trophies.equipped === def.id;
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "card-btn";
+    if (!unlocked) card.classList.add("is-locked");
+    if (equipped) card.classList.add("is-selected");
+    card.disabled = !unlocked;
+
+    const header = document.createElement("div");
+    header.className = "card-row";
+    const nameEl = document.createElement("span");
+    nameEl.className = "card-name";
+    nameEl.textContent = def.name;
+    header.appendChild(nameEl);
+    const tag = this.createTag(equipped ? "EQUIPPED" : `from ${def.fromBoss}`, equipped ? "accent" : "normal");
+    header.appendChild(tag);
+    card.appendChild(header);
+
+    const desc = document.createElement("div");
+    desc.className = "card-text";
+    desc.textContent = unlocked
+      ? def.description
+      : `Locked — defeat ${def.fromBoss.toUpperCase()}.`;
+    card.appendChild(desc);
+
+    if (unlocked) {
+      card.addEventListener("click", async () => {
+        const next: TrophyId | null = equipped ? null : def.id;
+        profile.trophies.equipped = next;
+        await this.cb.onTrophyStateChanged();
+        this.cb.notify(
+          next === null ? `${def.name} unequipped.` : `${def.name} equipped.`,
+          "success",
+        );
+        this.enter();
+      });
+    }
+    return card;
   }
 }

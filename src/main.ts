@@ -56,6 +56,7 @@ import {
   reflectDamageRatio,
 } from './game/skills';
 import { diffUnlocks } from './game/unlocks';
+import { trophyForBoss, getTrophyDef } from './game/content/trophies';
 import { MAX_SKILL_LEVEL } from './game/data/types';
 import { unlockAchievement } from './game/achievements';
 import type { RunResult } from './game/rewards';
@@ -289,6 +290,24 @@ async function boot(): Promise<void> {
       applyEffectToWorld({ kind: 'speedMul', value: bonuses.speedMul }, play.world, play.avatarId);
     }
     // pointRewardMul and fragmentRewardMul are applied in settleRun
+    applyEquippedTrophyPassive();
+  }
+
+  /**
+   * Apply the currently-equipped trophy's passive on top of class/talent bonuses.
+   * Trophies layer additively for additive kinds and as additive deltas (1 + x)
+   * for multiplicative kinds, mirroring the class-passive convention.
+   */
+  function applyEquippedTrophyPassive(): void {
+    const equippedId = profile.trophies.equipped;
+    if (!equippedId || !profile.trophies.unlocked[equippedId]) return;
+    const def = getTrophyDef(equippedId);
+    const p = def.passive;
+    if (p.damageAdd) applyEffectToWorld({ kind: 'damageAdd', value: p.damageAdd }, play.world, play.avatarId);
+    if (p.critAdd) applyEffectToWorld({ kind: 'critAdd', value: p.critAdd }, play.world, play.avatarId);
+    if (p.projectilesAdd) applyEffectToWorld({ kind: 'projectilesAdd', value: p.projectilesAdd }, play.world, play.avatarId);
+    if (p.iframeAdd) applyEffectToWorld({ kind: 'iframeAdd', value: p.iframeAdd }, play.world, play.avatarId);
+    if (p.speedMul) applyEffectToWorld({ kind: 'speedMul', value: p.speedMul }, play.world, play.avatarId);
   }
 
   function syncRunControlButtons(): void {
@@ -3145,6 +3164,17 @@ async function boot(): Promise<void> {
       result.wavesCleared >= normalStageWaveTarget
     ) {
       profile.stats.normalCleared[result.stageIndex] = true;
+      // Auto-unlock the boss trophy alongside the stage-clear flag.
+      const stageBossKind = bossKindForStage(result.stageIndex);
+      const trophyDef = stageBossKind === 'boss' ? null : trophyForBoss(stageBossKind);
+      if (trophyDef && !profile.trophies.unlocked[trophyDef.id]) {
+        profile.trophies.unlocked[trophyDef.id] = true;
+        // First trophy auto-equips so passive applies on the next run with no
+        // extra menu hunt; subsequent unlocks leave existing equip alone.
+        if (profile.trophies.equipped === null) {
+          profile.trophies.equipped = trophyDef.id;
+        }
+      }
     }
 
     // Check achievements
@@ -3177,12 +3207,17 @@ async function boot(): Promise<void> {
         POOL,
         allSkillDefs,
       );
-      if (diff.newCards.length > 0 || diff.newSkills.length > 0) {
+      if (
+        diff.newCards.length > 0
+        || diff.newSkills.length > 0
+        || diff.newTrophies.length > 0
+      ) {
         pendingUnlocks = {
           newCards: diff.newCards.map((id) => POOL_BY_ID.get(id)?.name ?? id),
           newSkills: diff.newSkills.map(
             (id) => PRIMAL_SKILLS[id as keyof typeof PRIMAL_SKILLS]?.name ?? id,
           ),
+          newTrophies: diff.newTrophies.map((id) => `${getTrophyDef(id).name} (trophy)`),
         };
       }
     }
@@ -3348,6 +3383,9 @@ async function boot(): Promise<void> {
                     }
                     void saveProfile(profile);
                   }
+                },
+                onTrophyStateChanged: async () => {
+                  await saveProfile(profile);
                 },
                 onBack: () => {
                   stack.pop();

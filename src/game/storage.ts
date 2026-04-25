@@ -10,6 +10,7 @@ import {
   defaultTalentState,
   defaultCharactersState,
   defaultFusionState,
+  defaultTrophyState,
   defaultSkillTreeState,
   defaultAchievementState,
   defaultShopUnlocks,
@@ -20,6 +21,7 @@ import {
   type ShopUnlocks,
   type GameSettings,
   type SaveData,
+  type TrophyId,
 } from "./data/types";
 import { emptyFragmentDetailRecord, FRAGMENT_META } from "./fragments";
 import { startingShapeToLineage } from "./classes";
@@ -121,6 +123,19 @@ export async function loadProfile(): Promise<PlayerProfile> {
     };
   }
 
+  // ── Trophy migration ───────────────────────────────────────────────────────
+  // Saves predating SCHEMA_VERSION 5 have no `trophies` field; default to all
+  // locked / nothing equipped. Validate that any equipped trophy is also
+  // unlocked, otherwise reset equipped to null.
+  const trophyBase = defaultTrophyState();
+  const rawTrophies = (raw as { trophies?: Partial<typeof trophyBase> }).trophies;
+  const unlockedTrophies = { ...trophyBase.unlocked, ...(rawTrophies?.unlocked ?? {}) };
+  let equippedTrophy: TrophyId | null = rawTrophies?.equipped ?? null;
+  if (equippedTrophy && !unlockedTrophies[equippedTrophy]) {
+    equippedTrophy = null;
+  }
+  const trophies = { unlocked: unlockedTrophies, equipped: equippedTrophy };
+
   return {
     ...base,
     ...raw,
@@ -140,6 +155,7 @@ export async function loadProfile(): Promise<PlayerProfile> {
     },
     characters,
     fusion: raw.fusion ?? defaultFusionState(),
+    trophies,
     stats: {
       ...base.stats,
       ...raw.stats,

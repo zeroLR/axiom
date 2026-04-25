@@ -130,6 +130,34 @@ describe("unlock system", () => {
     expect(diff.newSkills).toHaveLength(0);
   });
 
+  // ── trophies ────────────────────────────────────────────────────────────
+
+  it("diffs the matching trophy when a boss is newly defeated", () => {
+    const allSkillDefs = Object.values(PRIMAL_SKILLS) as PrimalSkillDef[];
+
+    const a = diffUnlocks(makeStats([false, false, false, false, false]),
+                          makeStats([true,  false, false, false, false]),
+                          POOL, allSkillDefs);
+    expect(a.newTrophies).toEqual(["axis-lock"]);
+
+    const b = diffUnlocks(makeStats([true, false, false, false, false]),
+                          makeStats([true, true,  false, false, false]),
+                          POOL, allSkillDefs);
+    expect(b.newTrophies).toEqual(["wing-dash"]);
+
+    const c = diffUnlocks(makeStats([true, true, true, false, false]),
+                          makeStats([true, true, true, true,  true]),
+                          POOL, allSkillDefs);
+    expect(c.newTrophies.sort()).toEqual(["grid-overlay", "void-blink"]);
+  });
+
+  it("returns empty newTrophies when no fresh boss kill", () => {
+    const allSkillDefs = Object.values(PRIMAL_SKILLS) as PrimalSkillDef[];
+    const same = makeStats([true, true, false, false, false]);
+    const diff = diffUnlocks(same, same, POOL, allSkillDefs);
+    expect(diff.newTrophies).toHaveLength(0);
+  });
+
   // ── POOL integrity ────────────────────────────────────────────────────
 
   it("pool has exactly 5 boss-gated cards", () => {
