@@ -138,7 +138,6 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Precision Protocol",
     description: "Significantly enhance critical rate.",
     passives: [{ kind: "critAdd", value: 0.08 }],
-    unlocksSkill: "overload",
     promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
   },
   "axis-t2b": {
@@ -146,7 +145,6 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Force Amplifier",
     description: "Raw weapon damage increase.",
     passives: [{ kind: "damageAdd", value: 2 }],
-    unlocksSkill: "shadowClone",
     promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
   },
   "axis-t3aa": {
@@ -200,7 +198,6 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Cascade Fire",
     description: "Further increase fire rate.",
     passives: [{ kind: "periodMul", value: 0.92 }],
-    unlocksSkill: "timeStop",
     promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
   },
   "wing-t2b": {
@@ -261,7 +258,6 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Fortified Core",
     description: "Further increase max HP.",
     passives: [{ kind: "maxHpAdd", value: 3 }],
-    unlocksSkill: "lifestealPulse",
     promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
   },
   "mirror-t2b": {

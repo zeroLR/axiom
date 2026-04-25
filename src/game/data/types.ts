@@ -9,7 +9,7 @@ import {
 // one import path and one schema version constant.
 
 /** Global schema version — bump when store shapes change. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 6;
 
 // ── Player Profile ──────────────────────────────────────────────────────────
 
@@ -33,6 +33,8 @@ export interface PlayerProfile {
   characters: CharactersState;
   /** Fusion / Mutation placeholder (not yet functional). */
   fusion: FusionState;
+  /** Boss-defeat trophy state (one signature passive equipped at a time). */
+  trophies: TrophyState;
 }
 
 /** Persistent storage for the three kinds of collectible fragment. */
@@ -51,7 +53,19 @@ export interface PlayerStats {
   totalBossKills: number;
   enemyKills: Record<EnemyKind, number>;
   bestSurvivalWave: number;
-  normalCleared: boolean[];  // indexed 0..4 for 5 stages
+  /**
+   * Legacy positional clear flags, indexed 0..4 for the original 5 stages.
+   * Kept for backward compat with code paths (achievements, mirror boss
+   * spec, etc.) that still read by index. New code should prefer
+   * `clearedStages` which is keyed by `StageConfig.stageId`.
+   */
+  normalCleared: boolean[];
+  /**
+   * StageId-keyed clear map. Survives stage reordering and supports adding
+   * a 6th stage without bumping a positional array length. Authoritative
+   * source for Act-based unlock logic in `unlocks.ts`.
+   */
+  clearedStages: Record<string, boolean>;
   /** Cumulative points earned across all runs; used for progression unlocks. */
   totalPointsEarned: number;
 }
@@ -90,6 +104,7 @@ export function defaultPlayerProfile(): PlayerProfile {
     talents: defaultTalentState(),
     characters: defaultCharactersState(),
     fusion: defaultFusionState(),
+    trophies: defaultTrophyState(),
     stats: {
       totalRuns: 0,
       totalKills: 0,
@@ -97,6 +112,7 @@ export function defaultPlayerProfile(): PlayerProfile {
       enemyKills: defaultEnemyKills(),
       bestSurvivalWave: 0,
       normalCleared: [false, false, false, false, false],
+      clearedStages: {},
       totalPointsEarned: 0,
     },
   };
@@ -167,6 +183,36 @@ export interface FusionState {
 
 export function defaultFusionState(): FusionState {
   return { records: [] };
+}
+
+// ── Trophies ──────────────────────────────────────────────────────────────────
+
+/** Stable identifier for a Boss Trophy (one per current boss). */
+export type TrophyId =
+  | "axis-lock"
+  | "wing-dash"
+  | "mirror-echo"
+  | "grid-overlay"
+  | "void-blink";
+
+/** Persistent trophy progression: which trophies are unlocked and which one is equipped. */
+export interface TrophyState {
+  unlocked: Record<TrophyId, boolean>;
+  /** ID of the currently equipped trophy, or null when nothing is equipped. */
+  equipped: TrophyId | null;
+}
+
+export function defaultTrophyState(): TrophyState {
+  return {
+    unlocked: {
+      "axis-lock": false,
+      "wing-dash": false,
+      "mirror-echo": false,
+      "grid-overlay": false,
+      "void-blink": false,
+    },
+    equipped: null,
+  };
 }
 
 // ── Talent Growth ────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 import type { TalentId } from "../data/types";
+import type { BossId } from "../bosses/types";
 
 export type TalentBranch = "survival" | "offense" | "efficiency";
 export type TalentFragmentKind = "basic" | "elite";
@@ -49,6 +50,12 @@ export interface TalentNodeDef {
   levels: TalentLevelDef[];
   requires?: { id: TalentId; level: number };
   isCore?: boolean;
+  /**
+   * Optional boss-defeat gate. The node's connector/vertex prerequisites still
+   * apply; this adds a meta-progression lock on top, used to make boss kills
+   * grant tangible capstone unlocks rather than only currency.
+   */
+  unlockAfterBoss?: BossId;
 }
 
 // Hex layout: each cluster has 1 connector → 6 vertices (V0 nearest origin, then clockwise) → 1 core.
@@ -143,6 +150,7 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     fragmentKind: "elite", effectKind: "maxHpAdd",
     requires: { id: "survivalHpV3", level: 4 },
     isCore: true,
+    unlockAfterBoss: "orthogon",
     levels: [
       { pointCost: 800, fragmentCost: 6, bonus: 5 },
       { pointCost: 1200, fragmentCost: 9, bonus: 5 },
@@ -232,6 +240,7 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     fragmentKind: "elite", effectKind: "speedMul",
     requires: { id: "survivalMobilityV3", level: 3 },
     isCore: true,
+    unlockAfterBoss: "jets",
     levels: [
       { pointCost: 850, fragmentCost: 6, bonus: 0.1 },
       { pointCost: 1250, fragmentCost: 9, bonus: 0.1 },
@@ -325,6 +334,7 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     fragmentKind: "elite", effectKind: "damageAdd",
     requires: { id: "offenseDamageV3", level: 4 },
     isCore: true,
+    unlockAfterBoss: "mirror",
     levels: [
       { pointCost: 800, fragmentCost: 6, bonus: 5 },
       { pointCost: 1200, fragmentCost: 9, bonus: 5 },
@@ -413,6 +423,7 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     fragmentKind: "elite", effectKind: "projectilesAdd",
     requires: { id: "offenseTempoV3", level: 3 },
     isCore: true,
+    unlockAfterBoss: "lattice",
     levels: [
       { pointCost: 900, fragmentCost: 7, bonus: 1 },
       { pointCost: 1400, fragmentCost: 10, bonus: 1 },
@@ -502,6 +513,7 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     fragmentKind: "elite", effectKind: "pointRewardMul",
     requires: { id: "efficiencyPointsV3", level: 3 },
     isCore: true,
+    unlockAfterBoss: "rift",
     levels: [
       { pointCost: 800, fragmentCost: 6, bonus: 0.1 },
       { pointCost: 1200, fragmentCost: 9, bonus: 0.1 },

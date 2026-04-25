@@ -15,9 +15,11 @@ import { compileStageWaves } from "./stageCompiler";
 export type { WaveSpec };
 
 // Compile all stage configs deterministically (no RNG needed — all current
-// stages use fixed enemy kinds, not weighted tables).
+// stages use fixed enemy kinds, not weighted/archetype tables). Stages that
+// adopt `archetype` or `enemies` should compile per-run via
+// `compileStageWaves(cfg, idx, runRng)` instead of using this static cache.
 export const STAGE_WAVES: readonly (readonly WaveSpec[])[] =
-  STAGE_CONFIGS.map(cfg => compileStageWaves(cfg));
+  STAGE_CONFIGS.map((cfg, idx) => compileStageWaves(cfg, idx));
 
 /** Number of stages available in normal mode. Derived from STAGE_CONFIGS. */
 export const STAGE_COUNT = STAGE_WAVES.length;

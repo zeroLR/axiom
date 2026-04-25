@@ -16,6 +16,7 @@ export type EndgameKind = "dead" | "won";
 export interface EndgameUnlocks {
   newCards: string[];
   newSkills: string[];
+  newTrophies: string[];
 }
 
 interface EndgameActions {
@@ -215,7 +216,14 @@ export class EndgameScene implements Scene {
 
   private renderUnlockBanner(inner: HTMLElement): void {
     const unlocks = this.summary.unlocks;
-    if (!unlocks || (unlocks.newCards.length === 0 && unlocks.newSkills.length === 0)) return;
+    if (
+      !unlocks
+      || (unlocks.newCards.length === 0
+        && unlocks.newSkills.length === 0
+        && unlocks.newTrophies.length === 0)
+    ) {
+      return;
+    }
     const banner = document.createElement("div");
     banner.className = "pause-panel";
     const heading = document.createElement("div");
@@ -224,7 +232,11 @@ export class EndgameScene implements Scene {
     banner.appendChild(heading);
     const unlockLine = document.createElement("div");
     unlockLine.className = "pause-bonus-value";
-    unlockLine.textContent = `UNLOCKED: ${[...unlocks.newCards, ...unlocks.newSkills].join(", ")}`;
+    unlockLine.textContent = `UNLOCKED: ${[
+      ...unlocks.newCards,
+      ...unlocks.newSkills,
+      ...unlocks.newTrophies,
+    ].join(", ")}`;
     banner.appendChild(unlockLine);
     inner.appendChild(banner);
   }

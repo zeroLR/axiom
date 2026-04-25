@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createRng } from '../src/game/rng';
 import { STAGE_CONFIGS } from '../src/game/content/stages';
+import { enemiesForArchetype } from '../src/game/content/enemies';
 import {
   compileStageWaves,
   stageStrengthMul,
@@ -65,14 +66,15 @@ describe('STAGE_CONFIGS', () => {
     expect(STAGE_CONFIGS[4]!.pointMul).toBe(5);
   });
 
-  it('all non-boss wave spawns have either kind or enemies set', () => {
+  it('all non-boss wave spawns have kind, enemies, or archetype set', () => {
     for (const cfg of STAGE_CONFIGS) {
       for (const wave of cfg.waves) {
         if (wave.isBossWave) continue;
         for (const spawn of wave.spawns) {
           const hasKind = spawn.kind !== undefined;
           const hasEnemies = spawn.enemies !== undefined && spawn.enemies.length > 0;
-          expect(hasKind || hasEnemies).toBe(true);
+          const hasArchetype = spawn.archetype !== undefined;
+          expect(hasKind || hasEnemies || hasArchetype).toBe(true);
         }
       }
     }
@@ -83,28 +85,28 @@ describe('STAGE_CONFIGS', () => {
 
 describe('compileStageWaves', () => {
   it('compiles stage 1 to exactly 6 WaveSpecs', () => {
-    const waves = compileStageWaves(STAGE_CONFIGS[0]!);
+    const waves = compileStageWaves(STAGE_CONFIGS[0]!, 0);
     expect(waves).toHaveLength(6);
   });
 
   it('compiled wave specs have correct indices', () => {
-    const waves = compileStageWaves(STAGE_CONFIGS[0]!);
+    const waves = compileStageWaves(STAGE_CONFIGS[0]!, 0);
     waves.forEach((w, i) => {
       expect(w.index).toBe(i + 1);
     });
   });
 
   it('last wave of each stage is a boss wave (spawns boss)', () => {
-    for (const cfg of STAGE_CONFIGS) {
-      const waves = compileStageWaves(cfg);
+    for (let i = 0; i < STAGE_CONFIGS.length; i++) {
+      const waves = compileStageWaves(STAGE_CONFIGS[i]!, i);
       const last = waves[waves.length - 1]!;
       expect(last.groups.some(g => g.kind === 'boss')).toBe(true);
     }
   });
 
   it('non-boss waves have at least one spawn group', () => {
-    for (const cfg of STAGE_CONFIGS) {
-      const waves = compileStageWaves(cfg);
+    for (let i = 0; i < STAGE_CONFIGS.length; i++) {
+      const waves = compileStageWaves(STAGE_CONFIGS[i]!, i);
       waves.slice(0, -1).forEach(w => {
         expect(w.groups.length).toBeGreaterThan(0);
       });
@@ -112,7 +114,7 @@ describe('compileStageWaves', () => {
   });
 
   it('compiled stage 1 wave 1 matches original data', () => {
-    const waves = compileStageWaves(STAGE_CONFIGS[0]!);
+    const waves = compileStageWaves(STAGE_CONFIGS[0]!, 0);
     const w1 = waves[0]!;
     expect(w1.index).toBe(1);
     expect(w1.durationHint).toBe(20);
@@ -122,8 +124,8 @@ describe('compileStageWaves', () => {
   });
 
   it('compiled output is identical for deterministic configs (no rng needed)', () => {
-    const a = compileStageWaves(STAGE_CONFIGS[2]!);
-    const b = compileStageWaves(STAGE_CONFIGS[2]!);
+    const a = compileStageWaves(STAGE_CONFIGS[2]!, 2);
+    const b = compileStageWaves(STAGE_CONFIGS[2]!, 2);
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
 
@@ -139,7 +141,7 @@ describe('compileStageWaves', () => {
         spawns: [{ t: 1, kind: 'circle' as const, count: 2, batches: 3, interval: 5 }],
       }],
     };
-    const waves = compileStageWaves(config);
+    const waves = compileStageWaves(config, 0);
     expect(waves[0]!.groups).toHaveLength(3);
     expect(waves[0]!.groups[0]).toEqual({ t: 1, kind: 'circle', count: 2 });
     expect(waves[0]!.groups[1]).toEqual({ t: 6, kind: 'circle', count: 2 });
@@ -166,7 +168,7 @@ describe('compileStageWaves', () => {
         }],
       }],
     };
-    const waves = compileStageWaves(config, rng);
+    const waves = compileStageWaves(config, 0, rng);
     expect(waves[0]!.groups).toHaveLength(1);
     const kind = waves[0]!.groups[0]!.kind;
     expect(['circle', 'square']).toContain(kind);
@@ -188,7 +190,64 @@ describe('compileStageWaves', () => {
         }],
       }],
     };
-    expect(() => compileStageWaves(config)).toThrow();
+    expect(() => compileStageWaves(config, 0)).toThrow();
+  });
+
+  it('resolves archetype spawns to an eligible enemy when rng is provided', () => {
+    const rng = createRng(7);
+    const config = {
+      stageId: 'arch-test',
+      bossId: 'mirror' as const,
+      enemyStrengthMul: 1,
+      pointMul: 1,
+      waves: [{
+        index: 1,
+        durationHint: 20,
+        spawns: [{ t: 1, count: 2, archetype: 'swarmer' as const }],
+      }],
+    };
+    const waves = compileStageWaves(config, 1, rng);
+    expect(waves[0]!.groups).toHaveLength(1);
+    const kind = waves[0]!.groups[0]!.kind;
+    expect(enemiesForArchetype('swarmer', 1)).toContain(kind);
+  });
+
+  it('archetype resolution respects minStageIndex (excludes higher-stage enemies at low stageIndex)', () => {
+    expect(enemiesForArchetype('swarmer', 0)).toEqual(['circle', 'square']);
+    expect(enemiesForArchetype('swarmer', 1)).toContain('pentagon');
+    expect(enemiesForArchetype('spiral', 0)).toEqual([]);
+    expect(enemiesForArchetype('spiral', 3)).toEqual(['spiral', 'lance']);
+  });
+
+  it('throws when archetype spawn has no rng', () => {
+    const config = {
+      stageId: 'arch-err',
+      bossId: 'mirror' as const,
+      enemyStrengthMul: 1,
+      pointMul: 1,
+      waves: [{
+        index: 1,
+        durationHint: 20,
+        spawns: [{ t: 1, count: 1, archetype: 'swarmer' as const }],
+      }],
+    };
+    expect(() => compileStageWaves(config, 1)).toThrow(/archetype/i);
+  });
+
+  it('throws when archetype has no eligible enemies for stageIndex', () => {
+    const rng = createRng(1);
+    const config = {
+      stageId: 'arch-empty',
+      bossId: 'mirror' as const,
+      enemyStrengthMul: 1,
+      pointMul: 1,
+      waves: [{
+        index: 1,
+        durationHint: 20,
+        spawns: [{ t: 1, count: 1, archetype: 'spiral' as const }],
+      }],
+    };
+    expect(() => compileStageWaves(config, 0, rng)).toThrow(/no eligible enemies/i);
   });
 });
 

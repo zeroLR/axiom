@@ -10,6 +10,7 @@ import {
   defaultTalentState,
   defaultCharactersState,
   defaultFusionState,
+  defaultTrophyState,
   defaultSkillTreeState,
   defaultAchievementState,
   defaultShopUnlocks,
@@ -20,9 +21,12 @@ import {
   type ShopUnlocks,
   type GameSettings,
   type SaveData,
+  type TrophyId,
 } from "./data/types";
 import { emptyFragmentDetailRecord, FRAGMENT_META } from "./fragments";
 import { startingShapeToLineage } from "./classes";
+import { STAGE_CONFIGS } from "./content/stages";
+import { TROPHIES } from "./content/trophies";
 
 const DB_NAME = "axiom";
 const DB_VERSION = 2; // IndexedDB schema version (bump to trigger onupgradeneeded)
@@ -121,6 +125,33 @@ export async function loadProfile(): Promise<PlayerProfile> {
     };
   }
 
+  // ── Trophy migration ───────────────────────────────────────────────────────
+  // Saves predating SCHEMA_VERSION 5 have no `trophies` field; default to all
+  // locked / nothing equipped. Validate that any equipped trophy is also
+  // unlocked, otherwise reset equipped to null. Then reconcile against the
+  // stageId-keyed clear map: any trophy whose boss is already cleared gets
+  // retroactively unlocked. This catches players who pre-date the trophy
+  // system or who toggled `unlocksSkill` from class T2 nodes (§6.3).
+  const trophyBase = defaultTrophyState();
+  const rawTrophies = (raw as { trophies?: Partial<typeof trophyBase> }).trophies;
+  const unlockedTrophies = { ...trophyBase.unlocked, ...(rawTrophies?.unlocked ?? {}) };
+  const clearedStagesMap = migrateClearedStages(
+    raw.stats?.clearedStages,
+    raw.stats?.normalCleared,
+  );
+  for (const def of TROPHIES) {
+    if (unlockedTrophies[def.id]) continue;
+    const stageCfg = STAGE_CONFIGS.find((c) => c.bossId === def.fromBoss);
+    if (stageCfg && clearedStagesMap[stageCfg.stageId]) {
+      unlockedTrophies[def.id] = true;
+    }
+  }
+  let equippedTrophy: TrophyId | null = rawTrophies?.equipped ?? null;
+  if (equippedTrophy && !unlockedTrophies[equippedTrophy]) {
+    equippedTrophy = null;
+  }
+  const trophies = { unlocked: unlockedTrophies, equipped: equippedTrophy };
+
   return {
     ...base,
     ...raw,
@@ -140,6 +171,7 @@ export async function loadProfile(): Promise<PlayerProfile> {
     },
     characters,
     fusion: raw.fusion ?? defaultFusionState(),
+    trophies,
     stats: {
       ...base.stats,
       ...raw.stats,
@@ -149,8 +181,37 @@ export async function loadProfile(): Promise<PlayerProfile> {
       normalCleared: base.stats.normalCleared.map(
         (b, i) => (raw.stats?.normalCleared?.[i] ?? b),
       ),
+      clearedStages: clearedStagesMap,
     },
   };
+}
+
+/**
+ * Build the stageId-keyed clear map. Authoritative source is `clearedStages`
+ * if present (SCHEMA_VERSION ≥ 6); otherwise project the legacy positional
+ * `normalCleared[]` onto STAGE_CONFIGS in declaration order. Unknown stageIds
+ * carried in old saves are dropped silently.
+ *
+ * Exported for unit-test access; production callers should go through
+ * `loadProfile`.
+ */
+export function migrateClearedStages(
+  rawCleared: Record<string, boolean> | undefined,
+  legacyNormalCleared: boolean[] | undefined,
+): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  if (rawCleared && typeof rawCleared === "object") {
+    const validIds = new Set(STAGE_CONFIGS.map((c) => c.stageId));
+    for (const [stageId, cleared] of Object.entries(rawCleared)) {
+      if (validIds.has(stageId) && cleared === true) out[stageId] = true;
+    }
+  }
+  if (Array.isArray(legacyNormalCleared)) {
+    STAGE_CONFIGS.forEach((cfg, idx) => {
+      if (legacyNormalCleared[idx] === true) out[cfg.stageId] = true;
+    });
+  }
+  return out;
 }
 export async function saveProfile(p: PlayerProfile): Promise<void> {
   return putStore("profile", p);

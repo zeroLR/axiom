@@ -8,6 +8,7 @@
 import type { Rng } from './rng';
 import type { EnemyKind } from './world';
 import { STAGE_CONFIGS, type StageConfig, type SpawnTemplate, type WaveTemplate } from './content/stages';
+import { enemiesForArchetype } from './content/enemies';
 import type { WaveSpec, SpawnGroup } from './waves';
 import { weightedPick } from './weightedSampler';
 
@@ -17,8 +18,10 @@ import { weightedPick } from './weightedSampler';
  * Resolve the enemy kind for a spawn template.
  * - `kind` → fixed kind, returned directly.
  * - `enemies` → randomly sampled proportional to weight (requires `rng`).
+ * - `archetype` → uniformly sampled from all enemies tagged with the
+ *   archetype that are eligible for `stageIndex` (requires `rng`).
  */
-function resolveKind(spawn: SpawnTemplate, rng?: Rng): EnemyKind {
+function resolveKind(spawn: SpawnTemplate, stageIndex: number, rng?: Rng): EnemyKind {
   if (spawn.kind) return spawn.kind;
   if (spawn.enemies && spawn.enemies.length > 0) {
     if (!rng) {
@@ -31,11 +34,28 @@ function resolveKind(spawn: SpawnTemplate, rng?: Rng): EnemyKind {
       rng,
     );
   }
-  throw new Error('stageCompiler: SpawnTemplate must have `kind` or `enemies`');
+  if (spawn.archetype) {
+    if (!rng) {
+      throw new Error(
+        'stageCompiler: a SpawnTemplate uses `archetype` but no Rng was supplied to compileStageWaves()',
+      );
+    }
+    const pool = enemiesForArchetype(spawn.archetype, stageIndex);
+    if (pool.length === 0) {
+      throw new Error(
+        `stageCompiler: archetype "${spawn.archetype}" has no eligible enemies at stageIndex ${stageIndex}`,
+      );
+    }
+    return weightedPick(
+      pool.map(kind => ({ item: kind, weight: 1 })),
+      rng,
+    );
+  }
+  throw new Error('stageCompiler: SpawnTemplate must have `kind`, `enemies`, or `archetype`');
 }
 
 /** Compile one WaveTemplate into a runtime WaveSpec. */
-function compileWave(wave: WaveTemplate, rng?: Rng): WaveSpec {
+function compileWave(wave: WaveTemplate, stageIndex: number, rng?: Rng): WaveSpec {
   if (wave.isBossWave) {
     return {
       index: wave.index,
@@ -48,8 +68,8 @@ function compileWave(wave: WaveTemplate, rng?: Rng): WaveSpec {
   for (const spawn of wave.spawns) {
     const batches = spawn.batches ?? 1;
     const interval = spawn.interval ?? 0;
-    const kind = resolveKind(spawn, rng);
     for (let b = 0; b < batches; b++) {
+      const kind = resolveKind(spawn, stageIndex, rng);
       groups.push({ t: spawn.t + b * interval, kind, count: spawn.count });
     }
   }
@@ -63,12 +83,20 @@ function compileWave(wave: WaveTemplate, rng?: Rng): WaveSpec {
  * Compile a `StageConfig` into an array of `WaveSpec`s ready for the
  * `updateWave` runtime.
  *
- * Pass `rng` only when the config contains waves with weighted enemy tables
- * (`enemies` field).  For deterministic configs (all `kind` fields fixed)
- * `rng` can be omitted.
+ * `stageIndex` is the 0-based index into `STAGE_CONFIGS`; it gates the
+ * archetype-resolution path so that early stages do not draw from
+ * higher-stage enemy pools.
+ *
+ * Pass `rng` when the config contains weighted (`enemies`) or archetype-
+ * pooled (`archetype`) spawn groups. For deterministic configs (only fixed
+ * `kind` fields) `rng` may be omitted.
  */
-export function compileStageWaves(config: StageConfig, rng?: Rng): readonly WaveSpec[] {
-  return config.waves.map(wave => compileWave(wave, rng));
+export function compileStageWaves(
+  config: StageConfig,
+  stageIndex: number,
+  rng?: Rng,
+): readonly WaveSpec[] {
+  return config.waves.map(wave => compileWave(wave, stageIndex, rng));
 }
 
 /**

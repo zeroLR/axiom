@@ -9,7 +9,9 @@
 //   4. Run `npm test` and `npm run build`.
 
 import type { EnemyKind } from '../world';
+import type { EnemyArchetype } from './enemies';
 import type { BossId } from '../bosses/types';
+import type { ActId } from './acts';
 
 // ── Schema ───────────────────────────────────────────────────────────────────
 
@@ -23,8 +25,11 @@ export interface EnemyWeight {
 /**
  * A single spawn group within a wave template.
  *
- * Either `kind` (fixed enemy) or `enemies` (weighted random selection)
- * must be set — not both.
+ * Exactly one of `kind`, `enemies`, or `archetype` must be set.
+ *  - `kind`: fixed enemy.
+ *  - `enemies`: weighted random selection from an explicit table.
+ *  - `archetype`: weighted random selection over all enemies tagged with
+ *    `archetype` whose `minStageIndex` is reached by the current stage.
  *
  * Optional `batches` + `interval` repeat the group N times with
  * `interval` seconds between each batch, starting at `t`.
@@ -34,10 +39,16 @@ export interface SpawnTemplate {
   t: number;
   /** Number of enemies to spawn per batch. */
   count: number;
-  /** Fixed enemy kind. Mutually exclusive with `enemies`. */
+  /** Fixed enemy kind. Mutually exclusive with `enemies`/`archetype`. */
   kind?: EnemyKind;
-  /** Weighted enemy table. Mutually exclusive with `kind`. */
+  /** Weighted enemy table. Mutually exclusive with `kind`/`archetype`. */
   enemies?: EnemyWeight[];
+  /**
+   * Sample uniformly from all enemies whose `archetypes` include this tag
+   * and whose `minStageIndex <= stageIndex`. Mutually exclusive with the
+   * explicit forms.
+   */
+  archetype?: EnemyArchetype;
   /** Repeat this spawn group N times (default: 1). */
   batches?: number;
   /** Seconds between each batch when `batches` > 1. */
@@ -84,6 +95,12 @@ export interface StageConfig {
   /** Boss fought in this stage's final wave. */
   bossId: BossId;
   /**
+   * Optional Act/Chapter membership. When set, the stage participates in the
+   * Act-based unlock graph defined in `content/acts.ts`. Stages without an
+   * `actId` fall back to the legacy linear gate.
+   */
+  actId?: ActId;
+  /**
    * Multiplier applied to enemy HP, speed, and contact/weapon damage for
    * all regular enemies in this stage (bosses are scaled by `BossDef`).
    */
@@ -107,6 +124,7 @@ export interface StageConfig {
 const STAGE_1: StageConfig = {
   stageId: 'stage1',
   bossId: 'orthogon',
+  actId: 'form',
   enemyStrengthMul: 1,
   pointMul: 1,
   waves: [
@@ -150,6 +168,7 @@ const STAGE_1: StageConfig = {
 const STAGE_2: StageConfig = {
   stageId: 'stage2',
   bossId: 'jets',
+  actId: 'form',
   enemyStrengthMul: 1.5,
   pointMul: 2,
   waves: [
@@ -203,6 +222,7 @@ const STAGE_2: StageConfig = {
 const STAGE_3: StageConfig = {
   stageId: 'stage3',
   bossId: 'mirror',
+  actId: 'form',
   enemyStrengthMul: 2.0,
   pointMul: 3,
   waves: [
@@ -269,6 +289,7 @@ const STAGE_3: StageConfig = {
 const STAGE_4: StageConfig = {
   stageId: 'stage4',
   bossId: 'lattice',
+  actId: 'decay',
   enemyStrengthMul: 3.0,
   pointMul: 4,
   waves: [
@@ -352,6 +373,7 @@ const STAGE_4: StageConfig = {
 const STAGE_5: StageConfig = {
   stageId: 'stage5',
   bossId: 'rift',
+  actId: 'decay',
   enemyStrengthMul: 4.0,
   pointMul: 5,
   waves: [

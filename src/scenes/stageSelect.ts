@@ -2,12 +2,54 @@ import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import { STAGE_THEMES } from "../game/stageThemes";
 import { STAGE_WAVES } from "../game/stageWaves";
+import { STAGE_CONFIGS } from "../game/content/stages";
+import { ACTS, type ActDef } from "../game/content/acts";
+import {
+  isActFullyCleared,
+  isActUnlocked,
+  isStageCleared,
+  isStageUnlocked,
+} from "../game/unlocks";
 import { bossForStage } from "../game/bosses/registry";
 import type { PlayerStats } from "../game/data/types";
-import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, createBodyScroll, createCardList, createBackButton } from "./ui";
+import {
+  openOverlay,
+  closeOverlay,
+  createOverlayTitle,
+  createOverlaySub,
+  createBodyScroll,
+  createCardList,
+  createBackButton,
+} from "./ui";
 import { iconCheck, iconChevronRight, iconLock, iconSpan } from "../icons";
 
 // ── Stage select (Main Story) ───────────────────────────────────────────────
+//
+// Stages are grouped into Acts (FORM / DECAY). Within an Act the trial stages
+// are clearable in any order; the gate stage (if any) opens once every trial
+// is cleared. Acts unlock linearly via `unlockAfterAct` so global progression
+// still moves forward.
+
+interface StageBucketEntry {
+  stageId: string;
+  stageIndex: number;
+  role: "trial" | "gate";
+}
+
+function bucketStagesForAct(act: ActDef): StageBucketEntry[] {
+  const out: StageBucketEntry[] = [];
+  for (const id of act.trialStageIds) {
+    const idx = STAGE_CONFIGS.findIndex((c) => c.stageId === id);
+    if (idx >= 0) out.push({ stageId: id, stageIndex: idx, role: "trial" });
+  }
+  if (act.gateStageId) {
+    const idx = STAGE_CONFIGS.findIndex((c) => c.stageId === act.gateStageId);
+    if (idx >= 0) {
+      out.push({ stageId: act.gateStageId, stageIndex: idx, role: "gate" });
+    }
+  }
+  return out;
+}
 
 export class StageSelectScene implements Scene {
   readonly root: Container;
@@ -39,96 +81,146 @@ export class StageSelectScene implements Scene {
     const body = createBodyScroll();
     content.appendChild(body);
 
-    const list = createCardList();
-
     const stats = this.getStats();
 
-    // Find the current target — first un-cleared, un-locked stage.
-    const firstUnclearedIdx = STAGE_THEMES.findIndex(
-      (_, i) => !(stats.normalCleared?.[i] === true),
-    );
+    for (const act of ACTS) {
+      body.appendChild(this.renderActSection(act, stats));
+    }
 
-    STAGE_THEMES.forEach((theme, i) => {
-      // Linear unlock: Stage N+1 requires Stage N cleared.
-      const locked = i > 0 && !(stats.normalCleared?.[i - 1] === true);
-      const cleared = stats.normalCleared?.[i] === true;
-      const isCurrent = !locked && !cleared && i === firstUnclearedIdx;
-      const bossDef = bossForStage(i);
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "card-btn stage-card";
-      if (cleared) btn.classList.add("stage-card--cleared");
-      if (isCurrent) btn.classList.add("stage-card--current");
-      if (locked) {
-        btn.disabled = true;
-        btn.classList.add("stage-card--locked");
+    // Stages without an `actId` (none today, but safe for future test stages)
+    // are listed under a fallback "OTHER" bucket so they remain reachable.
+    const orphans = STAGE_CONFIGS
+      .map((cfg, idx) => ({ cfg, idx }))
+      .filter(({ cfg }) => !cfg.actId);
+    if (orphans.length > 0) {
+      const section = document.createElement("section");
+      section.className = "menu-section";
+      const title = document.createElement("div");
+      title.className = "menu-section-title";
+      title.textContent = "other";
+      section.appendChild(title);
+      const list = createCardList();
+      for (const { cfg, idx } of orphans) {
+        list.appendChild(this.renderStageCard(cfg.stageId, idx, "trial", stats));
       }
-
-      const glyph = document.createElement("span");
-      glyph.className = "card-glyph stage-glyph";
-      glyph.textContent = locked ? "?" : `${i + 1}`;
-      btn.appendChild(glyph);
-
-      const bodyEl = document.createElement("span");
-      bodyEl.className = "card-body";
-      const name = document.createElement("span");
-      name.className = "card-name stage-name";
-      name.textContent = locked
-        ? `STAGE ${i + 1} — ???`
-        : `STAGE ${i + 1} — ${theme.domainName}`;
-      bodyEl.appendChild(name);
-
-      if (locked) {
-        const desc = document.createElement("span");
-        desc.className = "card-text";
-        desc.textContent = "???";
-        bodyEl.appendChild(desc);
-      } else {
-        const bossLine = document.createElement("span");
-        bossLine.className = "card-text stage-boss";
-        bossLine.textContent = `BOSS · ${bossDef.displayName.toUpperCase()}`;
-        bodyEl.appendChild(bossLine);
-
-        const theorem = document.createElement("span");
-        theorem.className = "card-text stage-theorem";
-        theorem.textContent = theme.theoremLine;
-        bodyEl.appendChild(theorem);
-
-        const chip = document.createElement("span");
-        chip.className = "stage-wave-chip";
-        chip.textContent = `${STAGE_WAVES[i]?.length ?? 0} waves`;
-        bodyEl.appendChild(chip);
-      }
-      btn.appendChild(bodyEl);
-
-      // Status indicator: lock / check / chevron + theme color bar
-      const status = document.createElement("span");
-      status.className = "stage-status";
-      const statusIcon = locked
-        ? iconLock
-        : cleared
-        ? iconCheck
-        : isCurrent
-        ? iconChevronRight
-        : null;
-      if (statusIcon) status.appendChild(iconSpan(statusIcon));
-      const bar = document.createElement("span");
-      bar.className = "stage-status-bar";
-      bar.style.background = locked
-        ? "var(--muted)"
-        : `#${theme.background.toString(16).padStart(6, "0")}`;
-      status.appendChild(bar);
-      btn.appendChild(status);
-
-      if (!locked) {
-        btn.addEventListener("click", () => this.onSelect(i));
-      }
-      list.appendChild(btn);
-    });
-    body.appendChild(list);
+      section.appendChild(list);
+      body.appendChild(section);
+    }
 
     inner.appendChild(createBackButton(() => this.onBack()));
+  }
+
+  private renderActSection(act: ActDef, stats: PlayerStats): HTMLElement {
+    const section = document.createElement("section");
+    section.className = "menu-section";
+
+    const header = document.createElement("div");
+    header.className = "menu-section-title";
+    const actUnlocked = isActUnlocked(act.id, stats);
+    const actCleared = isActFullyCleared(act, stats);
+    header.textContent = actUnlocked ? `${act.name.toLowerCase()} · ${act.motto}` : `??? · locked`;
+    if (actCleared) header.textContent += "  ✓";
+    section.appendChild(header);
+
+    const list = createCardList();
+    if (!actUnlocked) {
+      const hint = document.createElement("div");
+      hint.className = "card-text";
+      hint.textContent = `Clear Act ${act.unlockAfterAct?.toUpperCase()} to reveal.`;
+      hint.style.padding = "8px 4px";
+      section.appendChild(hint);
+      return section;
+    }
+    for (const entry of bucketStagesForAct(act)) {
+      list.appendChild(
+        this.renderStageCard(entry.stageId, entry.stageIndex, entry.role, stats),
+      );
+    }
+    section.appendChild(list);
+    return section;
+  }
+
+  private renderStageCard(
+    stageId: string,
+    stageIndex: number,
+    role: "trial" | "gate",
+    stats: PlayerStats,
+  ): HTMLElement {
+    const theme = STAGE_THEMES[stageIndex]!;
+    const bossDef = bossForStage(stageIndex);
+    const unlocked = isStageUnlocked(stageId, stats);
+    const cleared = isStageCleared(stageId, stats);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "card-btn stage-card";
+    if (cleared) btn.classList.add("stage-card--cleared");
+    if (!unlocked) {
+      btn.disabled = true;
+      btn.classList.add("stage-card--locked");
+    }
+    if (role === "gate") btn.classList.add("stage-card--gate");
+
+    const glyph = document.createElement("span");
+    glyph.className = "card-glyph stage-glyph";
+    glyph.textContent = unlocked ? `${stageIndex + 1}` : "?";
+    btn.appendChild(glyph);
+
+    const bodyEl = document.createElement("span");
+    bodyEl.className = "card-body";
+    const name = document.createElement("span");
+    name.className = "card-name stage-name";
+    const roleTag = role === "gate" ? " · GATE" : "";
+    name.textContent = unlocked
+      ? `STAGE ${stageIndex + 1} — ${theme.domainName}${roleTag}`
+      : `STAGE ${stageIndex + 1} — ???${roleTag}`;
+    bodyEl.appendChild(name);
+
+    if (!unlocked) {
+      const desc = document.createElement("span");
+      desc.className = "card-text";
+      desc.textContent = role === "gate"
+        ? "Clear every trial in this Act to open the gate."
+        : "???";
+      bodyEl.appendChild(desc);
+    } else {
+      const bossLine = document.createElement("span");
+      bossLine.className = "card-text stage-boss";
+      bossLine.textContent = `BOSS · ${bossDef.displayName.toUpperCase()}`;
+      bodyEl.appendChild(bossLine);
+
+      const theorem = document.createElement("span");
+      theorem.className = "card-text stage-theorem";
+      theorem.textContent = theme.theoremLine;
+      bodyEl.appendChild(theorem);
+
+      const chip = document.createElement("span");
+      chip.className = "stage-wave-chip";
+      chip.textContent = `${STAGE_WAVES[stageIndex]?.length ?? 0} waves`;
+      bodyEl.appendChild(chip);
+    }
+    btn.appendChild(bodyEl);
+
+    const status = document.createElement("span");
+    status.className = "stage-status";
+    const statusIcon = !unlocked
+      ? iconLock
+      : cleared
+      ? iconCheck
+      : iconChevronRight;
+    status.appendChild(iconSpan(statusIcon));
+    const bar = document.createElement("span");
+    bar.className = "stage-status-bar";
+    bar.style.background = !unlocked
+      ? "var(--muted)"
+      : `#${theme.background.toString(16).padStart(6, "0")}`;
+    status.appendChild(bar);
+    btn.appendChild(status);
+
+    if (unlocked) {
+      btn.addEventListener("click", () => this.onSelect(stageIndex));
+    }
+    return btn;
   }
 
   exit(): void {
