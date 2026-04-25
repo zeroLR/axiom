@@ -130,10 +130,19 @@ function compileBeat(beat: StageBeat, indexHint: number): WaveSpec {
     }
     case 'hazardWave': {
       const duration = beat.duration ?? 6;
+      const groups: SpawnGroup[] = [];
+      for (const spawn of (beat.spawns ?? [])) {
+        const batches = spawn.batches ?? 1;
+        const interval = spawn.interval ?? 0;
+        for (let b = 0; b < batches; b++) {
+          const kind = resolveKind(spawn, 0);
+          groups.push({ t: spawn.t + b * interval, kind, count: spawn.count });
+        }
+      }
       return {
         index: indexHint,
         durationHint: duration,
-        groups: [],
+        groups,
         minHoldSec: duration,
         beatMeta: {
           kind: 'hazardWave',
@@ -145,10 +154,19 @@ function compileBeat(beat: StageBeat, indexHint: number): WaveSpec {
     }
     case 'puzzle': {
       const duration = beat.duration ?? 6;
+      const groups: SpawnGroup[] = [];
+      for (const spawn of (beat.spawns ?? [])) {
+        const batches = spawn.batches ?? 1;
+        const interval = spawn.interval ?? 0;
+        for (let b = 0; b < batches; b++) {
+          const kind = resolveKind(spawn, 0);
+          groups.push({ t: spawn.t + b * interval, kind, count: spawn.count });
+        }
+      }
       return {
         index: indexHint,
         durationHint: duration,
-        groups: [],
+        groups,
         minHoldSec: duration,
         beatMeta: { kind: 'puzzle', afterWave: beat.afterWave, duration },
       };

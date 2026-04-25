@@ -7,7 +7,7 @@ import type { Card } from '../cards';
 import type { Components, WeaponState } from '../world';
 
 /** Unique identifier for each boss in the main story. */
-export type BossId = 'orthogon' | 'jets' | 'mirror' | 'lattice' | 'rift';
+export type BossId = 'orthogon' | 'jets' | 'mirror' | 'lattice' | 'rift' | 'nexus';
 
 /** Combat stats produced by a boss definition. */
 export interface BossSpec {
@@ -16,7 +16,7 @@ export interface BossSpec {
   maxSpeed: number;
   weapon: WeaponState;
   /** Weapon pattern used by `bossWeapon.ts` to dispatch AI. */
-  patternKind: 'standard' | 'orthogon' | 'jets' | 'lattice' | 'rift';
+  patternKind: 'standard' | 'orthogon' | 'jets' | 'lattice' | 'rift' | 'nexus';
   // ── Mirror-specific optional abilities ──────────────────────────────────
   mirrorShieldMax?: number;
   mirrorShieldRegenPeriod?: number;

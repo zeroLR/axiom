@@ -28,4 +28,5 @@ export const ALL_ENEMY_KINDS = [
   'mirror',
   'lattice',
   'rift',
+  'nexus',
 ] as const satisfies readonly EnemyKind[];

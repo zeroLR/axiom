@@ -74,7 +74,19 @@ export type BossVerb =
       playW: number;
       playH: number;
     }
-  | { kind: "ifEnraged"; then: BossVerb };
+  | { kind: "ifEnraged"; then: BossVerb }
+  | {
+      /** Freeze up to `count` non-boss enemies for `duration` seconds. */
+      kind: "freezeEnemies";
+      count: number;
+      duration: number;
+    }
+  | {
+      /** Teleport the avatar to the opposite side of the play field. */
+      kind: "forceDash";
+      playW: number;
+      playH: number;
+    };
 
 export interface BossPhase {
   /** Instant actions run when the boss enters this phase. */
@@ -103,6 +115,8 @@ export interface BossScriptCtx {
   fireAimedFan: (world: World, c: Components, baseAngle: number, rng: Rng) => void;
   /** Boss `maxHp` (used for the enrage threshold). */
   maxHp: number;
+  /** Avatar entity id — required by `forceDash`; optional for backwards compat. */
+  avatarId?: number;
 }
 
 // ── Verb runner ────────────────────────────────────────────────────────────
@@ -192,6 +206,38 @@ function runVerb(verb: BossVerb, ctx: BossScriptCtx): void {
     }
     case "ifEnraged": {
       if (enraged) runVerb(verb.then, ctx);
+      return;
+    }
+    case "freezeEnemies": {
+      // Collect up to `count` live non-boss enemies sorted by ascending HP
+      // (freeze the weakest so they can't clean up the player while evading).
+      const targets: { id: number; hp: number }[] = [];
+      for (const [id, fc] of world.with("enemy", "hp")) {
+        if (fc.enemy!.kind === "boss") continue;
+        if ((fc.hp?.value ?? 0) <= 0) continue;
+        targets.push({ id, hp: fc.hp!.value });
+      }
+      targets.sort((a, b) => a.hp - b.hp);
+      for (let i = 0; i < Math.min(verb.count, targets.length); i++) {
+        const fc = world.get(targets[i]!.id);
+        if (fc?.enemy) fc.enemy.frozenTimer = verb.duration;
+      }
+      return;
+    }
+    case "forceDash": {
+      // Teleport avatar to the side of the field opposite the boss.
+      const bx = c.pos!.x;
+      const by = c.pos!.y;
+      const cx = verb.playW / 2;
+      const cy = verb.playH / 2;
+      for (const [, ac] of world.with("avatar", "pos")) {
+        // Mirror through the field centre, clamped 15% from each wall.
+        const margin = 0.15;
+        const nx = cx + (cx - bx);
+        const ny = cy + (cy - by);
+        ac.pos!.x = Math.max(verb.playW * margin, Math.min(verb.playW * (1 - margin), nx));
+        ac.pos!.y = Math.max(verb.playH * margin, Math.min(verb.playH * (1 - margin), ny));
+      }
       return;
     }
   }

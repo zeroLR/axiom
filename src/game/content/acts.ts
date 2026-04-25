@@ -51,6 +51,7 @@ export const ACTS: readonly ActDef[] = [
     name: "DECAY",
     motto: "the lattice fails",
     trialStageIds: ["stage4", "stage5"],
+    gateStageId: "stage6",
     unlockAfterAct: "form",
   },
 ];

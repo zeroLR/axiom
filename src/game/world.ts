@@ -21,7 +21,8 @@ export type EnemyKind =
   | 'jets'
   | 'mirror'
   | 'lattice'
-  | 'rift';
+  | 'rift'
+  | 'nexus';
 
 export interface Pos {
   x: number;
@@ -109,6 +110,8 @@ export interface Enemy {
   slow?: { pct: number; remaining: number };
   /** Marked as elite at spawn time. Elite kills yield +1 draft token. */
   isElite?: boolean;
+  /** Seconds of freeze remaining; movement + shooting blocked while > 0. */
+  frozenTimer?: number;
   /**
    * Boss telegraph aim snapshotted at the start of the lead window.
    * Locked so the player can dodge from the warning they see, not from
@@ -118,7 +121,7 @@ export interface Enemy {
 
   // ── Boss AI state (set by BossDef.install) ──────────────────────────────
   /** Weapon pattern kind for dispatch in `bossWeapon.ts`. */
-  bossPattern?: 'standard' | 'orthogon' | 'jets' | 'lattice' | 'rift';
+  bossPattern?: 'standard' | 'orthogon' | 'jets' | 'lattice' | 'rift' | 'nexus';
   /** Current boss AI phase/move index, cycling through the pattern sequence. */
   bossPhase?: number;
   /** General-purpose boss AI timer (seconds remaining for current action). */

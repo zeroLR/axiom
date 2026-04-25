@@ -2382,6 +2382,27 @@ body[data-scene="menu"] #version-tag {
   border-radius: 4px;
 }
 
+/* ── StageBeat hazard persistent HUD badge ───────────────────────────────── */
+/* Shows "HAZARD · <id>" as a small badge at the top of the play field for
+   the entire duration of the hazard wave so the player can read the active
+   constraint without relying on the fleeting title-card. */
+body[data-hazard] #app::before {
+  content: "HAZARD · " attr(data-hazard);
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent, #e0e0e0);
+  opacity: 0.70;
+  z-index: 20;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* ── StageBeat hazard / puzzle visual hooks ──────────────────────────────── */
 
 /* Fog: dim the play surface and pulse a soft inner shadow so the field
@@ -2416,6 +2437,75 @@ body[data-hazard="axis-lock"] #app::after {
     repeating-linear-gradient(0deg, color-mix(in srgb, var(--accent) 24%, transparent) 0 1px, transparent 1px 56px),
     repeating-linear-gradient(90deg, color-mix(in srgb, var(--accent) 24%, transparent) 0 1px, transparent 1px 56px);
   z-index: 5;
+}
+
+/* Slow: blue-tinted screen-edge vignette signals reduced speed. */
+body[data-hazard="slow"] #app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    transparent 40%,
+    rgba(30, 90, 200, 0.30) 80%,
+    rgba(10, 40, 140, 0.55) 100%);
+  animation: hazard-slow-pulse 1.8s ease-in-out infinite alternate;
+  z-index: 5;
+}
+
+@keyframes hazard-slow-pulse {
+  from { opacity: 0.75; }
+  to   { opacity: 1; }
+}
+
+/* Mirror: horizontal flip indicator — paired edge bars. */
+body[data-hazard="mirror"] #app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 28%, transparent) 0 3px, transparent 3px),
+    linear-gradient(270deg, color-mix(in srgb, var(--accent) 28%, transparent) 0 3px, transparent 3px);
+  z-index: 5;
+}
+
+/* Pull-toward: radial gradient pulling the eye to the centre. */
+body[data-hazard="pull-toward"] #app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    rgba(180, 60, 255, 0.18) 0%,
+    rgba(80, 0, 160, 0.10) 50%,
+    transparent 75%);
+  animation: hazard-pull-pulse 2.2s ease-in-out infinite alternate;
+  z-index: 5;
+}
+
+@keyframes hazard-pull-pulse {
+  from { opacity: 0.7; }
+  to   { opacity: 1; }
+}
+
+/* Static Field: amber screen-edge vignette for Stage 6. */
+body[data-hazard="static-field"] #app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    transparent 35%,
+    rgba(200, 140, 20, 0.20) 70%,
+    rgba(160, 90, 0, 0.50) 100%);
+  animation: hazard-static-pulse 1.4s ease-in-out infinite alternate;
+  z-index: 5;
+}
+
+@keyframes hazard-static-pulse {
+  from { opacity: 0.80; }
+  to   { opacity: 1; }
 }
 
 /* Puzzle: mute the weapon-HUD tint so the player reads the no-fire window. */

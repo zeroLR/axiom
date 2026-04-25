@@ -144,6 +144,12 @@ export interface StageBeat {
   duration?: number;
   /** Hazard registry id (used by `hazardWave`). */
   hazardId?: string;
+  /**
+   * Optional enemy spawns for `hazardWave` / `puzzle` beats. When present
+   * the compiler injects these groups alongside the hazard / weapon-mute so
+   * the player faces real pressure while the effect is active.
+   */
+  spawns?: readonly SpawnTemplate[];
 }
 
 // ── Stage data ───────────────────────────────────────────────────────────────
@@ -322,9 +328,13 @@ const STAGE_3: StageConfig = {
     { index: 8, durationHint: 60, isBossWave: true, spawns: [] },
   ],
   beats: [
-    // Fog beat sets the stage for Mirror's adaptive fight — vision narrows
-    // before the boss reads the player's deck.
-    { kind: 'hazardWave', afterWave: 5, hazardId: 'fog', duration: 6 },
+    // Fog hazard wave — vision narrows; enemies keep pressure on so the
+    // constraint is felt under fire rather than in an empty arena.
+    { kind: 'hazardWave', afterWave: 5, hazardId: 'fog', duration: 6,
+      spawns: [
+        { t: 1.0, kind: 'cross',    count: 2 },
+        { t: 3.5, kind: 'crescent', count: 2 },
+      ] },
   ],
 };
 
@@ -411,9 +421,13 @@ const STAGE_4: StageConfig = {
     { index: 10, durationHint: 60, isBossWave: true, spawns: [] },
   ],
   beats: [
-    // Axis-Lock literalises the GRID domain — movement collapses to one
-    // cardinal at a time, foreshadowing Lattice's axis volleys.
-    { kind: 'hazardWave', afterWave: 6, hazardId: 'axis-lock', duration: 6 },
+    // Axis-Lock hazard wave — movement collapses to one cardinal axis;
+    // prisms and spirals force the player to exploit the constraint.
+    { kind: 'hazardWave', afterWave: 6, hazardId: 'axis-lock', duration: 6,
+      spawns: [
+        { t: 0.5, kind: 'prism',  count: 2 },
+        { t: 3.0, kind: 'spiral', count: 2 },
+      ] },
   ],
 };
 
@@ -524,9 +538,137 @@ const STAGE_5: StageConfig = {
     { index: 12, durationHint: 60, isBossWave: true, spawns: [] },
   ],
   beats: [
-    // Pre-boss puzzle: the void mutes the player's weapons for 4 seconds —
-    // pure dodge endurance before facing Rift.
-    { kind: 'puzzle', afterWave: 8, duration: 4 },
+    // Pre-boss puzzle: weapons muted + enemies spawn — pure dodge endurance
+    // before facing Rift.
+    { kind: 'puzzle', afterWave: 8, duration: 4,
+      spawns: [
+        { t: 0.5, kind: 'shade',  count: 2 },
+        { t: 2.5, kind: 'spiral', count: 2 },
+      ] },
+  ],
+};
+
+/** Stage 6 — "Null Grid" · NEXUS · Boss: Nexus (strength ×5.0) — Act II gate */
+const STAGE_6: StageConfig = {
+  stageId: 'stage6',
+  bossId: 'nexus',
+  actId: 'decay',
+  enemyStrengthMul: 5.0,
+  pointMul: 7,
+  waves: [
+    { index: 1,  durationHint: 22, spawns: [
+      { t: 0.5, kind: 'octo',   count: 1 },
+      { t: 6,   kind: 'prism',  count: 2 },
+      { t: 14,  kind: 'shade',  count: 2 },
+    ] },
+    { index: 2,  durationHint: 24, spawns: [
+      { t: 0.5, kind: 'shade',    count: 2 },
+      { t: 7,   kind: 'cross',    count: 2 },
+      { t: 15,  kind: 'crescent', count: 2 },
+    ] },
+    { index: 3,  durationHint: 26, spawns: [
+      { t: 0.5, kind: 'octo',   count: 2 },
+      { t: 6,   kind: 'shade',  count: 2 },
+      { t: 14,  kind: 'prism',  count: 3 },
+      { t: 20,  kind: 'spiral', count: 2 },
+    ] },
+    { index: 4,  durationHint: 28, spawns: [
+      { t: 0.5, kind: 'octo',     count: 2 },
+      { t: 0.5, kind: 'cross',    count: 2 },
+      { t: 7,   kind: 'shade',    count: 3 },
+      { t: 7,   kind: 'crescent', count: 2 },
+      { t: 14,  kind: 'prism',    count: 3 },
+      { t: 22,  kind: 'octo',     count: 2 },
+    ] },
+    { index: 5,  durationHint: 30, spawns: [
+      { t: 0.5, kind: 'prism',    count: 3 },
+      { t: 6,   kind: 'shade',    count: 3 },
+      { t: 6,   kind: 'octo',     count: 2 },
+      { t: 14,  kind: 'cross',    count: 3 },
+      { t: 14,  kind: 'crescent', count: 2 },
+      { t: 22,  kind: 'shade',    count: 3 },
+    ] },
+    { index: 6,  durationHint: 32, spawns: [
+      { t: 0.5, kind: 'octo',     count: 3 },
+      { t: 0.5, kind: 'shade',    count: 3 },
+      { t: 6,   kind: 'cross',    count: 3 },
+      { t: 6,   kind: 'crescent', count: 3 },
+      { t: 14,  kind: 'prism',    count: 3 },
+      { t: 14,  kind: 'octo',     count: 2 },
+      { t: 22,  kind: 'shade',    count: 3 },
+      { t: 28,  kind: 'spiral',   count: 2 },
+    ] },
+    { index: 7,  durationHint: 36, spawns: [
+      { t: 0.5, kind: 'shade',    count: 4 },
+      { t: 0.5, kind: 'cross',    count: 3 },
+      { t: 6,   kind: 'octo',     count: 3 },
+      { t: 6,   kind: 'prism',    count: 3 },
+      { t: 14,  kind: 'crescent', count: 3 },
+      { t: 14,  kind: 'shade',    count: 3 },
+      { t: 22,  kind: 'octo',     count: 2 },
+      { t: 22,  kind: 'cross',    count: 3 },
+      { t: 30,  kind: 'prism',    count: 3 },
+    ] },
+    { index: 8,  durationHint: 38, spawns: [
+      { t: 0.5, kind: 'octo',     count: 4 },
+      { t: 0.5, kind: 'shade',    count: 4 },
+      { t: 6,   kind: 'cross',    count: 3 },
+      { t: 6,   kind: 'prism',    count: 3 },
+      { t: 14,  kind: 'crescent', count: 4 },
+      { t: 14,  kind: 'octo',     count: 3 },
+      { t: 22,  kind: 'shade',    count: 4 },
+      { t: 28,  kind: 'cross',    count: 3 },
+      { t: 34,  kind: 'prism',    count: 3 },
+    ] },
+    { index: 9,  durationHint: 40, spawns: [
+      { t: 0.5, kind: 'shade',    count: 4 },
+      { t: 0.5, kind: 'cross',    count: 4 },
+      { t: 6,   kind: 'octo',     count: 4 },
+      { t: 6,   kind: 'prism',    count: 4 },
+      { t: 14,  kind: 'crescent', count: 4 },
+      { t: 14,  kind: 'spiral',   count: 2 },
+      { t: 22,  kind: 'shade',    count: 4 },
+      { t: 22,  kind: 'octo',     count: 3 },
+      { t: 30,  kind: 'cross',    count: 4 },
+      { t: 36,  kind: 'prism',    count: 3 },
+    ] },
+    { index: 10, durationHint: 42, spawns: [
+      { t: 0.5, kind: 'octo',     count: 4 },
+      { t: 0.5, kind: 'shade',    count: 5 },
+      { t: 6,   kind: 'cross',    count: 4 },
+      { t: 6,   kind: 'crescent', count: 4 },
+      { t: 14,  kind: 'prism',    count: 4 },
+      { t: 14,  kind: 'shade',    count: 4 },
+      { t: 22,  kind: 'octo',     count: 4 },
+      { t: 22,  kind: 'cross',    count: 4 },
+      { t: 30,  kind: 'prism',    count: 4 },
+      { t: 36,  kind: 'spiral',   count: 2 },
+    ] },
+    { index: 11, durationHint: 44, spawns: [
+      { t: 0.5, kind: 'shade',    count: 5 },
+      { t: 0.5, kind: 'cross',    count: 5 },
+      { t: 6,   kind: 'octo',     count: 4 },
+      { t: 6,   kind: 'prism',    count: 5 },
+      { t: 14,  kind: 'crescent', count: 5 },
+      { t: 14,  kind: 'shade',    count: 4 },
+      { t: 22,  kind: 'octo',     count: 4 },
+      { t: 22,  kind: 'cross',    count: 4 },
+      { t: 30,  kind: 'prism',    count: 5 },
+      { t: 36,  kind: 'shade',    count: 4 },
+    ] },
+    { index: 12, durationHint: 60, isBossWave: true, spawns: [] },
+  ],
+  beats: [
+    // Elite ambush mid-stage — three octos at ×5 strength.
+    { kind: 'eliteAmbush', afterWave: 6, enemyKind: 'octo', count: 3 },
+    // Static-field hazard wave — speed capped at 60%; pressure maintained.
+    { kind: 'hazardWave', afterWave: 9, hazardId: 'static-field', duration: 7,
+      spawns: [
+        { t: 1.0, kind: 'octo',  count: 3 },
+        { t: 4.0, kind: 'shade', count: 2 },
+      ] },
+    // Pre-boss weapon-mute puzzle — 5 seconds of pure evasion before Nexus.
+    { kind: 'puzzle', afterWave: 11, duration: 5 },
   ],
 };
 
@@ -534,7 +676,7 @@ const STAGE_5: StageConfig = {
 
 /**
  * All normal-mode stage configurations in play order.
- * Index 0 = Stage 1, index 4 = Stage 5.
+ * Index 0 = Stage 1, index 5 = Stage 6.
  *
  * Invariant: `STAGE_CONFIGS.length === STAGE_THEMES.length` (content/stageThemes.ts).
  */
@@ -544,4 +686,5 @@ export const STAGE_CONFIGS: readonly StageConfig[] = [
   STAGE_3,
   STAGE_4,
   STAGE_5,
+  STAGE_6,
 ];

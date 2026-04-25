@@ -12,13 +12,13 @@ import {
 // ── STAGE_CONFIGS sanity ─────────────────────────────────────────────────────
 
 describe('STAGE_CONFIGS', () => {
-  it('has exactly 5 stages', () => {
-    expect(STAGE_CONFIGS).toHaveLength(5);
+  it('has exactly 6 stages', () => {
+    expect(STAGE_CONFIGS).toHaveLength(6);
   });
 
   it('has unique stageIds', () => {
     const ids = STAGE_CONFIGS.map(c => c.stageId);
-    expect(new Set(ids).size).toBe(5);
+    expect(new Set(ids).size).toBe(6);
   });
 
   it('every stage has at least one wave', () => {
@@ -291,8 +291,8 @@ describe('stagePointMul', () => {
 });
 
 describe('buildStagePointMulArray', () => {
-  it('produces [1, 2, 3, 4, 5]', () => {
-    expect(buildStagePointMulArray()).toEqual([1, 2, 3, 4, 5]);
+  it('produces [1, 2, 3, 4, 5, 7]', () => {
+    expect(buildStagePointMulArray()).toEqual([1, 2, 3, 4, 5, 7]);
   });
 });
 

@@ -20,10 +20,10 @@ describe("ACTS registry", () => {
     expect(form.unlockAfterAct).toBeUndefined();
   });
 
-  it("DECAY groups stages 4–5 with no gate yet, gated behind FORM", () => {
+  it("DECAY groups stages 4–5 with stage6 as the gate, gated behind FORM", () => {
     const decay = getActDef("decay");
     expect(decay.trialStageIds).toEqual(["stage4", "stage5"]);
-    expect(decay.gateStageId).toBeUndefined();
+    expect(decay.gateStageId).toBe("stage6");
     expect(decay.unlockAfterAct).toBe("form");
   });
 

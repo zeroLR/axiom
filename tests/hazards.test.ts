@@ -7,9 +7,9 @@ import {
 import type { Components } from "../src/game/world";
 
 describe("HAZARD_REGISTRY", () => {
-  it("registers exactly fog and axis-lock", () => {
+  it("registers fog, axis-lock, slow, mirror, pull-toward, static-field", () => {
     const ids = Object.keys(HAZARD_REGISTRY).sort();
-    expect(ids).toEqual(["axis-lock", "fog"]);
+    expect(ids).toEqual(["axis-lock", "fog", "mirror", "pull-toward", "slow", "static-field"]);
   });
 
   it("getHazardDef returns null for unknown ids and missing input", () => {

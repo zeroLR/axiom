@@ -21,6 +21,14 @@ export function updateEnemyAi(
     // Jets boss controls its own movement via bossWeapon.ts.
     if (e.kind === 'boss' && e.bossPattern === 'jets') continue;
 
+    // Frozen enemies: decrement timer and skip movement + shooting.
+    if (e.frozenTimer !== undefined && e.frozenTimer > 0) {
+      e.frozenTimer -= dt;
+      v.x *= 0.85;
+      v.y *= 0.85;
+      continue;
+    }
+
     let dx = ax - p.x;
     let dy = ay - p.y;
     const dist = Math.hypot(dx, dy) || 1;

@@ -13,13 +13,14 @@ import {
 import type { BossId } from "../src/game/bosses/types";
 import { CLASS_NODES } from "../src/game/content/classes";
 
-const ALL_BOSSES: BossId[] = ["orthogon", "jets", "mirror", "lattice", "rift"];
+const ALL_BOSSES: BossId[] = ["orthogon", "jets", "mirror", "lattice", "rift", "nexus"];
 const ALL_TROPHY_IDS: TrophyId[] = [
   "axis-lock",
   "wing-dash",
   "mirror-echo",
   "grid-overlay",
   "void-blink",
+  "nexus-core",
 ];
 
 describe("trophy registry", () => {
@@ -83,6 +84,7 @@ describe("trophy-granted skills (§6.3 + active component)", () => {
       "mirror-echo": "shadowClone",
       "grid-overlay": "timeStop",
       "void-blink": "lifestealPulse",
+      "nexus-core": "barrage",
     };
     for (const def of TROPHIES) {
       expect(def.grantsSkill).toBe(map[def.id]);
