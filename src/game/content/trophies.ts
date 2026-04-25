@@ -5,7 +5,7 @@
 // (unlock → endgame banner → equip → run-start bonus) lands in one slice.
 
 import type { BossId } from "../bosses/types";
-import type { TrophyId } from "../data/types";
+import type { PrimalSkillId, TrophyId } from "../data/types";
 
 /**
  * The passive bonus contributed by an equipped trophy. Field names match the
@@ -26,6 +26,12 @@ export interface TrophyDef {
   name: string;
   description: string;
   passive: TrophyPassive;
+  /**
+   * Primal skill granted while this trophy is unlocked (no equip required).
+   * Layered with class T0/T1 skill unlocks at run start. Trophies without a
+   * skill are passive-only.
+   */
+  grantsSkill?: PrimalSkillId;
 }
 
 /**
@@ -44,29 +50,33 @@ export const TROPHIES: readonly TrophyDef[] = [
     id: "wing-dash",
     fromBoss: "jets",
     name: "Wing Dash",
-    description: "+8% movement speed.",
+    description: "+8% movement speed. Unlocks Overload skill.",
     passive: { speedMul: 0.08 },
+    grantsSkill: "overload",
   },
   {
     id: "mirror-echo",
     fromBoss: "mirror",
     name: "Mirror Echo",
-    description: "+1 weapon damage.",
+    description: "+1 weapon damage. Unlocks Shadow Clone skill.",
     passive: { damageAdd: 1 },
+    grantsSkill: "shadowClone",
   },
   {
     id: "grid-overlay",
     fromBoss: "lattice",
     name: "Grid Overlay",
-    description: "+5% crit chance.",
+    description: "+5% crit chance. Unlocks Time Stop skill.",
     passive: { critAdd: 0.05 },
+    grantsSkill: "timeStop",
   },
   {
     id: "void-blink",
     fromBoss: "rift",
     name: "Void Blink",
-    description: "+0.04s hit-invulnerability.",
+    description: "+0.04s hit-invulnerability. Unlocks Lifesteal Pulse skill.",
     passive: { iframeAdd: 0.04 },
+    grantsSkill: "lifestealPulse",
   },
 ];
 
@@ -86,4 +96,20 @@ export function getTrophyDef(id: TrophyId): TrophyDef {
 /** Trophy granted by defeating `bossId`, if any. */
 export function trophyForBoss(bossId: BossId): TrophyDef | null {
   return TROPHY_BY_BOSS[bossId] ?? null;
+}
+
+/**
+ * Collect every primal skill currently granted by unlocked trophies.
+ * Order matches `TROPHIES` declaration so the resulting list is stable.
+ * Returns an empty array if no trophy with `grantsSkill` is unlocked.
+ */
+export function trophyGrantedSkills(
+  unlocked: Record<TrophyId, boolean>,
+): PrimalSkillId[] {
+  const out: PrimalSkillId[] = [];
+  for (const def of TROPHIES) {
+    if (!def.grantsSkill) continue;
+    if (unlocked[def.id]) out.push(def.grantsSkill);
+  }
+  return out;
 }

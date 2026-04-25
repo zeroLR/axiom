@@ -56,7 +56,7 @@ import {
   reflectDamageRatio,
 } from './game/skills';
 import { diffUnlocks } from './game/unlocks';
-import { trophyForBoss, getTrophyDef } from './game/content/trophies';
+import { trophyForBoss, getTrophyDef, trophyGrantedSkills } from './game/content/trophies';
 import { MAX_SKILL_LEVEL } from './game/data/types';
 import { unlockAchievement } from './game/achievements';
 import type { RunResult } from './game/rewards';
@@ -2841,8 +2841,15 @@ async function boot(): Promise<void> {
     const activeChar = activeCharacterSlot(profile.characters);
 
     // In develop mode, start with no skills and default skin (bare avatar).
+    // Run-time skill loadout = class T0/T1 unlocks + every primal skill granted
+    // by unlocked trophies. Dedupe so a player who has both a class T1 unlock
+    // and a trophy granting the same skill doesn't end up with duplicate
+    // entries on the skill HUD.
+    const trophyUnlockedSkills = trophyGrantedSkills(profile.trophies.unlocked);
+    const classSkills = activeChar ? getClassUnlockedSkills(activeChar) : [];
+    const mergedSkillIds = Array.from(new Set([...classSkills, ...trophyUnlockedSkills]));
     const activeSkills = developMode ? [] : createActiveSkillStates(
-      activeChar ? getClassUnlockedSkills(activeChar) : [],
+      mergedSkillIds,
       skillTree,
     );
     const startingShape = activeChar

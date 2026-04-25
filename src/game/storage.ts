@@ -26,6 +26,7 @@ import {
 import { emptyFragmentDetailRecord, FRAGMENT_META } from "./fragments";
 import { startingShapeToLineage } from "./classes";
 import { STAGE_CONFIGS } from "./content/stages";
+import { TROPHIES } from "./content/trophies";
 
 const DB_NAME = "axiom";
 const DB_VERSION = 2; // IndexedDB schema version (bump to trigger onupgradeneeded)
@@ -127,10 +128,24 @@ export async function loadProfile(): Promise<PlayerProfile> {
   // ── Trophy migration ───────────────────────────────────────────────────────
   // Saves predating SCHEMA_VERSION 5 have no `trophies` field; default to all
   // locked / nothing equipped. Validate that any equipped trophy is also
-  // unlocked, otherwise reset equipped to null.
+  // unlocked, otherwise reset equipped to null. Then reconcile against the
+  // stageId-keyed clear map: any trophy whose boss is already cleared gets
+  // retroactively unlocked. This catches players who pre-date the trophy
+  // system or who toggled `unlocksSkill` from class T2 nodes (§6.3).
   const trophyBase = defaultTrophyState();
   const rawTrophies = (raw as { trophies?: Partial<typeof trophyBase> }).trophies;
   const unlockedTrophies = { ...trophyBase.unlocked, ...(rawTrophies?.unlocked ?? {}) };
+  const clearedStagesMap = migrateClearedStages(
+    raw.stats?.clearedStages,
+    raw.stats?.normalCleared,
+  );
+  for (const def of TROPHIES) {
+    if (unlockedTrophies[def.id]) continue;
+    const stageCfg = STAGE_CONFIGS.find((c) => c.bossId === def.fromBoss);
+    if (stageCfg && clearedStagesMap[stageCfg.stageId]) {
+      unlockedTrophies[def.id] = true;
+    }
+  }
   let equippedTrophy: TrophyId | null = rawTrophies?.equipped ?? null;
   if (equippedTrophy && !unlockedTrophies[equippedTrophy]) {
     equippedTrophy = null;
@@ -166,10 +181,7 @@ export async function loadProfile(): Promise<PlayerProfile> {
       normalCleared: base.stats.normalCleared.map(
         (b, i) => (raw.stats?.normalCleared?.[i] ?? b),
       ),
-      clearedStages: migrateClearedStages(
-        raw.stats?.clearedStages,
-        raw.stats?.normalCleared,
-      ),
+      clearedStages: clearedStagesMap,
     },
   };
 }

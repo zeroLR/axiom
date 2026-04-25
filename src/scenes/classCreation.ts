@@ -8,7 +8,7 @@ import type {
 } from "../game/data/types";
 import { MAX_SKILL_LEVEL } from "../game/data/types";
 import type { TrophyId } from "../game/data/types";
-import { TROPHIES, type TrophyDef } from "../game/content/trophies";
+import { TROPHIES, trophyGrantedSkills, type TrophyDef } from "../game/content/trophies";
 import { isBossDefeated } from "../game/unlocks";
 import {
   CLASS_LINEAGES,
@@ -1060,7 +1060,12 @@ export class ClassCreationScene implements Scene {
 
   private createSkillsSection(slot: CharacterSlot): HTMLElement {
     const state = this.cb.getSkillState();
-    const unlockedIds = new Set(getClassUnlockedSkills(slot));
+    const profile = this.cb.getProfile();
+    const trophySkillSet = new Set(trophyGrantedSkills(profile.trophies.unlocked));
+    const unlockedIds = new Set([
+      ...getClassUnlockedSkills(slot),
+      ...trophySkillSet,
+    ]);
 
     const section = document.createElement("div");
     section.style.cssText = "margin-top:16px;";
@@ -1113,6 +1118,11 @@ export class ClassCreationScene implements Scene {
       const isMaxed = entry.level >= MAX_SKILL_LEVEL;
       nameEl.textContent = isMaxed ? `${def.name} (MAX)` : `${def.name} (Lv.${entry.level})`;
       headerRow.appendChild(nameEl);
+      if (trophySkillSet.has(def.id)) {
+        const sourceTag = this.createTag("trophy", "accent");
+        sourceTag.style.marginLeft = "auto";
+        headerRow.appendChild(sourceTag);
+      }
       card.appendChild(headerRow);
 
       const descEl = document.createElement("span");
