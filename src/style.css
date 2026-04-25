@@ -1874,8 +1874,14 @@ select.developer-form-input {
 }
 
 .talent-radial-node.is-core {
-  width: 58px;
-  height: 58px;
+  width: 64px;
+  height: 64px;
+  border-width: 3px;
+}
+
+.talent-radial-node.is-connector {
+  width: 44px;
+  height: 44px;
 }
 
 .talent-radial-node.is-locked {
@@ -1927,18 +1933,11 @@ select.developer-form-input {
   font-weight: 700;
 }
 
-.talent-ring-guide {
+.talent-hex-guide {
   fill: none;
   stroke: var(--chrome);
-  stroke-opacity: 0.18;
-  stroke-width: 1;
-}
-
-.talent-sector-guide {
-  stroke: var(--chrome);
-  stroke-opacity: 0.12;
-  stroke-width: 1;
-  stroke-dasharray: 5 4;
+  stroke-opacity: 0.22;
+  stroke-width: 1.5;
 }
 
 .talent-radial-line--offense {

@@ -96,6 +96,17 @@ export async function loadProfile(): Promise<PlayerProfile> {
   const enemyKills = { ...defaultEnemyKills(), ...(raw.stats?.enemyKills ?? {}) };
   const talentBase = defaultTalentState();
   const rawTalentLevels = raw.talents?.levels ?? {};
+  // Hex talent migration: drop legacy IDs that no longer exist in the new schema.
+  // Spent points on legacy talents are refunded as a flat sum so progress isn't fully lost.
+  let legacyRefund = 0;
+  const cleanedTalentLevels: Record<string, number> = {};
+  for (const [k, v] of Object.entries(rawTalentLevels)) {
+    if (k in talentBase.levels) {
+      cleanedTalentLevels[k] = Number(v) || 0;
+    } else if (typeof v === "number" && v > 0) {
+      legacyRefund += v * 200;
+    }
+  }
 
   // ── Class Creation migration ───────────────────────────────────────────────
   // If an existing save has no characters data, derive the lineage from
@@ -113,6 +124,7 @@ export async function loadProfile(): Promise<PlayerProfile> {
   return {
     ...base,
     ...raw,
+    points: (raw.points ?? base.points) + legacyRefund,
     activeStartShape: raw.activeStartShape ?? base.activeStartShape,
     fragments: {
       basic: raw.fragments?.basic ?? 0,
@@ -123,7 +135,7 @@ export async function loadProfile(): Promise<PlayerProfile> {
     talents: {
       levels: {
         ...talentBase.levels,
-        ...rawTalentLevels,
+        ...cleanedTalentLevels,
       },
     },
     characters,

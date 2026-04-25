@@ -3,8 +3,10 @@ import type { Scene } from "./scene";
 import type { PlayerProfile, TalentId } from "../game/data/types";
 import {
   TALENT_NODES,
+  TALENT_CLUSTER_ORDER,
   type TalentEffectKind,
   type TalentBranch,
+  type TalentClusterId,
 } from "../game/content/talents";
 import {
   talentDefinition,
@@ -33,23 +35,22 @@ import {
 
 // ── Layout constants ───────────────────────────────────────────────────────────
 
-const CANVAS_SIZE = 1200;
+const CANVAS_SIZE = 1400;
 const CANVAS_CX = CANVAS_SIZE / 2;
 const CANVAS_CY = CANVAS_SIZE / 2;
-// Ring radius per depth level (0 = innermost). Level 6+ clamps to last entry.
-const RING_RADII = [180, 265, 345, 420, 490, 555, 555] as const;
-const SECTOR_HALF_RAD = Math.PI / 3; // 60° → 3 branches × 120° = full 360°
-const SECTOR_CENTER: Record<TalentBranch, number> = {
-  offense:    -Math.PI / 2,          // top
-  survival:    Math.PI / 6,          // lower-right
-  efficiency:  (5 * Math.PI) / 6,   // lower-left
-};
+// Connector node distance from origin (between center hex and cluster hex).
+const R_CONNECTOR = 175;
+// Cluster core distance from origin (center of each peripheral hexagon).
+const R_CLUSTER = 470;
+// Hex side length: distance of vertices from cluster core.
+const R_VERTEX = 130;
+const SVG_NS = "http://www.w3.org/2000/svg";
+
 const BRANCH_CSS_COLOR: Record<TalentBranch, string> = {
   offense:    "var(--branch-offense)",
   survival:   "var(--branch-survival)",
   efficiency: "var(--branch-efficiency)",
 };
-const SVG_NS = "http://www.w3.org/2000/svg";
 
 // ── Callbacks ─────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,14 @@ export interface TalentSceneCallbacks {
 }
 
 const TALENT_IDS = Object.keys(TALENT_NODES) as TalentId[];
+
+const CLUSTER_ANGLE_RAD: Record<TalentClusterId, number> = TALENT_CLUSTER_ORDER.reduce(
+  (acc, c) => {
+    acc[c.id] = (c.angleDeg * Math.PI) / 180;
+    return acc;
+  },
+  {} as Record<TalentClusterId, number>,
+);
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 
@@ -80,7 +89,6 @@ export class TalentScene implements Scene {
   constructor(cb: TalentSceneCallbacks) {
     this.root = new Container();
     this.cb = cb;
-    // Center the canvas in the viewport at the initial zoom level
     this.panX = CANVAS_CX * (1 - this.zoom);
     this.panY = CANVAS_CY * (1 - this.zoom);
   }
@@ -93,7 +101,6 @@ export class TalentScene implements Scene {
     content.appendChild(this.createResourceTags(profile));
     content.appendChild(this.createRadialView(profile));
 
-    // Upgrade sheet: floats below the canvas, outside the pan/zoom wrap
     const sheetWrapper = document.createElement("div");
     sheetWrapper.className = "talent-sheet-wrapper";
     if (this.selectedId !== null) {
@@ -116,103 +123,48 @@ export class TalentScene implements Scene {
   update(_dt: number): void {}
   render(_alpha: number): void {}
 
-  // ── Depth & position computation ──────────────────────────────────────────
+  // ── Hex position computation ─────────────────────────────────────────────
 
-  private computeDepths(): Map<TalentId, number> {
-    const depths = new Map<TalentId, number>();
-    for (const id of TALENT_IDS) {
-      if (!TALENT_NODES[id].requires) depths.set(id, 0);
-    }
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const id of TALENT_IDS) {
-        const def = TALENT_NODES[id];
-        if (!def.requires) continue;
-        const parentDepth = depths.get(def.requires.id);
-        if (parentDepth === undefined) continue;
-        const newDepth = parentDepth + 1;
-        if (!depths.has(id) || depths.get(id)! > newDepth) {
-          depths.set(id, newDepth);
-          changed = true;
-        }
-      }
-    }
-    for (const id of TALENT_IDS) {
-      if (!depths.has(id)) depths.set(id, 0);
-    }
-    return depths;
-  }
-
-  private computeRadialPositions(): Map<TalentId, { x: number; y: number }> {
-    const depths = this.computeDepths();
+  private computeHexPositions(): Map<TalentId, { x: number; y: number }> {
     const positions = new Map<TalentId, { x: number; y: number }>();
 
-    // Group by branch × depth
-    const branchDepthMap = new Map<string, TalentId[]>();
     for (const id of TALENT_IDS) {
-      const branch = TALENT_NODES[id].branch;
-      const depth = depths.get(id) ?? 0;
-      const key = `${branch}:${depth}`;
-      if (!branchDepthMap.has(key)) branchDepthMap.set(key, []);
-      branchDepthMap.get(key)!.push(id);
-    }
+      const def = TALENT_NODES[id];
+      const theta = CLUSTER_ANGLE_RAD[def.cluster];
 
-    const maxDepth = Math.max(...Array.from(depths.values()));
-    const BRANCHES: TalentBranch[] = ["survival", "offense", "efficiency"];
-
-    // Process depth-first so parent positions are available for child sorting
-    for (let depth = 0; depth <= maxDepth; depth++) {
-      for (const branch of BRANCHES) {
-        const ids = branchDepthMap.get(`${branch}:${depth}`);
-        if (!ids || ids.length === 0) continue;
-
-        const r = RING_RADII[Math.min(depth, RING_RADII.length - 1)]!;
-        const sectorCenter = SECTOR_CENTER[branch];
-
-        // Sort by parent angle to minimize edge crossings
-        ids.sort((a, b) => {
-          const parentA = TALENT_NODES[a].requires?.id;
-          const parentB = TALENT_NODES[b].requires?.id;
-          const posA = parentA ? positions.get(parentA) : undefined;
-          const posB = parentB ? positions.get(parentB) : undefined;
-          const angleA = posA
-            ? Math.atan2(posA.y - CANVAS_CY, posA.x - CANVAS_CX)
-            : sectorCenter;
-          const angleB = posB
-            ? Math.atan2(posB.y - CANVAS_CY, posB.x - CANVAS_CX)
-            : sectorCenter;
-          return angleA - angleB;
+      if (def.role === "connector") {
+        positions.set(id, {
+          x: Math.round(CANVAS_CX + R_CONNECTOR * Math.cos(theta)),
+          y: Math.round(CANVAS_CY + R_CONNECTOR * Math.sin(theta)),
         });
-
-        const count = ids.length;
-        const totalArc = SECTOR_HALF_RAD * 2;
-
-        for (let i = 0; i < count; i++) {
-          const angle =
-            count === 1
-              ? sectorCenter
-              : sectorCenter - SECTOR_HALF_RAD + (i + 0.5) * (totalArc / count);
-          positions.set(ids[i]!, {
-            x: Math.round(CANVAS_CX + r * Math.cos(angle)),
-            y: Math.round(CANVAS_CY + r * Math.sin(angle)),
-          });
-        }
+      } else if (def.role === "core") {
+        positions.set(id, {
+          x: Math.round(CANVAS_CX + R_CLUSTER * Math.cos(theta)),
+          y: Math.round(CANVAS_CY + R_CLUSTER * Math.sin(theta)),
+        });
+      } else {
+        // vertex: regular hexagon around cluster core, slot 0 nearest origin (angle θ + π).
+        const slot = def.vertexSlot ?? 0;
+        const vAngle = theta + Math.PI + (slot * Math.PI) / 3;
+        const cx = CANVAS_CX + R_CLUSTER * Math.cos(theta);
+        const cy = CANVAS_CY + R_CLUSTER * Math.sin(theta);
+        positions.set(id, {
+          x: Math.round(cx + R_VERTEX * Math.cos(vAngle)),
+          y: Math.round(cy + R_VERTEX * Math.sin(vAngle)),
+        });
       }
     }
-
     return positions;
   }
 
   // ── Radial view ────────────────────────────────────────────────────────────
 
   private createRadialView(profile: PlayerProfile): HTMLElement {
-    const positions = this.computeRadialPositions();
+    const positions = this.computeHexPositions();
 
     const wrap = document.createElement("div");
     wrap.className = "talent-radial-wrap";
 
-    // Canvas (pan/zoom target)
     const canvas = document.createElement("div");
     canvas.className = "talent-radial-canvas";
     canvas.style.width = `${CANVAS_SIZE}px`;
@@ -220,10 +172,9 @@ export class TalentScene implements Scene {
     this.applyTransform(canvas);
     wrap.appendChild(canvas);
 
-    // SVG connection lines (rendered behind nodes)
     canvas.appendChild(this.createRadialSVG(positions, profile));
 
-    // Center icon
+    // Center decorative hex with talent icon (no upgrade target).
     const center = document.createElement("div");
     center.className = "talent-radial-center";
     center.style.left = `${CANVAS_CX}px`;
@@ -231,12 +182,10 @@ export class TalentScene implements Scene {
     center.appendChild(iconSpan(iconTalents));
     canvas.appendChild(center);
 
-    // Node buttons
     for (const [id, pos] of positions) {
       canvas.appendChild(this.createRadialNode(profile, id, pos.x, pos.y));
     }
 
-    // Smooth pan animation from previous position when a node is selected
     if (this._animFromPan) {
       const { x: fromX, y: fromY } = this._animFromPan;
       this._animFromPan = null;
@@ -249,7 +198,6 @@ export class TalentScene implements Scene {
       });
     }
 
-    // Pan/zoom interaction
     this.attachPanZoom(wrap, canvas);
 
     return wrap;
@@ -271,34 +219,15 @@ export class TalentScene implements Scene {
     svg.setAttribute("width", String(CANVAS_SIZE));
     svg.setAttribute("height", String(CANVAS_SIZE));
 
-    // Ring guide circles at each depth radius (drawn behind everything)
-    const drawnRadii = new Set<number>();
-    for (const r of RING_RADII) {
-      if (drawnRadii.has(r)) continue;
-      drawnRadii.add(r);
-      const circle = document.createElementNS(SVG_NS, "circle");
-      circle.setAttribute("cx", String(CANVAS_CX));
-      circle.setAttribute("cy", String(CANVAS_CY));
-      circle.setAttribute("r", String(r));
-      circle.setAttribute("class", "talent-ring-guide");
-      svg.appendChild(circle);
-    }
+    // Decorative central hexagon outline (the "center hex" the clusters grow from).
+    svg.appendChild(this.hexOutline(CANVAS_CX, CANVAS_CY, R_CONNECTOR * 0.78));
 
-    // Branch sector divider lines at the 3 sector boundaries
-    const boundaries = [
-      SECTOR_CENTER.offense + SECTOR_HALF_RAD,  // offense→survival
-      SECTOR_CENTER.survival + SECTOR_HALF_RAD, // survival→efficiency
-      SECTOR_CENTER.efficiency + SECTOR_HALF_RAD, // efficiency→offense
-    ];
-    const maxR = RING_RADII[RING_RADII.length - 1]!;
-    for (const angle of boundaries) {
-      const line = document.createElementNS(SVG_NS, "line");
-      line.setAttribute("x1", String(CANVAS_CX));
-      line.setAttribute("y1", String(CANVAS_CY));
-      line.setAttribute("x2", String(Math.round(CANVAS_CX + maxR * Math.cos(angle))));
-      line.setAttribute("y2", String(Math.round(CANVAS_CY + maxR * Math.sin(angle))));
-      line.setAttribute("class", "talent-sector-guide");
-      svg.appendChild(line);
+    // Decorative cluster hexagon outlines (one per peripheral cluster).
+    for (const c of TALENT_CLUSTER_ORDER) {
+      const theta = (c.angleDeg * Math.PI) / 180;
+      const cx = CANVAS_CX + R_CLUSTER * Math.cos(theta);
+      const cy = CANVAS_CY + R_CLUSTER * Math.sin(theta);
+      svg.appendChild(this.hexOutline(cx, cy, R_VERTEX, c.id));
     }
 
     for (const id of TALENT_IDS) {
@@ -317,13 +246,32 @@ export class TalentScene implements Scene {
       line.setAttribute("x2", String(Math.round(to.x)));
       line.setAttribute("y2", String(Math.round(to.y)));
       line.setAttribute("class", `talent-radial-line--${def.branch}`);
-      line.setAttribute("stroke-width", "1.5");
-      line.setAttribute("stroke-opacity", isReachable ? "0.55" : "0.18");
+      line.setAttribute("stroke-width", "1.8");
+      line.setAttribute("stroke-opacity", isReachable ? "0.6" : "0.2");
       line.setAttribute("stroke-linecap", "round");
       svg.appendChild(line);
     }
 
     return svg;
+  }
+
+  /**
+   * Builds a hexagon outline polygon with one vertex pointing toward origin
+   * (for cluster hexes) or just flat orientation (for the center hex).
+   */
+  private hexOutline(cx: number, cy: number, radius: number, clusterId?: TalentClusterId): SVGElement {
+    const hex = document.createElementNS(SVG_NS, "polygon");
+    const baseAngle = clusterId ? CLUSTER_ANGLE_RAD[clusterId] + Math.PI : 0;
+    const points: string[] = [];
+    for (let k = 0; k < 6; k++) {
+      const a = baseAngle + (k * Math.PI) / 3;
+      const x = cx + radius * Math.cos(a);
+      const y = cy + radius * Math.sin(a);
+      points.push(`${Math.round(x)},${Math.round(y)}`);
+    }
+    hex.setAttribute("points", points.join(" "));
+    hex.setAttribute("class", "talent-hex-guide");
+    return hex;
   }
 
   // ── Node button ────────────────────────────────────────────────────────────
@@ -350,6 +298,7 @@ export class TalentScene implements Scene {
     btn.title = def.name;
 
     if (def.isCore) btn.classList.add("is-core");
+    if (def.role === "connector") btn.classList.add("is-connector");
     if (locked) btn.classList.add("is-locked");
     if (isMaxed) btn.classList.add("is-maxed");
     if (this.selectedId === id) btn.classList.add("is-selected");
@@ -392,7 +341,6 @@ export class TalentScene implements Scene {
     const sheet = document.createElement("div");
     sheet.className = "talent-upgrade-sheet";
 
-    // Header
     const header = document.createElement("div");
     header.className = "talent-upgrade-sheet-header";
     const titleEl = document.createElement("div");
@@ -409,7 +357,6 @@ export class TalentScene implements Scene {
     header.append(titleEl, dismissBtn);
     sheet.appendChild(header);
 
-    // Meta row: branch badge + level tag
     const metaRow = document.createElement("div");
     metaRow.className = "talent-upgrade-sheet-meta";
     const branchBadge = document.createElement("span");
@@ -420,13 +367,11 @@ export class TalentScene implements Scene {
     metaRow.append(branchBadge, levelTag);
     sheet.appendChild(metaRow);
 
-    // Description
     const desc = document.createElement("div");
     desc.className = "card-text";
     desc.textContent = def.description;
     sheet.appendChild(desc);
 
-    // State: maxed / locked / next level cost
     if (isMaxed) {
       sheet.appendChild(this.createTag("MAX LEVEL", "accent"));
     } else if (prereqMsg) {
@@ -446,7 +391,6 @@ export class TalentScene implements Scene {
       costRow.appendChild(this.createTag(bonusText, "accent"));
       sheet.appendChild(costRow);
 
-      // Confirm button
       const actions = document.createElement("div");
       actions.className = "talent-upgrade-sheet-actions";
       const confirmBtn = document.createElement("button");
@@ -483,7 +427,6 @@ export class TalentScene implements Scene {
       canvas.style.transform = `translate(calc(-50% + ${this.panX}px), calc(-50% + ${this.panY}px)) scale(${this.zoom})`;
     };
 
-    // ── Touch (mobile) ───────────────────────────────────────────────────────
     let touchStartX = 0, touchStartY = 0;
     let touchStartPanX = 0, touchStartPanY = 0;
     let pinchStartDist = 0, pinchStartZoom = 0;
@@ -525,7 +468,6 @@ export class TalentScene implements Scene {
     }, { passive: false, signal });
 
     viewport.addEventListener("touchend", (e) => {
-      // Forward tap as click when no drag occurred (touchstart preventDefault blocks synthetic clicks)
       if (!this.didDrag && e.changedTouches.length === 1) {
         const t = e.changedTouches[0]!;
         const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null;
@@ -534,7 +476,6 @@ export class TalentScene implements Scene {
       }
     }, { signal });
 
-    // ── Mouse (desktop) ──────────────────────────────────────────────────────
     let mouseDown = false;
     let mouseStartX = 0, mouseStartY = 0;
     let mouseStartPanX = 0, mouseStartPanY = 0;
@@ -563,7 +504,6 @@ export class TalentScene implements Scene {
       mouseDown = false;
     }, { signal });
 
-    // ── Mouse wheel zoom ─────────────────────────────────────────────────────
     viewport.addEventListener("wheel", (e) => {
       e.preventDefault();
       const factor = e.deltaY < 0 ? 1.1 : 0.9;
