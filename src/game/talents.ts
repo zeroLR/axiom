@@ -9,6 +9,7 @@ import {
   type TalentId,
   type TalentState,
 } from "./data/types";
+import { isTalentUnlocked } from "./unlocks";
 
 export interface TalentBonuses {
   // additive
@@ -94,6 +95,20 @@ export function talentPrerequisiteMessage(
   return `Locked: ${TALENT_NODES[def.requires.id].name} Lv.${def.requires.level}`;
 }
 
+/**
+ * Boss-gate message for a talent node. Returns null if there is no gate or
+ * the gate is satisfied. Independent of `talentPrerequisiteMessage`.
+ */
+export function talentBossGateMessage(
+  profile: PlayerProfile,
+  id: TalentId,
+): string | null {
+  const def = TALENT_NODES[id];
+  if (!def.unlockAfterBoss) return null;
+  if (isTalentUnlocked(def, profile.stats)) return null;
+  return `Locked: defeat ${def.unlockAfterBoss.toUpperCase()}.`;
+}
+
 export function talentTotalSpentPoints(state: TalentState): number {
   let total = 0;
   for (const id of TALENT_IDS) {
@@ -144,6 +159,9 @@ export function canUpgradeTalent(
     if (reqLevel < def.requires.level) {
       return { ok: false, reason: `Requires ${TALENT_NODES[def.requires.id].name} Lv.${def.requires.level}.` };
     }
+  }
+  if (!isTalentUnlocked(def, profile.stats)) {
+    return { ok: false, reason: `Defeat ${def.unlockAfterBoss!.toUpperCase()} to unlock.` };
   }
   const next = def.levels[currentLevel]!;
   if (profile.points < next.pointCost) {

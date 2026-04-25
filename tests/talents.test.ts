@@ -5,6 +5,7 @@ import {
   canUpgradeTalent,
   resetTalentGrowth,
   talentBonuses,
+  talentBossGateMessage,
   talentTotalSpentPoints,
   upgradeTalent,
 } from "../src/game/talents";
@@ -165,6 +166,65 @@ describe("talent growth", () => {
     expect(effects.has("speedMul")).toBe(true);
     expect(effects.has("iframeAdd")).toBe(true);
     expect(effects.has("pickupRadiusMul")).toBe(true);
+  });
+
+  it("five cluster cores carry an unlockAfterBoss gate, mapped 1-to-1 with each boss", () => {
+    const expected: Record<string, string> = {
+      survivalHpCore: "orthogon",
+      survivalMobilityCore: "jets",
+      offenseDamageCore: "mirror",
+      offenseTempoCore: "lattice",
+      efficiencyPointsCore: "rift",
+    };
+    for (const [coreId, bossId] of Object.entries(expected)) {
+      expect(TALENT_NODES[coreId as keyof typeof TALENT_NODES].unlockAfterBoss).toBe(bossId);
+    }
+    // Sixth core (fragments) intentionally ungated.
+    expect(TALENT_NODES.efficiencyFragmentsCore.unlockAfterBoss).toBeUndefined();
+  });
+
+  it("blocks core upgrade when the gating boss has not been defeated", () => {
+    const profile = defaultPlayerProfile();
+    profile.points = 999999;
+    profile.fragments.basic = 9999;
+    profile.fragments.elite = 9999;
+    // Pre-fill all prerequisites for survivalHpCore.
+    profile.talents.levels.survivalHpConn = 3;
+    profile.talents.levels.survivalHpV0 = 4;
+    profile.talents.levels.survivalHpV1 = 4;
+    profile.talents.levels.survivalHpV2 = 4;
+    profile.talents.levels.survivalHpV3 = 4;
+
+    const result = canUpgradeTalent(profile, profile.talents, "survivalHpCore");
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/orthogon/i);
+    expect(talentBossGateMessage(profile, "survivalHpCore")).toMatch(/orthogon/i);
+  });
+
+  it("allows core upgrade once the gating boss is defeated", () => {
+    const profile = defaultPlayerProfile();
+    profile.points = 999999;
+    profile.fragments.basic = 9999;
+    profile.fragments.elite = 9999;
+    profile.talents.levels.survivalHpConn = 3;
+    profile.talents.levels.survivalHpV0 = 4;
+    profile.talents.levels.survivalHpV1 = 4;
+    profile.talents.levels.survivalHpV2 = 4;
+    profile.talents.levels.survivalHpV3 = 4;
+    profile.stats.normalCleared = [true, false, false, false, false];
+
+    expect(talentBossGateMessage(profile, "survivalHpCore")).toBeNull();
+    const before = profile.points;
+    const result = upgradeTalent(profile, "survivalHpCore");
+    expect(result.ok).toBe(true);
+    expect(profile.talents.levels.survivalHpCore).toBe(1);
+    expect(profile.points).toBeLessThan(before);
+  });
+
+  it("ungated nodes have no boss-gate message regardless of stats", () => {
+    const profile = defaultPlayerProfile();
+    expect(talentBossGateMessage(profile, "survivalHpConn")).toBeNull();
+    expect(talentBossGateMessage(profile, "efficiencyFragmentsCore")).toBeNull();
   });
 
   it("talentBonuses accumulates multiplicative delta kinds", () => {

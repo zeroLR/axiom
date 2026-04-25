@@ -9,6 +9,7 @@
 //   4. Run `npm test` and `npm run build`.
 
 import type { EnemyKind } from '../world';
+import type { EnemyArchetype } from './enemies';
 import type { BossId } from '../bosses/types';
 
 // ── Schema ───────────────────────────────────────────────────────────────────
@@ -23,8 +24,11 @@ export interface EnemyWeight {
 /**
  * A single spawn group within a wave template.
  *
- * Either `kind` (fixed enemy) or `enemies` (weighted random selection)
- * must be set — not both.
+ * Exactly one of `kind`, `enemies`, or `archetype` must be set.
+ *  - `kind`: fixed enemy.
+ *  - `enemies`: weighted random selection from an explicit table.
+ *  - `archetype`: weighted random selection over all enemies tagged with
+ *    `archetype` whose `minStageIndex` is reached by the current stage.
  *
  * Optional `batches` + `interval` repeat the group N times with
  * `interval` seconds between each batch, starting at `t`.
@@ -34,10 +38,16 @@ export interface SpawnTemplate {
   t: number;
   /** Number of enemies to spawn per batch. */
   count: number;
-  /** Fixed enemy kind. Mutually exclusive with `enemies`. */
+  /** Fixed enemy kind. Mutually exclusive with `enemies`/`archetype`. */
   kind?: EnemyKind;
-  /** Weighted enemy table. Mutually exclusive with `kind`. */
+  /** Weighted enemy table. Mutually exclusive with `kind`/`archetype`. */
   enemies?: EnemyWeight[];
+  /**
+   * Sample uniformly from all enemies whose `archetypes` include this tag
+   * and whose `minStageIndex <= stageIndex`. Mutually exclusive with the
+   * explicit forms.
+   */
+  archetype?: EnemyArchetype;
   /** Repeat this spawn group N times (default: 1). */
   batches?: number;
   /** Seconds between each batch when `batches` > 1. */

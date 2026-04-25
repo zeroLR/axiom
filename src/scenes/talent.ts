@@ -9,6 +9,7 @@ import {
   type TalentClusterId,
 } from "../game/content/talents";
 import {
+  talentBossGateMessage,
   talentDefinition,
   talentLevel,
   talentPrerequisiteMessage,
@@ -286,7 +287,10 @@ export class TalentScene implements Scene {
     const def = talentDefinition(id);
     const level = talentLevel(profile.talents, id);
     const maxLevel = def.levels.length;
-    const locked = Boolean(talentPrerequisiteMessage(profile.talents, id));
+    const locked = Boolean(
+      talentPrerequisiteMessage(profile.talents, id)
+      || talentBossGateMessage(profile, id),
+    );
     const isMaxed = level >= maxLevel;
 
     const btn = document.createElement("button");
@@ -337,6 +341,8 @@ export class TalentScene implements Scene {
     const maxLevel = def.levels.length;
     const isMaxed = level >= maxLevel;
     const prereqMsg = talentPrerequisiteMessage(profile.talents, id);
+    const bossGateMsg = talentBossGateMessage(profile, id);
+    const lockMsgText = prereqMsg ?? bossGateMsg;
     const nextLevelDef = def.levels[level];
 
     const sheet = document.createElement("div");
@@ -375,10 +381,10 @@ export class TalentScene implements Scene {
 
     if (isMaxed) {
       sheet.appendChild(this.createTag("MAX LEVEL", "accent"));
-    } else if (prereqMsg) {
+    } else if (lockMsgText) {
       const lockMsg = document.createElement("div");
       lockMsg.className = "card-text";
-      lockMsg.textContent = prereqMsg;
+      lockMsg.textContent = lockMsgText;
       sheet.appendChild(lockMsg);
     } else if (nextLevelDef) {
       const costRow = document.createElement("div");

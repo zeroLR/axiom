@@ -7,6 +7,7 @@ import type { BossId } from "./bosses/types";
 import type { PlayerStats } from "./data/types";
 import type { Card } from "./cards";
 import type { PrimalSkillDef } from "./skills";
+import type { TalentNodeDef } from "./content/talents";
 
 // ── Mapping ─────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,14 @@ export function isCardUnlocked(card: Card, stats: PlayerStats): boolean {
 /** Return only the unlocked cards from a pool. */
 export function filterUnlockedCards(pool: readonly Card[], stats: PlayerStats): Card[] {
   return pool.filter((c) => isCardUnlocked(c, stats));
+}
+
+// ── Talent gating ───────────────────────────────────────────────────────────
+
+/** A talent node is unlocked if it has no boss gate, or the gate boss is dead. */
+export function isTalentUnlocked(node: TalentNodeDef, stats: PlayerStats): boolean {
+  if (!node.unlockAfterBoss) return true;
+  return isBossDefeated(node.unlockAfterBoss, stats);
 }
 
 // ── Diff unlocks (for endgame banner) ───────────────────────────────────────
