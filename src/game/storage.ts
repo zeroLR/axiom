@@ -25,6 +25,7 @@ import {
 } from "./data/types";
 import { emptyFragmentDetailRecord, FRAGMENT_META } from "./fragments";
 import { startingShapeToLineage } from "./classes";
+import { STAGE_CONFIGS } from "./content/stages";
 
 const DB_NAME = "axiom";
 const DB_VERSION = 2; // IndexedDB schema version (bump to trigger onupgradeneeded)
@@ -165,8 +166,40 @@ export async function loadProfile(): Promise<PlayerProfile> {
       normalCleared: base.stats.normalCleared.map(
         (b, i) => (raw.stats?.normalCleared?.[i] ?? b),
       ),
+      clearedStages: migrateClearedStages(
+        raw.stats?.clearedStages,
+        raw.stats?.normalCleared,
+      ),
     },
   };
+}
+
+/**
+ * Build the stageId-keyed clear map. Authoritative source is `clearedStages`
+ * if present (SCHEMA_VERSION ≥ 6); otherwise project the legacy positional
+ * `normalCleared[]` onto STAGE_CONFIGS in declaration order. Unknown stageIds
+ * carried in old saves are dropped silently.
+ *
+ * Exported for unit-test access; production callers should go through
+ * `loadProfile`.
+ */
+export function migrateClearedStages(
+  rawCleared: Record<string, boolean> | undefined,
+  legacyNormalCleared: boolean[] | undefined,
+): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  if (rawCleared && typeof rawCleared === "object") {
+    const validIds = new Set(STAGE_CONFIGS.map((c) => c.stageId));
+    for (const [stageId, cleared] of Object.entries(rawCleared)) {
+      if (validIds.has(stageId) && cleared === true) out[stageId] = true;
+    }
+  }
+  if (Array.isArray(legacyNormalCleared)) {
+    STAGE_CONFIGS.forEach((cfg, idx) => {
+      if (legacyNormalCleared[idx] === true) out[cfg.stageId] = true;
+    });
+  }
+  return out;
 }
 export async function saveProfile(p: PlayerProfile): Promise<void> {
   return putStore("profile", p);

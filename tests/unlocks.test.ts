@@ -1,16 +1,32 @@
 import { describe, it, expect } from "vitest";
 import {
   bossToStageIndex,
+  bossToStageId,
+  isActFullyCleared,
+  isActTrialsCleared,
+  isActUnlocked,
   isBossDefeated,
   isCardUnlocked,
+  isStageCleared,
+  isStageUnlocked,
   filterUnlockedCards,
   diffUnlocks,
 } from "../src/game/unlocks";
+import { ACTS } from "../src/game/content/acts";
 import { POOL, type Card } from "../src/game/cards";
 import { PRIMAL_SKILLS, type PrimalSkillDef } from "../src/game/skills";
 import { defaultEnemyKills, type PlayerStats } from "../src/game/data/types";
 
 function makeStats(normalCleared: boolean[]): PlayerStats {
+  // Mirror the legacy positional flags into the stageId-keyed map so
+  // current-API helpers (isStageCleared / isActUnlocked / etc.) see the same
+  // truth as `isBossDefeated` did historically. Test fixtures may pass arrays
+  // of any length; map only the indices that exist in STAGE_CONFIGS.
+  const clearedStages: Record<string, boolean> = {};
+  const STAGE_IDS = ["stage1", "stage2", "stage3", "stage4", "stage5"];
+  STAGE_IDS.forEach((id, i) => {
+    if (normalCleared[i] === true) clearedStages[id] = true;
+  });
   return {
     totalRuns: 0,
     totalKills: 0,
@@ -18,6 +34,7 @@ function makeStats(normalCleared: boolean[]): PlayerStats {
     enemyKills: defaultEnemyKills(),
     bestSurvivalWave: 0,
     normalCleared,
+    clearedStages,
     totalPointsEarned: 0,
   };
 }
@@ -156,6 +173,77 @@ describe("unlock system", () => {
     const same = makeStats([true, true, false, false, false]);
     const diff = diffUnlocks(same, same, POOL, allSkillDefs);
     expect(diff.newTrophies).toHaveLength(0);
+  });
+
+  // ── Acts / stageId map ──────────────────────────────────────────────────
+
+  it("bossToStageId returns canonical stageIds", () => {
+    expect(bossToStageId("orthogon")).toBe("stage1");
+    expect(bossToStageId("jets")).toBe("stage2");
+    expect(bossToStageId("mirror")).toBe("stage3");
+    expect(bossToStageId("lattice")).toBe("stage4");
+    expect(bossToStageId("rift")).toBe("stage5");
+  });
+
+  it("isStageCleared reads stageId map", () => {
+    const stats = makeStats([true, false, true, false, false]);
+    expect(isStageCleared("stage1", stats)).toBe(true);
+    expect(isStageCleared("stage2", stats)).toBe(false);
+    expect(isStageCleared("stage3", stats)).toBe(true);
+  });
+
+  it("isActUnlocked: FORM is always unlocked, DECAY needs FORM cleared", () => {
+    const empty = makeStats([false, false, false, false, false]);
+    expect(isActUnlocked("form", empty)).toBe(true);
+    expect(isActUnlocked("decay", empty)).toBe(false);
+
+    const trialsOnly = makeStats([true, true, false, false, false]);
+    // Form trials cleared but gate not — DECAY still locked.
+    expect(isActTrialsCleared(ACTS[0]!, trialsOnly)).toBe(true);
+    expect(isActFullyCleared(ACTS[0]!, trialsOnly)).toBe(false);
+    expect(isActUnlocked("decay", trialsOnly)).toBe(false);
+
+    const formDone = makeStats([true, true, true, false, false]);
+    expect(isActFullyCleared(ACTS[0]!, formDone)).toBe(true);
+    expect(isActUnlocked("decay", formDone)).toBe(true);
+  });
+
+  it("isStageUnlocked: trials in any order, gate after all trials", () => {
+    const empty = makeStats([false, false, false, false, false]);
+    // FORM trials available immediately
+    expect(isStageUnlocked("stage1", empty)).toBe(true);
+    expect(isStageUnlocked("stage2", empty)).toBe(true);
+    // FORM gate locked until trials cleared
+    expect(isStageUnlocked("stage3", empty)).toBe(false);
+    // DECAY locked entirely
+    expect(isStageUnlocked("stage4", empty)).toBe(false);
+
+    const trialsCleared = makeStats([true, true, false, false, false]);
+    expect(isStageUnlocked("stage3", trialsCleared)).toBe(true);
+    expect(isStageUnlocked("stage4", trialsCleared)).toBe(false);
+
+    const formDone = makeStats([true, true, true, false, false]);
+    expect(isStageUnlocked("stage4", formDone)).toBe(true);
+    expect(isStageUnlocked("stage5", formDone)).toBe(true);
+  });
+
+  it("isStageUnlocked allows clearing trials in reverse order", () => {
+    // Clear stage2 first, then stage1 — both should be selectable, gate opens
+    // only after both are cleared.
+    const stage2First = makeStats([false, true, false, false, false]);
+    expect(isStageUnlocked("stage1", stage2First)).toBe(true);
+    expect(isStageUnlocked("stage2", stage2First)).toBe(true);
+    expect(isStageUnlocked("stage3", stage2First)).toBe(false);
+
+    const both = makeStats([true, true, false, false, false]);
+    expect(isStageUnlocked("stage3", both)).toBe(true);
+  });
+
+  it("isBossDefeated still reads cleared state via the new map", () => {
+    const partial = makeStats([true, false, true, false, false]);
+    expect(isBossDefeated("orthogon", partial)).toBe(true);
+    expect(isBossDefeated("jets", partial)).toBe(false);
+    expect(isBossDefeated("mirror", partial)).toBe(true);
   });
 
   // ── POOL integrity ────────────────────────────────────────────────────

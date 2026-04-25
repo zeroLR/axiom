@@ -9,7 +9,7 @@ import {
 // one import path and one schema version constant.
 
 /** Global schema version — bump when store shapes change. */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 // ── Player Profile ──────────────────────────────────────────────────────────
 
@@ -53,7 +53,19 @@ export interface PlayerStats {
   totalBossKills: number;
   enemyKills: Record<EnemyKind, number>;
   bestSurvivalWave: number;
-  normalCleared: boolean[];  // indexed 0..4 for 5 stages
+  /**
+   * Legacy positional clear flags, indexed 0..4 for the original 5 stages.
+   * Kept for backward compat with code paths (achievements, mirror boss
+   * spec, etc.) that still read by index. New code should prefer
+   * `clearedStages` which is keyed by `StageConfig.stageId`.
+   */
+  normalCleared: boolean[];
+  /**
+   * StageId-keyed clear map. Survives stage reordering and supports adding
+   * a 6th stage without bumping a positional array length. Authoritative
+   * source for Act-based unlock logic in `unlocks.ts`.
+   */
+  clearedStages: Record<string, boolean>;
   /** Cumulative points earned across all runs; used for progression unlocks. */
   totalPointsEarned: number;
 }
@@ -100,6 +112,7 @@ export function defaultPlayerProfile(): PlayerProfile {
       enemyKills: defaultEnemyKills(),
       bestSurvivalWave: 0,
       normalCleared: [false, false, false, false, false],
+      clearedStages: {},
       totalPointsEarned: 0,
     },
   };

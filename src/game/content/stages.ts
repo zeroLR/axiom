@@ -11,6 +11,7 @@
 import type { EnemyKind } from '../world';
 import type { EnemyArchetype } from './enemies';
 import type { BossId } from '../bosses/types';
+import type { ActId } from './acts';
 
 // ── Schema ───────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,12 @@ export interface StageConfig {
   /** Boss fought in this stage's final wave. */
   bossId: BossId;
   /**
+   * Optional Act/Chapter membership. When set, the stage participates in the
+   * Act-based unlock graph defined in `content/acts.ts`. Stages without an
+   * `actId` fall back to the legacy linear gate.
+   */
+  actId?: ActId;
+  /**
    * Multiplier applied to enemy HP, speed, and contact/weapon damage for
    * all regular enemies in this stage (bosses are scaled by `BossDef`).
    */
@@ -117,6 +124,7 @@ export interface StageConfig {
 const STAGE_1: StageConfig = {
   stageId: 'stage1',
   bossId: 'orthogon',
+  actId: 'form',
   enemyStrengthMul: 1,
   pointMul: 1,
   waves: [
@@ -160,6 +168,7 @@ const STAGE_1: StageConfig = {
 const STAGE_2: StageConfig = {
   stageId: 'stage2',
   bossId: 'jets',
+  actId: 'form',
   enemyStrengthMul: 1.5,
   pointMul: 2,
   waves: [
@@ -213,6 +222,7 @@ const STAGE_2: StageConfig = {
 const STAGE_3: StageConfig = {
   stageId: 'stage3',
   bossId: 'mirror',
+  actId: 'form',
   enemyStrengthMul: 2.0,
   pointMul: 3,
   waves: [
@@ -279,6 +289,7 @@ const STAGE_3: StageConfig = {
 const STAGE_4: StageConfig = {
   stageId: 'stage4',
   bossId: 'lattice',
+  actId: 'decay',
   enemyStrengthMul: 3.0,
   pointMul: 4,
   waves: [
@@ -362,6 +373,7 @@ const STAGE_4: StageConfig = {
 const STAGE_5: StageConfig = {
   stageId: 'stage5',
   bossId: 'rift',
+  actId: 'decay',
   enemyStrengthMul: 4.0,
   pointMul: 5,
   waves: [

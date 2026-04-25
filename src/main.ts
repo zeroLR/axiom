@@ -3164,6 +3164,15 @@ async function boot(): Promise<void> {
       result.wavesCleared >= normalStageWaveTarget
     ) {
       profile.stats.normalCleared[result.stageIndex] = true;
+      // Mirror the clear into the stageId-keyed map so Act-based unlock logic
+      // sees it without relying on positional indexing.
+      const stageCfg = STAGE_CONFIGS[result.stageIndex];
+      if (stageCfg) {
+        profile.stats.clearedStages = {
+          ...(profile.stats.clearedStages ?? {}),
+          [stageCfg.stageId]: true,
+        };
+      }
       // Auto-unlock the boss trophy alongside the stage-clear flag.
       const stageBossKind = bossKindForStage(result.stageIndex);
       const trophyDef = stageBossKind === 'boss' ? null : trophyForBoss(stageBossKind);

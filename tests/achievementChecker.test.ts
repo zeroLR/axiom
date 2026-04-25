@@ -17,6 +17,7 @@ function makeStats(overrides: Partial<PlayerStats> = {}): PlayerStats {
     enemyKills: defaultEnemyKills(),
     bestSurvivalWave: 0,
     normalCleared: [false, false, false],
+    clearedStages: {},
     totalPointsEarned: 0,
     ...overrides,
   };
