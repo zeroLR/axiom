@@ -136,9 +136,11 @@ export interface StageBeat {
   kind: StageBeatKind;
   /** Wave index this beat hooks into (1-based). The beat plays AFTER this wave. */
   afterWave: number;
-  /** Mini-boss enemy kind (required for `miniBoss`). */
+  /** Mini-boss enemy kind (required for `miniBoss`); also primary kind for `eliteAmbush`. */
   enemyKind?: EnemyKind;
-  /** Beat duration in seconds (used by `puzzle` / `hazardWave`). */
+  /** Number of enemies to spawn (eliteAmbush only; default 3). */
+  count?: number;
+  /** Beat duration in seconds (used by `puzzle` / `hazardWave`; default 6). */
   duration?: number;
   /** Hazard registry id (used by `hazardWave`). */
   hazardId?: string;

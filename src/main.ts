@@ -3000,6 +3000,21 @@ async function boot(): Promise<void> {
             }
           }
         },
+        onBeatStart: (meta) => {
+          // Surface the StageBeat as a title card so the player can read the
+          // beat's kind before its content arrives. hazardId / duration get
+          // promoted into the second line when present.
+          const headline = meta.kind === 'miniBoss' ? 'MINI-BOSS'
+            : meta.kind === 'eliteAmbush' ? 'ELITE AMBUSH'
+            : meta.kind === 'hazardWave' ? 'HAZARD'
+            : 'PUZZLE';
+          const detail = meta.hazardId
+            ? meta.hazardId.toUpperCase()
+            : meta.duration !== undefined
+              ? `${meta.duration}s`
+              : '';
+          showTitleCard(detail ? [headline, detail] : [headline]);
+        },
       },
       mapper,
       {

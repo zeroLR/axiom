@@ -94,22 +94,66 @@ function compileWave(wave: WaveTemplate, stageIndex: number, rng?: Rng): WaveSpe
  * than producing silently empty waves.
  */
 function compileBeat(beat: StageBeat, indexHint: number): WaveSpec {
-  if (beat.kind === 'miniBoss') {
-    if (!beat.enemyKind) {
-      throw new Error(
-        `stageCompiler: miniBoss beat after wave ${beat.afterWave} requires \`enemyKind\``,
-      );
+  switch (beat.kind) {
+    case 'miniBoss': {
+      if (!beat.enemyKind) {
+        throw new Error(
+          `stageCompiler: miniBoss beat after wave ${beat.afterWave} requires \`enemyKind\``,
+        );
+      }
+      return {
+        index: indexHint,
+        durationHint: 18,
+        groups: [{ t: 0.5, kind: beat.enemyKind, count: 1 }],
+        beatMeta: { kind: 'miniBoss', afterWave: beat.afterWave },
+      };
     }
-    return {
-      index: indexHint,
-      durationHint: 18,
-      groups: [{ t: 0.5, kind: beat.enemyKind, count: 1 }],
-      beatMeta: { kind: 'miniBoss', afterWave: beat.afterWave },
-    };
+    case 'eliteAmbush': {
+      if (!beat.enemyKind) {
+        throw new Error(
+          `stageCompiler: eliteAmbush beat after wave ${beat.afterWave} requires \`enemyKind\``,
+        );
+      }
+      const count = Math.max(1, beat.count ?? 3);
+      return {
+        index: indexHint,
+        durationHint: 12,
+        // Burst the elites in 0.5s, 1.0s, 1.5s ... so the engine treats them
+        // as three quick spawns rather than a single instant blob.
+        groups: Array.from({ length: count }, (_, i) => ({
+          t: 0.5 + i * 0.5,
+          kind: beat.enemyKind!,
+          count: 1,
+        })),
+        beatMeta: { kind: 'eliteAmbush', afterWave: beat.afterWave },
+      };
+    }
+    case 'hazardWave': {
+      const duration = beat.duration ?? 6;
+      return {
+        index: indexHint,
+        durationHint: duration,
+        groups: [],
+        minHoldSec: duration,
+        beatMeta: {
+          kind: 'hazardWave',
+          afterWave: beat.afterWave,
+          hazardId: beat.hazardId,
+          duration,
+        },
+      };
+    }
+    case 'puzzle': {
+      const duration = beat.duration ?? 6;
+      return {
+        index: indexHint,
+        durationHint: duration,
+        groups: [],
+        minHoldSec: duration,
+        beatMeta: { kind: 'puzzle', afterWave: beat.afterWave, duration },
+      };
+    }
   }
-  throw new Error(
-    `stageCompiler: StageBeat kind "${beat.kind}" is reserved schema; handler not implemented yet`,
-  );
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
