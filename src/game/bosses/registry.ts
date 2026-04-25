@@ -11,6 +11,7 @@ import { jetsBossDef } from "./jets";
 import { mirrorBossDef } from "./mirror";
 import { latticeBossDef } from "./lattice";
 import { riftBossDef } from "./rift";
+import { nexusBossDef } from "./nexus";
 import { STAGE_CONFIGS } from "../content/stages";
 
 export const BOSS_REGISTRY: Record<BossId, BossDef> = {
@@ -19,6 +20,7 @@ export const BOSS_REGISTRY: Record<BossId, BossDef> = {
   mirror: mirrorBossDef,
   lattice: latticeBossDef,
   rift: riftBossDef,
+  nexus: nexusBossDef,
 };
 
 /** Stage-index (0-based) → boss definition for that stage's final wave. */

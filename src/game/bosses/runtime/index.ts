@@ -4,6 +4,7 @@ import type { Components, EntityId, World } from "../../world";
 import { updateJetsPattern } from "./jets";
 import { updateLatticePattern } from "./lattice";
 import { updateMirrorBossAbilities } from "./mirror";
+import { updateNexusPattern } from "./nexus";
 import { updateOrthogonPattern } from "./orthogon";
 import { updateRiftPattern } from "./rift";
 
@@ -88,6 +89,9 @@ export function updateBossWeapon(
         break;
       case "rift":
         updateRiftPattern(world, c, ax, ay, rng, dt, fireAimedFan);
+        break;
+      case "nexus":
+        updateNexusPattern(world, c, ax, ay, rng, dt, fireAimedFan);
         break;
       default:
         updateStandardPattern(world, c, ax, ay, rng, dt);

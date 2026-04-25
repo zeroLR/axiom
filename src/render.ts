@@ -270,6 +270,8 @@ function enemyColor(kind: EnemyKind, dark: boolean): number {
         return 0x80cbc4;
       case 'rift':
         return 0xce93d8;
+      case 'nexus':
+        return 0xffd740;
     }
   }
   switch (kind) {
@@ -311,6 +313,8 @@ function enemyColor(kind: EnemyKind, dark: boolean): number {
       return 0xe0f2f1;
     case 'rift':
       return 0xede7f6;
+    case 'nexus':
+      return 0xfff8e1;
   }
 }
 

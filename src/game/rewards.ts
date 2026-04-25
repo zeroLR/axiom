@@ -37,6 +37,7 @@ export const BASE_KILL_POINTS: Record<EnemyKind, number> = {
   mirror: 50,
   lattice: 50,
   rift: 50,
+  nexus: 50,
 };
 
 /**
@@ -152,7 +153,7 @@ export function emptyFragmentTally(): FragmentTally {
  * boss-only drop path instead.
  */
 const BASE_FRAGMENT_DROP: Partial<Record<EnemyKind, number>> = {
-  boss: 0, orthogon: 0, jets: 0, mirror: 0, lattice: 0, rift: 0,
+  boss: 0, orthogon: 0, jets: 0, mirror: 0, lattice: 0, rift: 0, nexus: 0,
 };
 
 /**
@@ -201,7 +202,8 @@ export function rollFragmentDrops(
     kind === 'jets' ||
     kind === 'mirror' ||
     kind === 'lattice' ||
-    kind === 'rift'
+    kind === 'rift' ||
+    kind === 'nexus'
   ) {
     tally.boss = 1 + Math.floor(rng() * 5); // 1–5
     tally.detailed[`boss-${kind}`] += tally.boss;

@@ -99,6 +99,21 @@ export const STAGE_THEMES: readonly StageTheme[] = [
     theoremLine: '"the null set expands"',
     accentTint: "rgba(206,147,216,0.12)",
   },
+  {
+    name: "Null Grid",
+    background: 0x0a0a12,
+    gridColor: 0x1c1c2e,
+    overlayBg: "rgba(10,10,18,0.62)",
+    dark: true,
+    playerColor: 0xffd740,
+    enemyStroke: 0xffe57f,
+    fogColor: 0xffd740,
+    fogAlpha: 0.14,
+    bossId: "nexus",
+    domainName: "NEXUS",
+    theoremLine: '"all axioms collapse here"',
+    accentTint: "rgba(255,215,64,0.08)",
+  },
 ];
 
 /** The default theme (stage 0 / survival fallback). */

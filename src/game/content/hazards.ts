@@ -9,9 +9,10 @@
 //   2. Add an entry below.
 //   3. (Optional) author CSS for `body[data-hazard="<id>"]` in style.css.
 
+import { PLAY_H, PLAY_W } from "../config";
 import type { Components } from "../world";
 
-export type HazardId = "fog" | "axis-lock";
+export type HazardId = "fog" | "axis-lock" | "slow" | "mirror" | "pull-toward" | "static-field";
 
 export interface HazardDef {
   id: HazardId;
@@ -50,9 +51,57 @@ const FOG: HazardDef = {
   // No avatar tick — fog is visual-only via CSS overlay.
 };
 
+const SLOW: HazardDef = {
+  id: "slow",
+  name: "Slow",
+  description: "Movement speed reduced to 45%.",
+  // play.ts snapshots speedMul before wave and restores after — safe to override each frame.
+  applyAvatarTick: (c) => {
+    if (c.avatar) c.avatar.speedMul = Math.min(c.avatar.speedMul, 0.45);
+  },
+};
+
+const MIRROR: HazardDef = {
+  id: "mirror",
+  name: "Mirror",
+  description: "Movement inputs are reflected through the field centre.",
+  applyAvatarTick: (c) => {
+    if (!c.avatar) return;
+    c.avatar.targetX = PLAY_W - c.avatar.targetX;
+    c.avatar.targetY = PLAY_H - c.avatar.targetY;
+  },
+};
+
+const PULL_TOWARD: HazardDef = {
+  id: "pull-toward",
+  name: "Pull-Toward",
+  description: "Gravitational bias draws movement toward the field centre.",
+  applyAvatarTick: (c, dt) => {
+    if (!c.avatar || !c.pos) return;
+    const cx = PLAY_W / 2;
+    const cy = PLAY_H / 2;
+    const strength = 60;
+    c.avatar.targetX += (cx - c.pos.x) * dt * (strength / 200);
+    c.avatar.targetY += (cy - c.pos.y) * dt * (strength / 200);
+  },
+};
+
+const STATIC_FIELD: HazardDef = {
+  id: "static-field",
+  name: "Static Field",
+  description: "Speed reduced to 60%; electromagnetic interference disrupts movement.",
+  applyAvatarTick: (c) => {
+    if (c.avatar) c.avatar.speedMul = Math.min(c.avatar.speedMul, 0.60);
+  },
+};
+
 export const HAZARD_REGISTRY: Record<HazardId, HazardDef> = {
   fog: FOG,
   "axis-lock": AXIS_LOCK,
+  slow: SLOW,
+  mirror: MIRROR,
+  "pull-toward": PULL_TOWARD,
+  "static-field": STATIC_FIELD,
 };
 
 export function getHazardDef(id: string | undefined): HazardDef | null {

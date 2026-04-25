@@ -147,6 +147,7 @@ function defaultEnemySpawnConfig(): Record<EnemyKind, DeveloperEnemySpawn> {
     mirror: { enabled: false, count: 1 },
     lattice: { enabled: false, count: 1 },
     rift: { enabled: false, count: 1 },
+    nexus: { enabled: false, count: 1 },
   };
 }
 
@@ -236,6 +237,8 @@ export class PlayScene implements Scene {
   private currentBeatMeta: WaveBeatMeta | null = null;
   /** Hazard def resolved from the current wave's `beatMeta.hazardId`. */
   private currentHazard: HazardDef | null = null;
+  /** Avatar speedMul snapshotted at wave start; restored in clearBeatState. */
+  private hazardSpeedMulSnapshot = 1;
 
   constructor(
     rng: Rng,
@@ -327,6 +330,11 @@ export class PlayScene implements Scene {
     if (meta) {
       this.currentBeatMeta = meta;
       this.currentHazard = meta.kind === 'hazardWave' ? getHazardDef(meta.hazardId) : null;
+      if (this.currentHazard?.applyAvatarTick) {
+        // Snapshot speedMul before the hazard can cap it; restored in clearBeatState.
+        const av = this.world.get(this.avatarId)?.avatar;
+        if (av) this.hazardSpeedMulSnapshot = av.speedMul;
+      }
       if (typeof document !== 'undefined' && document.body) {
         document.body.dataset.beat = meta.kind;
         if (this.currentHazard) {
@@ -343,6 +351,11 @@ export class PlayScene implements Scene {
    * authored duration.
    */
   private clearBeatState(): void {
+    // Restore speedMul if a speed-modifying hazard was active.
+    if (this.currentHazard?.applyAvatarTick) {
+      const av = this.world.get(this.avatarId)?.avatar;
+      if (av) av.speedMul = this.hazardSpeedMulSnapshot;
+    }
     this.currentBeatMeta = null;
     this.currentHazard = null;
     if (typeof document !== 'undefined' && document.body) {

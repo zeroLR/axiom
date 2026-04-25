@@ -24,11 +24,15 @@ export const LATTICE_SCRIPT: BossPhaseScript = {
     {
       steps: [
         { kind: "fanAtPlayer" },
-        // Enrage-only homing chaser. `count: 1` with `spread: 0` reproduces
-        // the original single-shot behaviour from runtime/lattice.ts.
+        // Enrage: homing chaser piggybacked on the fan.
         {
           kind: "ifEnraged",
           then: { kind: "homingAtPlayer", count: 1, speed: 180, spread: 0 },
+        },
+        // Enrage: freeze up to 3 non-boss enemies (grid-lock mechanic).
+        {
+          kind: "ifEnraged",
+          then: { kind: "freezeEnemies", count: 3, duration: 2.5 },
         },
       ],
       cooldown: 0.2,

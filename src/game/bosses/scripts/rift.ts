@@ -31,6 +31,12 @@ export const RIFT_SCRIPT: BossPhaseScript = {
           speed: 130,
           useRotateOffset: true,
         },
+        // Enrage: force-dash the avatar to the opposite side of the field so
+        // they land inside the spreading burst.
+        {
+          kind: "ifEnraged",
+          then: { kind: "forceDash", playW: PLAY_W, playH: PLAY_H },
+        },
       ],
       cooldown: 1.0,
       enragedCooldown: 0.7,

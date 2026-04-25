@@ -91,6 +91,7 @@ export function defaultEnemyKills(): Record<EnemyKind, number> {
     mirror: 0,
     lattice: 0,
     rift: 0,
+    nexus: 0,
   };
 }
 
@@ -193,7 +194,8 @@ export type TrophyId =
   | "wing-dash"
   | "mirror-echo"
   | "grid-overlay"
-  | "void-blink";
+  | "void-blink"
+  | "nexus-core";
 
 /** Persistent trophy progression: which trophies are unlocked and which one is equipped. */
 export interface TrophyState {
@@ -210,6 +212,7 @@ export function defaultTrophyState(): TrophyState {
       "mirror-echo": false,
       "grid-overlay": false,
       "void-blink": false,
+      "nexus-core": false,
     },
     equipped: null,
   };

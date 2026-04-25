@@ -166,6 +166,10 @@ export const ENEMY_REGISTRY: Record<EnemyKind, EnemyDef> = {
     kind: "rift",
     stats: { hp: 460, maxSpeed: 42, contactDamage: 1, radius: 24 },
   },
+  nexus: {
+    kind: "nexus",
+    stats: { hp: 620, maxSpeed: 36, contactDamage: 1, radius: 26 },
+  },
 };
 
 // ── Archetype pool helpers ───────────────────────────────────────────────────

@@ -79,6 +79,14 @@ export const TROPHIES: readonly TrophyDef[] = [
     passive: { iframeAdd: 0.04 },
     grantsSkill: "lifestealPulse",
   },
+  {
+    id: "nexus-core",
+    fromBoss: "nexus",
+    name: "Nexus Core",
+    description: "+2 weapon damage. Equip for Barrage skill.",
+    passive: { damageAdd: 2 },
+    grantsSkill: "barrage",
+  },
 ];
 
 const TROPHY_BY_ID: Record<TrophyId, TrophyDef> = Object.fromEntries(

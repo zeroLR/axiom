@@ -19,6 +19,7 @@ export const BOSS_FRAGMENT_KINDS = [
   "mirror",
   "lattice",
   "rift",
+  "nexus",
 ] as const;
 
 export type EliteFragmentKind = (typeof ELITE_FRAGMENT_KINDS)[number];
@@ -62,6 +63,7 @@ const BASE_STRENGTH: Record<EnemyKind, number> = {
   mirror: 50,
   lattice: 50,
   rift: 50,
+  nexus: 50,
 };
 
 export const FRAGMENT_META: readonly FragmentMeta[] = [
@@ -125,6 +127,8 @@ export function bossKindForStage(stageIndex: number): BossFragmentKind {
       return "lattice";
     case 4:
       return "rift";
+    case 5:
+      return "nexus";
     default:
       return "boss";
   }
