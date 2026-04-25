@@ -2141,6 +2141,39 @@ select.developer-form-input {
   stroke-width: 1.5;
 }
 
+/* ── Main menu sections ─────────────────────────────────────────────────── */
+
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.menu-section--mode {
+  margin-top: 0;
+}
+
+.menu-section-title {
+  margin: 0 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.menu-data-row {
+  display: flex;
+  gap: 8px;
+}
+
 /* ── Scene-aware chrome (topbar / footer / version) ─────────────────────── */
 
 body:not([data-scene="play"]) #hud-hp,
