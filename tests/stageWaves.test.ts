@@ -3,11 +3,14 @@ import { STAGE_WAVES } from "../src/game/stageWaves";
 
 describe("stage waves", () => {
   it("uses configured wave counts per stage", () => {
-    expect(STAGE_WAVES[0]).toHaveLength(6);
-    expect(STAGE_WAVES[1]).toHaveLength(7);
-    expect(STAGE_WAVES[2]).toHaveLength(8);
-    expect(STAGE_WAVES[3]).toHaveLength(10);
-    expect(STAGE_WAVES[4]).toHaveLength(12);
+    // Compiled lengths include any synthetic StageBeat waves spliced in by
+    // the compiler. Authored wave counts are still 6/7/8/10/12; each stage
+    // currently adds exactly one beat after the rename.
+    expect(STAGE_WAVES[0]).toHaveLength(7);
+    expect(STAGE_WAVES[1]).toHaveLength(8);
+    expect(STAGE_WAVES[2]).toHaveLength(9);
+    expect(STAGE_WAVES[3]).toHaveLength(11);
+    expect(STAGE_WAVES[4]).toHaveLength(13);
   });
 
   it("keeps wave indices monotonic in each stage", () => {

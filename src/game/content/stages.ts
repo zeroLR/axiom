@@ -190,6 +190,11 @@ const STAGE_1: StageConfig = {
     ] },
     { index: 6, durationHint: 60, isBossWave: true, spawns: [] },
   ],
+  beats: [
+    // After wave 3 the player faces a single pentagon mini-boss as a soft
+    // intro to the elite tier before the Orthogon fight.
+    { kind: 'miniBoss', afterWave: 3, enemyKind: 'pentagon' },
+  ],
 };
 
 /** Stage 2 — "Deep Blue" · WING · Boss: Jets */
@@ -243,6 +248,11 @@ const STAGE_2: StageConfig = {
       { t: 22,  kind: 'pentagon', count: 3 },
     ] },
     { index: 7, durationHint: 60, isBossWave: true, spawns: [] },
+  ],
+  beats: [
+    // Mid-stage rusher swarm. Wing/Jets territory rewards the player who
+    // already learned to handle diamond dashes earlier in the stage.
+    { kind: 'eliteAmbush', afterWave: 4, enemyKind: 'diamond', count: 4 },
   ],
 };
 
@@ -310,6 +320,11 @@ const STAGE_3: StageConfig = {
       { t: 28,  kind: 'diamond',  count: 4 },
     ] },
     { index: 8, durationHint: 60, isBossWave: true, spawns: [] },
+  ],
+  beats: [
+    // Fog beat sets the stage for Mirror's adaptive fight — vision narrows
+    // before the boss reads the player's deck.
+    { kind: 'hazardWave', afterWave: 5, hazardId: 'fog', duration: 6 },
   ],
 };
 
@@ -394,6 +409,11 @@ const STAGE_4: StageConfig = {
       { t: 30,  kind: 'hexagon',  count: 2 },
     ] },
     { index: 10, durationHint: 60, isBossWave: true, spawns: [] },
+  ],
+  beats: [
+    // Axis-Lock literalises the GRID domain — movement collapses to one
+    // cardinal at a time, foreshadowing Lattice's axis volleys.
+    { kind: 'hazardWave', afterWave: 6, hazardId: 'axis-lock', duration: 6 },
   ],
 };
 
@@ -502,6 +522,11 @@ const STAGE_5: StageConfig = {
       { t: 30,  kind: 'prism',    count: 4 },
     ] },
     { index: 12, durationHint: 60, isBossWave: true, spawns: [] },
+  ],
+  beats: [
+    // Pre-boss puzzle: the void mutes the player's weapons for 4 seconds —
+    // pure dodge endurance before facing Rift.
+    { kind: 'puzzle', afterWave: 8, duration: 4 },
   ],
 };
 
