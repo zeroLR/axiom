@@ -25,6 +25,8 @@ export interface StageTheme {
   domainName: string;
   /** Theorem flavour text displayed on stage entry / boss spawn. */
   theoremLine: string;
+  /** Optional subtle CSS tint applied to chrome (topbar/title-card/hud-skills). */
+  accentTint?: string;
 }
 
 export const STAGE_THEMES: readonly StageTheme[] = [
@@ -50,6 +52,7 @@ export const STAGE_THEMES: readonly StageTheme[] = [
     bossId: "jets",
     domainName: "WING",
     theoremLine: '"edges strike first"',
+    accentTint: "rgba(170,200,255,0.10)",
   },
   {
     name: "Dark Core",
@@ -64,6 +67,7 @@ export const STAGE_THEMES: readonly StageTheme[] = [
     bossId: "mirror",
     domainName: "MIRROR",
     theoremLine: '"every inference reflects"',
+    accentTint: "rgba(255,180,150,0.10)",
   },
   {
     name: "Grid Lock",
@@ -78,6 +82,7 @@ export const STAGE_THEMES: readonly StageTheme[] = [
     bossId: "lattice",
     domainName: "GRID",
     theoremLine: '"all planes align"',
+    accentTint: "rgba(178,223,219,0.10)",
   },
   {
     name: "Void Core",
@@ -92,6 +97,7 @@ export const STAGE_THEMES: readonly StageTheme[] = [
     bossId: "rift",
     domainName: "VOID",
     theoremLine: '"the null set expands"',
+    accentTint: "rgba(206,147,216,0.12)",
   },
 ];
 

@@ -69,6 +69,7 @@ export function openOverlay(opts: { constrained?: boolean } = {}): OpenOverlayRe
   inner.appendChild(content);
 
   overlay.hidden = false;
+  document.body.dataset.overlay = 'open';
   return { overlay, inner, content };
 }
 
@@ -86,6 +87,7 @@ export function initOverlay(): { overlay: HTMLElement; inner: HTMLElement } {
   const { overlay, inner } = els;
   inner.innerHTML = '';
   overlay.hidden = false;
+  document.body.dataset.overlay = 'open';
   return { overlay, inner };
 }
 
@@ -100,6 +102,7 @@ export function closeOverlay(opts: { constrained?: boolean } = {}): void {
   if (opts.constrained) inner.classList.remove('overlay-constrained');
   inner.innerHTML = '';
   overlay.hidden = true;
+  delete document.body.dataset.overlay;
 }
 
 // ── Element factories ────────────────────────────────────────────────────────

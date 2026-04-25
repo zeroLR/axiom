@@ -1679,12 +1679,12 @@ select.developer-form-input {
 /* ── Title-card overlay (stage entry / boss spawn) ─────────────────────── */
 .title-card {
   position: absolute;
-  top: 30%;
+  top: 14px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   text-align: center;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 400;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1693,7 +1693,15 @@ select.developer-form-input {
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 50;
-  line-height: 1.6;
+  line-height: 1.5;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--chrome);
+  border-radius: 10px;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
 }
 
 /* ── Synergy HUD chips ─────────────────────────────────────────────────────── */
@@ -2196,8 +2204,25 @@ body[data-scene="menu"] #topbar {
   justify-content: flex-end;
 }
 
-body:not([data-scene="play"]) #hud-skills {
+body:not([data-scene="play"]) #hud-skills,
+body[data-overlay="open"] #hud-skills {
   display: none;
+}
+
+body[data-scene="play"] #topbar {
+  background:
+    linear-gradient(180deg, var(--domain-tint, transparent), var(--bg) 70%),
+    var(--bg);
+}
+
+body[data-scene="play"] #hud-skills {
+  background:
+    linear-gradient(0deg, var(--domain-tint, transparent), var(--bg) 70%),
+    var(--bg);
+}
+
+body[data-scene="play"] .title-card {
+  border-color: color-mix(in srgb, var(--domain-tint, var(--chrome)) 80%, var(--chrome));
 }
 
 body:not([data-scene="play"]) #footer-hint {

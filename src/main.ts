@@ -335,12 +335,13 @@ async function boot(): Promise<void> {
     app.renderer.background.color = theme.background;
     const overlay = document.getElementById('overlay');
     if (overlay) overlay.style.background = theme.overlayBg;
+    document.body.style.setProperty('--domain-tint', theme.accentTint ?? 'transparent');
   }
 
   // ── Title-card (stage entry / boss spawn) ────────────────────────────────
 
   /** Show a brief monospace title-card that fades in/out without blocking input. */
-  function showTitleCard(lines: string[], durationMs = 1500): void {
+  function showTitleCard(lines: string[], durationMs = 1100): void {
     const container = document.createElement('div');
     container.className = 'title-card';
     for (const line of lines) {
