@@ -29,6 +29,11 @@ export function updateWave(state: WaveState, world: World, rng: Rng, dt: number)
     for (const [, c] of world.with("enemy", "hp")) {
       if ((c.hp?.value ?? 0) > 0) { alive = true; break; }
     }
-    if (!alive) state.cleared = true;
+    // Duration-only synthetic waves (puzzle / hazardWave beats) hold the wave
+    // open for `minHoldSec` even when no enemies are alive, so the player
+    // experiences the full beat length.
+    const heldOpen =
+      state.spec.minHoldSec !== undefined && state.elapsed < state.spec.minHoldSec;
+    if (!alive && !heldOpen) state.cleared = true;
   }
 }

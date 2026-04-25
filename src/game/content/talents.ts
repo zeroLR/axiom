@@ -29,12 +29,12 @@ export type TalentNodeRole = "connector" | "vertex" | "core";
 
 /** Identifier of a hex cluster — six clusters total (two per branch). */
 export type TalentClusterId =
-  | "survivalHp"
-  | "survivalMobility"
-  | "offenseDamage"
-  | "offenseTempo"
-  | "efficiencyPoints"
-  | "efficiencyFragments";
+  | "axisGuard"
+  | "wingFlow"
+  | "mirrorPress"
+  | "gridPulse"
+  | "voidYield"
+  | "coreSyntax";
 
 export interface TalentNodeDef {
   id: TalentId;
@@ -63,9 +63,9 @@ export interface TalentNodeDef {
 // Core requires the cluster's V3 (the vertex farthest from origin) at its max.
 
 export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
-  // ── CLUSTER: SURVIVAL · HP ────────────────────────────────────────────────
-  survivalHpConn: {
-    id: "survivalHpConn", branch: "survival", cluster: "survivalHp", role: "connector",
+  // ── CLUSTER: AXIS · GUARD ────────────────────────────────────────────────
+  axisGuardConn: {
+    id: "axisGuardConn", branch: "survival", cluster: "axisGuard", role: "connector",
     name: "Vital Link", description: "Increase starting max HP.",
     fragmentKind: "basic", effectKind: "maxHpAdd",
     levels: [
@@ -74,11 +74,11 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 230, fragmentCost: 22, bonus: 1 },
     ],
   },
-  survivalHpV0: {
-    id: "survivalHpV0", branch: "survival", cluster: "survivalHp", role: "vertex", vertexSlot: 0,
+  axisGuardV0: {
+    id: "axisGuardV0", branch: "survival", cluster: "axisGuard", role: "vertex", vertexSlot: 0,
     name: "Cell Density I", description: "Increase starting max HP.",
     fragmentKind: "basic", effectKind: "maxHpAdd",
-    requires: { id: "survivalHpConn", level: 1 },
+    requires: { id: "axisGuardConn", level: 1 },
     levels: [
       { pointCost: 130, fragmentCost: 11, bonus: 1 },
       { pointCost: 200, fragmentCost: 17, bonus: 1 },
@@ -86,11 +86,11 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 370, fragmentCost: 33, bonus: 1 },
     ],
   },
-  survivalHpV1: {
-    id: "survivalHpV1", branch: "survival", cluster: "survivalHp", role: "vertex", vertexSlot: 1,
+  axisGuardV1: {
+    id: "axisGuardV1", branch: "survival", cluster: "axisGuard", role: "vertex", vertexSlot: 1,
     name: "Cell Density II", description: "Increase starting max HP.",
     fragmentKind: "basic", effectKind: "maxHpAdd",
-    requires: { id: "survivalHpV0", level: 2 },
+    requires: { id: "axisGuardV0", level: 2 },
     levels: [
       { pointCost: 170, fragmentCost: 14, bonus: 1 },
       { pointCost: 240, fragmentCost: 20, bonus: 1 },
@@ -98,11 +98,11 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 420, fragmentCost: 36, bonus: 1 },
     ],
   },
-  survivalHpV2: {
-    id: "survivalHpV2", branch: "survival", cluster: "survivalHp", role: "vertex", vertexSlot: 2,
+  axisGuardV2: {
+    id: "axisGuardV2", branch: "survival", cluster: "axisGuard", role: "vertex", vertexSlot: 2,
     name: "Vitality Matrix I", description: "Greatly increase starting max HP.",
     fragmentKind: "basic", effectKind: "maxHpAdd",
-    requires: { id: "survivalHpV1", level: 2 },
+    requires: { id: "axisGuardV1", level: 2 },
     levels: [
       { pointCost: 210, fragmentCost: 17, bonus: 2 },
       { pointCost: 290, fragmentCost: 23, bonus: 2 },
@@ -110,11 +110,11 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 480, fragmentCost: 40, bonus: 2 },
     ],
   },
-  survivalHpV3: {
-    id: "survivalHpV3", branch: "survival", cluster: "survivalHp", role: "vertex", vertexSlot: 3,
+  axisGuardV3: {
+    id: "axisGuardV3", branch: "survival", cluster: "axisGuard", role: "vertex", vertexSlot: 3,
     name: "Vitality Matrix II", description: "Greatly increase starting max HP.",
     fragmentKind: "basic", effectKind: "maxHpAdd",
-    requires: { id: "survivalHpV2", level: 2 },
+    requires: { id: "axisGuardV2", level: 2 },
     levels: [
       { pointCost: 260, fragmentCost: 21, bonus: 2 },
       { pointCost: 350, fragmentCost: 28, bonus: 2 },
@@ -122,33 +122,33 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 580, fragmentCost: 46, bonus: 2 },
     ],
   },
-  survivalHpV4: {
-    id: "survivalHpV4", branch: "survival", cluster: "survivalHp", role: "vertex", vertexSlot: 4,
+  axisGuardV4: {
+    id: "axisGuardV4", branch: "survival", cluster: "axisGuard", role: "vertex", vertexSlot: 4,
     name: "Vitality Matrix III", description: "Greatly increase starting max HP.",
     fragmentKind: "basic", effectKind: "maxHpAdd",
-    requires: { id: "survivalHpV3", level: 2 },
+    requires: { id: "axisGuardV3", level: 2 },
     levels: [
       { pointCost: 310, fragmentCost: 25, bonus: 2 },
       { pointCost: 410, fragmentCost: 32, bonus: 2 },
       { pointCost: 530, fragmentCost: 41, bonus: 2 },
     ],
   },
-  survivalHpV5: {
-    id: "survivalHpV5", branch: "survival", cluster: "survivalHp", role: "vertex", vertexSlot: 5,
+  axisGuardV5: {
+    id: "axisGuardV5", branch: "survival", cluster: "axisGuard", role: "vertex", vertexSlot: 5,
     name: "Cell Density III", description: "Increase starting max HP.",
     fragmentKind: "basic", effectKind: "maxHpAdd",
-    requires: { id: "survivalHpV4", level: 2 },
+    requires: { id: "axisGuardV4", level: 2 },
     levels: [
       { pointCost: 360, fragmentCost: 28, bonus: 1 },
       { pointCost: 470, fragmentCost: 36, bonus: 1 },
       { pointCost: 600, fragmentCost: 46, bonus: 1 },
     ],
   },
-  survivalHpCore: {
-    id: "survivalHpCore", branch: "survival", cluster: "survivalHp", role: "core",
+  axisGuardCore: {
+    id: "axisGuardCore", branch: "survival", cluster: "axisGuard", role: "core",
     name: "Bastion Core", description: "Massive increase to starting max HP.",
     fragmentKind: "elite", effectKind: "maxHpAdd",
-    requires: { id: "survivalHpV3", level: 4 },
+    requires: { id: "axisGuardV3", level: 4 },
     isCore: true,
     unlockAfterBoss: "orthogon",
     levels: [
@@ -157,9 +157,9 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     ],
   },
 
-  // ── CLUSTER: SURVIVAL · MOBILITY ──────────────────────────────────────────
-  survivalMobilityConn: {
-    id: "survivalMobilityConn", branch: "survival", cluster: "survivalMobility", role: "connector",
+  // ── CLUSTER: WING · FLOW ──────────────────────────────────────────
+  wingFlowConn: {
+    id: "wingFlowConn", branch: "survival", cluster: "wingFlow", role: "connector",
     name: "Kinetic Link", description: "Increase movement speed.",
     fragmentKind: "basic", effectKind: "speedMul",
     levels: [
@@ -168,77 +168,77 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 240, fragmentCost: 22, bonus: 0.02 },
     ],
   },
-  survivalMobilityV0: {
-    id: "survivalMobilityV0", branch: "survival", cluster: "survivalMobility", role: "vertex", vertexSlot: 0,
+  wingFlowV0: {
+    id: "wingFlowV0", branch: "survival", cluster: "wingFlow", role: "vertex", vertexSlot: 0,
     name: "Kinetic Drive I", description: "Increase movement speed.",
     fragmentKind: "basic", effectKind: "speedMul",
-    requires: { id: "survivalMobilityConn", level: 1 },
+    requires: { id: "wingFlowConn", level: 1 },
     levels: [
       { pointCost: 140, fragmentCost: 11, bonus: 0.02 },
       { pointCost: 210, fragmentCost: 17, bonus: 0.02 },
       { pointCost: 290, fragmentCost: 25, bonus: 0.02 },
     ],
   },
-  survivalMobilityV1: {
-    id: "survivalMobilityV1", branch: "survival", cluster: "survivalMobility", role: "vertex", vertexSlot: 1,
+  wingFlowV1: {
+    id: "wingFlowV1", branch: "survival", cluster: "wingFlow", role: "vertex", vertexSlot: 1,
     name: "Kinetic Drive II", description: "Increase movement speed.",
     fragmentKind: "basic", effectKind: "speedMul",
-    requires: { id: "survivalMobilityV0", level: 2 },
+    requires: { id: "wingFlowV0", level: 2 },
     levels: [
       { pointCost: 180, fragmentCost: 14, bonus: 0.02 },
       { pointCost: 260, fragmentCost: 20, bonus: 0.02 },
       { pointCost: 350, fragmentCost: 28, bonus: 0.02 },
     ],
   },
-  survivalMobilityV2: {
-    id: "survivalMobilityV2", branch: "survival", cluster: "survivalMobility", role: "vertex", vertexSlot: 2,
+  wingFlowV2: {
+    id: "wingFlowV2", branch: "survival", cluster: "wingFlow", role: "vertex", vertexSlot: 2,
     name: "Phase Shell I", description: "Gain extra hit-invulnerability time.",
     fragmentKind: "elite", effectKind: "iframeAdd",
-    requires: { id: "survivalMobilityV1", level: 2 },
+    requires: { id: "wingFlowV1", level: 2 },
     levels: [
       { pointCost: 200, fragmentCost: 3, bonus: 0.04 },
       { pointCost: 290, fragmentCost: 4, bonus: 0.04 },
       { pointCost: 400, fragmentCost: 5, bonus: 0.04 },
     ],
   },
-  survivalMobilityV3: {
-    id: "survivalMobilityV3", branch: "survival", cluster: "survivalMobility", role: "vertex", vertexSlot: 3,
+  wingFlowV3: {
+    id: "wingFlowV3", branch: "survival", cluster: "wingFlow", role: "vertex", vertexSlot: 3,
     name: "Phase Shell II", description: "Gain extra hit-invulnerability time.",
     fragmentKind: "elite", effectKind: "iframeAdd",
-    requires: { id: "survivalMobilityV2", level: 2 },
+    requires: { id: "wingFlowV2", level: 2 },
     levels: [
       { pointCost: 250, fragmentCost: 4, bonus: 0.03 },
       { pointCost: 340, fragmentCost: 5, bonus: 0.03 },
       { pointCost: 460, fragmentCost: 6, bonus: 0.03 },
     ],
   },
-  survivalMobilityV4: {
-    id: "survivalMobilityV4", branch: "survival", cluster: "survivalMobility", role: "vertex", vertexSlot: 4,
+  wingFlowV4: {
+    id: "wingFlowV4", branch: "survival", cluster: "wingFlow", role: "vertex", vertexSlot: 4,
     name: "Gravity Lens I", description: "Increase pickup collection radius.",
     fragmentKind: "basic", effectKind: "pickupRadiusMul",
-    requires: { id: "survivalMobilityV3", level: 2 },
+    requires: { id: "wingFlowV3", level: 2 },
     levels: [
       { pointCost: 200, fragmentCost: 16, bonus: 0.05 },
       { pointCost: 280, fragmentCost: 22, bonus: 0.05 },
       { pointCost: 370, fragmentCost: 30, bonus: 0.05 },
     ],
   },
-  survivalMobilityV5: {
-    id: "survivalMobilityV5", branch: "survival", cluster: "survivalMobility", role: "vertex", vertexSlot: 5,
+  wingFlowV5: {
+    id: "wingFlowV5", branch: "survival", cluster: "wingFlow", role: "vertex", vertexSlot: 5,
     name: "Gravity Lens II", description: "Increase pickup collection radius.",
     fragmentKind: "basic", effectKind: "pickupRadiusMul",
-    requires: { id: "survivalMobilityV4", level: 2 },
+    requires: { id: "wingFlowV4", level: 2 },
     levels: [
       { pointCost: 250, fragmentCost: 20, bonus: 0.05 },
       { pointCost: 340, fragmentCost: 28, bonus: 0.05 },
       { pointCost: 450, fragmentCost: 37, bonus: 0.05 },
     ],
   },
-  survivalMobilityCore: {
-    id: "survivalMobilityCore", branch: "survival", cluster: "survivalMobility", role: "core",
+  wingFlowCore: {
+    id: "wingFlowCore", branch: "survival", cluster: "wingFlow", role: "core",
     name: "Overdrive Core", description: "Greatly increase movement speed.",
     fragmentKind: "elite", effectKind: "speedMul",
-    requires: { id: "survivalMobilityV3", level: 3 },
+    requires: { id: "wingFlowV3", level: 3 },
     isCore: true,
     unlockAfterBoss: "jets",
     levels: [
@@ -247,9 +247,9 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     ],
   },
 
-  // ── CLUSTER: OFFENSE · DAMAGE ─────────────────────────────────────────────
-  offenseDamageConn: {
-    id: "offenseDamageConn", branch: "offense", cluster: "offenseDamage", role: "connector",
+  // ── CLUSTER: MIRROR · PRESS ─────────────────────────────────────────────
+  mirrorPressConn: {
+    id: "mirrorPressConn", branch: "offense", cluster: "mirrorPress", role: "connector",
     name: "Vector Link", description: "Increase base weapon damage.",
     fragmentKind: "basic", effectKind: "damageAdd",
     levels: [
@@ -258,11 +258,11 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 230, fragmentCost: 22, bonus: 1 },
     ],
   },
-  offenseDamageV0: {
-    id: "offenseDamageV0", branch: "offense", cluster: "offenseDamage", role: "vertex", vertexSlot: 0,
+  mirrorPressV0: {
+    id: "mirrorPressV0", branch: "offense", cluster: "mirrorPress", role: "vertex", vertexSlot: 0,
     name: "Edge Sharpener I", description: "Increase base weapon damage.",
     fragmentKind: "basic", effectKind: "damageAdd",
-    requires: { id: "offenseDamageConn", level: 1 },
+    requires: { id: "mirrorPressConn", level: 1 },
     levels: [
       { pointCost: 130, fragmentCost: 11, bonus: 1 },
       { pointCost: 200, fragmentCost: 17, bonus: 1 },
@@ -270,11 +270,11 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 370, fragmentCost: 33, bonus: 1 },
     ],
   },
-  offenseDamageV1: {
-    id: "offenseDamageV1", branch: "offense", cluster: "offenseDamage", role: "vertex", vertexSlot: 1,
+  mirrorPressV1: {
+    id: "mirrorPressV1", branch: "offense", cluster: "mirrorPress", role: "vertex", vertexSlot: 1,
     name: "Edge Sharpener II", description: "Increase base weapon damage.",
     fragmentKind: "basic", effectKind: "damageAdd",
-    requires: { id: "offenseDamageV0", level: 2 },
+    requires: { id: "mirrorPressV0", level: 2 },
     levels: [
       { pointCost: 170, fragmentCost: 14, bonus: 1 },
       { pointCost: 240, fragmentCost: 20, bonus: 1 },
@@ -282,11 +282,11 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 420, fragmentCost: 36, bonus: 1 },
     ],
   },
-  offenseDamageV2: {
-    id: "offenseDamageV2", branch: "offense", cluster: "offenseDamage", role: "vertex", vertexSlot: 2,
+  mirrorPressV2: {
+    id: "mirrorPressV2", branch: "offense", cluster: "mirrorPress", role: "vertex", vertexSlot: 2,
     name: "Vector Edge I", description: "Greatly increase base weapon damage.",
     fragmentKind: "basic", effectKind: "damageAdd",
-    requires: { id: "offenseDamageV1", level: 2 },
+    requires: { id: "mirrorPressV1", level: 2 },
     levels: [
       { pointCost: 210, fragmentCost: 17, bonus: 2 },
       { pointCost: 290, fragmentCost: 23, bonus: 2 },
@@ -294,11 +294,11 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 480, fragmentCost: 40, bonus: 2 },
     ],
   },
-  offenseDamageV3: {
-    id: "offenseDamageV3", branch: "offense", cluster: "offenseDamage", role: "vertex", vertexSlot: 3,
+  mirrorPressV3: {
+    id: "mirrorPressV3", branch: "offense", cluster: "mirrorPress", role: "vertex", vertexSlot: 3,
     name: "Vector Edge II", description: "Greatly increase base weapon damage.",
     fragmentKind: "basic", effectKind: "damageAdd",
-    requires: { id: "offenseDamageV2", level: 2 },
+    requires: { id: "mirrorPressV2", level: 2 },
     levels: [
       { pointCost: 260, fragmentCost: 21, bonus: 2 },
       { pointCost: 350, fragmentCost: 28, bonus: 2 },
@@ -306,33 +306,33 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 580, fragmentCost: 46, bonus: 2 },
     ],
   },
-  offenseDamageV4: {
-    id: "offenseDamageV4", branch: "offense", cluster: "offenseDamage", role: "vertex", vertexSlot: 4,
+  mirrorPressV4: {
+    id: "mirrorPressV4", branch: "offense", cluster: "mirrorPress", role: "vertex", vertexSlot: 4,
     name: "Vector Edge III", description: "Greatly increase base weapon damage.",
     fragmentKind: "basic", effectKind: "damageAdd",
-    requires: { id: "offenseDamageV3", level: 2 },
+    requires: { id: "mirrorPressV3", level: 2 },
     levels: [
       { pointCost: 310, fragmentCost: 25, bonus: 2 },
       { pointCost: 410, fragmentCost: 32, bonus: 2 },
       { pointCost: 530, fragmentCost: 41, bonus: 2 },
     ],
   },
-  offenseDamageV5: {
-    id: "offenseDamageV5", branch: "offense", cluster: "offenseDamage", role: "vertex", vertexSlot: 5,
+  mirrorPressV5: {
+    id: "mirrorPressV5", branch: "offense", cluster: "mirrorPress", role: "vertex", vertexSlot: 5,
     name: "Edge Sharpener III", description: "Increase base weapon damage.",
     fragmentKind: "basic", effectKind: "damageAdd",
-    requires: { id: "offenseDamageV4", level: 2 },
+    requires: { id: "mirrorPressV4", level: 2 },
     levels: [
       { pointCost: 360, fragmentCost: 28, bonus: 1 },
       { pointCost: 470, fragmentCost: 36, bonus: 1 },
       { pointCost: 600, fragmentCost: 46, bonus: 1 },
     ],
   },
-  offenseDamageCore: {
-    id: "offenseDamageCore", branch: "offense", cluster: "offenseDamage", role: "core",
+  mirrorPressCore: {
+    id: "mirrorPressCore", branch: "offense", cluster: "mirrorPress", role: "core",
     name: "Overcharge Core", description: "Massive increase to base weapon damage.",
     fragmentKind: "elite", effectKind: "damageAdd",
-    requires: { id: "offenseDamageV3", level: 4 },
+    requires: { id: "mirrorPressV3", level: 4 },
     isCore: true,
     unlockAfterBoss: "mirror",
     levels: [
@@ -341,9 +341,9 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     ],
   },
 
-  // ── CLUSTER: OFFENSE · TEMPO ──────────────────────────────────────────────
-  offenseTempoConn: {
-    id: "offenseTempoConn", branch: "offense", cluster: "offenseTempo", role: "connector",
+  // ── CLUSTER: GRID · PULSE ──────────────────────────────────────────────
+  gridPulseConn: {
+    id: "gridPulseConn", branch: "offense", cluster: "gridPulse", role: "connector",
     name: "Focal Link", description: "Increase base crit rate.",
     fragmentKind: "elite", effectKind: "critAdd",
     levels: [
@@ -352,76 +352,76 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 280, fragmentCost: 4, bonus: 0.02 },
     ],
   },
-  offenseTempoV0: {
-    id: "offenseTempoV0", branch: "offense", cluster: "offenseTempo", role: "vertex", vertexSlot: 0,
+  gridPulseV0: {
+    id: "gridPulseV0", branch: "offense", cluster: "gridPulse", role: "vertex", vertexSlot: 0,
     name: "Critical Lens I", description: "Increase base crit rate.",
     fragmentKind: "elite", effectKind: "critAdd",
-    requires: { id: "offenseTempoConn", level: 1 },
+    requires: { id: "gridPulseConn", level: 1 },
     levels: [
       { pointCost: 160, fragmentCost: 3, bonus: 0.02 },
       { pointCost: 230, fragmentCost: 4, bonus: 0.02 },
       { pointCost: 320, fragmentCost: 5, bonus: 0.02 },
     ],
   },
-  offenseTempoV1: {
-    id: "offenseTempoV1", branch: "offense", cluster: "offenseTempo", role: "vertex", vertexSlot: 1,
+  gridPulseV1: {
+    id: "gridPulseV1", branch: "offense", cluster: "gridPulse", role: "vertex", vertexSlot: 1,
     name: "Critical Lens II", description: "Increase base crit rate.",
     fragmentKind: "elite", effectKind: "critAdd",
-    requires: { id: "offenseTempoV0", level: 2 },
+    requires: { id: "gridPulseV0", level: 2 },
     levels: [
       { pointCost: 200, fragmentCost: 3, bonus: 0.02 },
       { pointCost: 280, fragmentCost: 4, bonus: 0.02 },
       { pointCost: 380, fragmentCost: 5, bonus: 0.02 },
     ],
   },
-  offenseTempoV2: {
-    id: "offenseTempoV2", branch: "offense", cluster: "offenseTempo", role: "vertex", vertexSlot: 2,
+  gridPulseV2: {
+    id: "gridPulseV2", branch: "offense", cluster: "gridPulse", role: "vertex", vertexSlot: 2,
     name: "Rate Optimizer I", description: "Reduce weapon fire interval.",
     fragmentKind: "basic", effectKind: "periodMul",
-    requires: { id: "offenseTempoV1", level: 2 },
+    requires: { id: "gridPulseV1", level: 2 },
     levels: [
       { pointCost: 180, fragmentCost: 14, bonus: -0.03 },
       { pointCost: 260, fragmentCost: 20, bonus: -0.03 },
       { pointCost: 350, fragmentCost: 28, bonus: -0.03 },
     ],
   },
-  offenseTempoV3: {
-    id: "offenseTempoV3", branch: "offense", cluster: "offenseTempo", role: "vertex", vertexSlot: 3,
+  gridPulseV3: {
+    id: "gridPulseV3", branch: "offense", cluster: "gridPulse", role: "vertex", vertexSlot: 3,
     name: "Rate Optimizer II", description: "Reduce weapon fire interval.",
     fragmentKind: "basic", effectKind: "periodMul",
-    requires: { id: "offenseTempoV2", level: 2 },
+    requires: { id: "gridPulseV2", level: 2 },
     levels: [
       { pointCost: 220, fragmentCost: 17, bonus: -0.03 },
       { pointCost: 310, fragmentCost: 24, bonus: -0.03 },
       { pointCost: 410, fragmentCost: 32, bonus: -0.03 },
     ],
   },
-  offenseTempoV4: {
-    id: "offenseTempoV4", branch: "offense", cluster: "offenseTempo", role: "vertex", vertexSlot: 4,
+  gridPulseV4: {
+    id: "gridPulseV4", branch: "offense", cluster: "gridPulse", role: "vertex", vertexSlot: 4,
     name: "Velocity Field", description: "Increase projectile speed.",
     fragmentKind: "basic", effectKind: "projectileSpeedMul",
-    requires: { id: "offenseTempoV3", level: 2 },
+    requires: { id: "gridPulseV3", level: 2 },
     levels: [
       { pointCost: 200, fragmentCost: 16, bonus: 0.05 },
       { pointCost: 280, fragmentCost: 22, bonus: 0.05 },
       { pointCost: 370, fragmentCost: 30, bonus: 0.05 },
     ],
   },
-  offenseTempoV5: {
-    id: "offenseTempoV5", branch: "offense", cluster: "offenseTempo", role: "vertex", vertexSlot: 5,
+  gridPulseV5: {
+    id: "gridPulseV5", branch: "offense", cluster: "gridPulse", role: "vertex", vertexSlot: 5,
     name: "Penetration Field", description: "Projectiles pierce additional enemies.",
     fragmentKind: "elite", effectKind: "pierceAdd",
-    requires: { id: "offenseTempoV4", level: 2 },
+    requires: { id: "gridPulseV4", level: 2 },
     levels: [
       { pointCost: 360, fragmentCost: 5, bonus: 1 },
       { pointCost: 520, fragmentCost: 7, bonus: 1 },
     ],
   },
-  offenseTempoCore: {
-    id: "offenseTempoCore", branch: "offense", cluster: "offenseTempo", role: "core",
+  gridPulseCore: {
+    id: "gridPulseCore", branch: "offense", cluster: "gridPulse", role: "core",
     name: "Multi-Barrel Core", description: "Fire additional projectiles per shot.",
     fragmentKind: "elite", effectKind: "projectilesAdd",
-    requires: { id: "offenseTempoV3", level: 3 },
+    requires: { id: "gridPulseV3", level: 3 },
     isCore: true,
     unlockAfterBoss: "lattice",
     levels: [
@@ -430,9 +430,9 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     ],
   },
 
-  // ── CLUSTER: EFFICIENCY · POINTS ──────────────────────────────────────────
-  efficiencyPointsConn: {
-    id: "efficiencyPointsConn", branch: "efficiency", cluster: "efficiencyPoints", role: "connector",
+  // ── CLUSTER: VOID · YIELD ──────────────────────────────────────────
+  voidYieldConn: {
+    id: "voidYieldConn", branch: "efficiency", cluster: "voidYield", role: "connector",
     name: "Salvage Link", description: "Increase run points earned.",
     fragmentKind: "basic", effectKind: "pointRewardMul",
     levels: [
@@ -441,77 +441,77 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 230, fragmentCost: 25, bonus: 0.03 },
     ],
   },
-  efficiencyPointsV0: {
-    id: "efficiencyPointsV0", branch: "efficiency", cluster: "efficiencyPoints", role: "vertex", vertexSlot: 0,
+  voidYieldV0: {
+    id: "voidYieldV0", branch: "efficiency", cluster: "voidYield", role: "vertex", vertexSlot: 0,
     name: "Salvage Protocol I", description: "Increase run points earned.",
     fragmentKind: "basic", effectKind: "pointRewardMul",
-    requires: { id: "efficiencyPointsConn", level: 1 },
+    requires: { id: "voidYieldConn", level: 1 },
     levels: [
       { pointCost: 130, fragmentCost: 14, bonus: 0.02 },
       { pointCost: 200, fragmentCost: 20, bonus: 0.02 },
       { pointCost: 280, fragmentCost: 28, bonus: 0.02 },
     ],
   },
-  efficiencyPointsV1: {
-    id: "efficiencyPointsV1", branch: "efficiency", cluster: "efficiencyPoints", role: "vertex", vertexSlot: 1,
+  voidYieldV1: {
+    id: "voidYieldV1", branch: "efficiency", cluster: "voidYield", role: "vertex", vertexSlot: 1,
     name: "Salvage Protocol II", description: "Increase run points earned.",
     fragmentKind: "basic", effectKind: "pointRewardMul",
-    requires: { id: "efficiencyPointsV0", level: 2 },
+    requires: { id: "voidYieldV0", level: 2 },
     levels: [
       { pointCost: 170, fragmentCost: 17, bonus: 0.02 },
       { pointCost: 240, fragmentCost: 23, bonus: 0.02 },
       { pointCost: 320, fragmentCost: 31, bonus: 0.02 },
     ],
   },
-  efficiencyPointsV2: {
-    id: "efficiencyPointsV2", branch: "efficiency", cluster: "efficiencyPoints", role: "vertex", vertexSlot: 2,
+  voidYieldV2: {
+    id: "voidYieldV2", branch: "efficiency", cluster: "voidYield", role: "vertex", vertexSlot: 2,
     name: "Salvage Protocol III", description: "Greatly increase run points earned.",
     fragmentKind: "basic", effectKind: "pointRewardMul",
-    requires: { id: "efficiencyPointsV1", level: 2 },
+    requires: { id: "voidYieldV1", level: 2 },
     levels: [
       { pointCost: 210, fragmentCost: 21, bonus: 0.04 },
       { pointCost: 290, fragmentCost: 28, bonus: 0.04 },
       { pointCost: 380, fragmentCost: 36, bonus: 0.04 },
     ],
   },
-  efficiencyPointsV3: {
-    id: "efficiencyPointsV3", branch: "efficiency", cluster: "efficiencyPoints", role: "vertex", vertexSlot: 3,
+  voidYieldV3: {
+    id: "voidYieldV3", branch: "efficiency", cluster: "voidYield", role: "vertex", vertexSlot: 3,
     name: "Salvage Protocol IV", description: "Greatly increase run points earned.",
     fragmentKind: "basic", effectKind: "pointRewardMul",
-    requires: { id: "efficiencyPointsV2", level: 2 },
+    requires: { id: "voidYieldV2", level: 2 },
     levels: [
       { pointCost: 260, fragmentCost: 25, bonus: 0.04 },
       { pointCost: 350, fragmentCost: 33, bonus: 0.04 },
       { pointCost: 460, fragmentCost: 42, bonus: 0.04 },
     ],
   },
-  efficiencyPointsV4: {
-    id: "efficiencyPointsV4", branch: "efficiency", cluster: "efficiencyPoints", role: "vertex", vertexSlot: 4,
+  voidYieldV4: {
+    id: "voidYieldV4", branch: "efficiency", cluster: "voidYield", role: "vertex", vertexSlot: 4,
     name: "Salvage Protocol V", description: "Greatly increase run points earned.",
     fragmentKind: "basic", effectKind: "pointRewardMul",
-    requires: { id: "efficiencyPointsV3", level: 2 },
+    requires: { id: "voidYieldV3", level: 2 },
     levels: [
       { pointCost: 310, fragmentCost: 29, bonus: 0.04 },
       { pointCost: 410, fragmentCost: 37, bonus: 0.04 },
       { pointCost: 530, fragmentCost: 47, bonus: 0.04 },
     ],
   },
-  efficiencyPointsV5: {
-    id: "efficiencyPointsV5", branch: "efficiency", cluster: "efficiencyPoints", role: "vertex", vertexSlot: 5,
+  voidYieldV5: {
+    id: "voidYieldV5", branch: "efficiency", cluster: "voidYield", role: "vertex", vertexSlot: 5,
     name: "Salvage Protocol VI", description: "Increase run points earned.",
     fragmentKind: "basic", effectKind: "pointRewardMul",
-    requires: { id: "efficiencyPointsV4", level: 2 },
+    requires: { id: "voidYieldV4", level: 2 },
     levels: [
       { pointCost: 360, fragmentCost: 32, bonus: 0.02 },
       { pointCost: 470, fragmentCost: 41, bonus: 0.02 },
       { pointCost: 600, fragmentCost: 52, bonus: 0.02 },
     ],
   },
-  efficiencyPointsCore: {
-    id: "efficiencyPointsCore", branch: "efficiency", cluster: "efficiencyPoints", role: "core",
+  voidYieldCore: {
+    id: "voidYieldCore", branch: "efficiency", cluster: "voidYield", role: "core",
     name: "Salvage Core", description: "Massive increase to run points earned.",
     fragmentKind: "elite", effectKind: "pointRewardMul",
-    requires: { id: "efficiencyPointsV3", level: 3 },
+    requires: { id: "voidYieldV3", level: 3 },
     isCore: true,
     unlockAfterBoss: "rift",
     levels: [
@@ -520,9 +520,9 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
     ],
   },
 
-  // ── CLUSTER: EFFICIENCY · FRAGMENTS ───────────────────────────────────────
-  efficiencyFragmentsConn: {
-    id: "efficiencyFragmentsConn", branch: "efficiency", cluster: "efficiencyFragments", role: "connector",
+  // ── CLUSTER: CORE · SYNTAX ───────────────────────────────────────
+  coreSyntaxConn: {
+    id: "coreSyntaxConn", branch: "efficiency", cluster: "coreSyntax", role: "connector",
     name: "Recycler Link", description: "Increase fragment gain.",
     fragmentKind: "elite", effectKind: "fragmentRewardMul",
     levels: [
@@ -531,71 +531,71 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 280, fragmentCost: 4, bonus: 0.03 },
     ],
   },
-  efficiencyFragmentsV0: {
-    id: "efficiencyFragmentsV0", branch: "efficiency", cluster: "efficiencyFragments", role: "vertex", vertexSlot: 0,
+  coreSyntaxV0: {
+    id: "coreSyntaxV0", branch: "efficiency", cluster: "coreSyntax", role: "vertex", vertexSlot: 0,
     name: "Fragment Recycler I", description: "Increase fragment gain.",
     fragmentKind: "elite", effectKind: "fragmentRewardMul",
-    requires: { id: "efficiencyFragmentsConn", level: 1 },
+    requires: { id: "coreSyntaxConn", level: 1 },
     levels: [
       { pointCost: 160, fragmentCost: 3, bonus: 0.03 },
       { pointCost: 230, fragmentCost: 4, bonus: 0.03 },
       { pointCost: 320, fragmentCost: 5, bonus: 0.03 },
     ],
   },
-  efficiencyFragmentsV1: {
-    id: "efficiencyFragmentsV1", branch: "efficiency", cluster: "efficiencyFragments", role: "vertex", vertexSlot: 1,
+  coreSyntaxV1: {
+    id: "coreSyntaxV1", branch: "efficiency", cluster: "coreSyntax", role: "vertex", vertexSlot: 1,
     name: "Fragment Recycler II", description: "Increase fragment gain.",
     fragmentKind: "elite", effectKind: "fragmentRewardMul",
-    requires: { id: "efficiencyFragmentsV0", level: 2 },
+    requires: { id: "coreSyntaxV0", level: 2 },
     levels: [
       { pointCost: 200, fragmentCost: 3, bonus: 0.03 },
       { pointCost: 280, fragmentCost: 4, bonus: 0.03 },
       { pointCost: 380, fragmentCost: 5, bonus: 0.03 },
     ],
   },
-  efficiencyFragmentsV2: {
-    id: "efficiencyFragmentsV2", branch: "efficiency", cluster: "efficiencyFragments", role: "vertex", vertexSlot: 2,
+  coreSyntaxV2: {
+    id: "coreSyntaxV2", branch: "efficiency", cluster: "coreSyntax", role: "vertex", vertexSlot: 2,
     name: "Fragment Recycler III", description: "Greatly increase fragment gain.",
     fragmentKind: "elite", effectKind: "fragmentRewardMul",
-    requires: { id: "efficiencyFragmentsV1", level: 2 },
+    requires: { id: "coreSyntaxV1", level: 2 },
     levels: [
       { pointCost: 240, fragmentCost: 4, bonus: 0.04 },
       { pointCost: 330, fragmentCost: 5, bonus: 0.04 },
       { pointCost: 440, fragmentCost: 6, bonus: 0.04 },
     ],
   },
-  efficiencyFragmentsV3: {
-    id: "efficiencyFragmentsV3", branch: "efficiency", cluster: "efficiencyFragments", role: "vertex", vertexSlot: 3,
+  coreSyntaxV3: {
+    id: "coreSyntaxV3", branch: "efficiency", cluster: "coreSyntax", role: "vertex", vertexSlot: 3,
     name: "Neural Reservoir I", description: "Permanently grant skill upgrade points.",
     fragmentKind: "elite", effectKind: "skillPointsAdd",
-    requires: { id: "efficiencyFragmentsV2", level: 2 },
+    requires: { id: "coreSyntaxV2", level: 2 },
     levels: [
       { pointCost: 600, fragmentCost: 4, bonus: 20 },
     ],
   },
-  efficiencyFragmentsV4: {
-    id: "efficiencyFragmentsV4", branch: "efficiency", cluster: "efficiencyFragments", role: "vertex", vertexSlot: 4,
+  coreSyntaxV4: {
+    id: "coreSyntaxV4", branch: "efficiency", cluster: "coreSyntax", role: "vertex", vertexSlot: 4,
     name: "Neural Reservoir II", description: "Permanently grant skill upgrade points.",
     fragmentKind: "elite", effectKind: "skillPointsAdd",
-    requires: { id: "efficiencyFragmentsV3", level: 1 },
+    requires: { id: "coreSyntaxV3", level: 1 },
     levels: [
       { pointCost: 700, fragmentCost: 5, bonus: 20 },
     ],
   },
-  efficiencyFragmentsV5: {
-    id: "efficiencyFragmentsV5", branch: "efficiency", cluster: "efficiencyFragments", role: "vertex", vertexSlot: 5,
+  coreSyntaxV5: {
+    id: "coreSyntaxV5", branch: "efficiency", cluster: "coreSyntax", role: "vertex", vertexSlot: 5,
     name: "Neural Reservoir III", description: "Permanently grant skill upgrade points.",
     fragmentKind: "elite", effectKind: "skillPointsAdd",
-    requires: { id: "efficiencyFragmentsV4", level: 1 },
+    requires: { id: "coreSyntaxV4", level: 1 },
     levels: [
       { pointCost: 800, fragmentCost: 6, bonus: 20 },
     ],
   },
-  efficiencyFragmentsCore: {
-    id: "efficiencyFragmentsCore", branch: "efficiency", cluster: "efficiencyFragments", role: "core",
+  coreSyntaxCore: {
+    id: "coreSyntaxCore", branch: "efficiency", cluster: "coreSyntax", role: "core",
     name: "Reservoir Core", description: "Permanently grant a large pool of skill upgrade points.",
     fragmentKind: "elite", effectKind: "skillPointsAdd",
-    requires: { id: "efficiencyFragmentsV5", level: 1 },
+    requires: { id: "coreSyntaxV5", level: 1 },
     isCore: true,
     levels: [
       { pointCost: 1100, fragmentCost: 7, bonus: 30 },
@@ -612,10 +612,10 @@ export const TALENT_BRANCH_ORDER: TalentBranch[] = [
 
 /** Cluster direction map for hex layout (degrees, 0° = right, going clockwise). */
 export const TALENT_CLUSTER_ORDER: { id: TalentClusterId; angleDeg: number }[] = [
-  { id: "offenseDamage",       angleDeg: -90 },
-  { id: "survivalHp",          angleDeg: -30 },
-  { id: "survivalMobility",    angleDeg: 30 },
-  { id: "efficiencyFragments", angleDeg: 90 },
-  { id: "efficiencyPoints",    angleDeg: 150 },
-  { id: "offenseTempo",        angleDeg: 210 },
+  { id: "mirrorPress",       angleDeg: -90 },
+  { id: "axisGuard",          angleDeg: -30 },
+  { id: "wingFlow",    angleDeg: 30 },
+  { id: "coreSyntax", angleDeg: 90 },
+  { id: "voidYield",    angleDeg: 150 },
+  { id: "gridPulse",        angleDeg: 210 },
 ];

@@ -21,7 +21,7 @@ import {
 import { resetStatusPhase, updateStatusEffects } from '../game/systems/status';
 import { newWaveState, updateWave, type WaveState } from '../game/systems/wave';
 import { updateWeapon } from '../game/systems/weapon';
-import type { WaveSpec } from '../game/waves';
+import type { WaveBeatMeta, WaveSpec } from '../game/waves';
 import { type EntityId, World } from '../game/world';
 import { drawGrid, drawWorld } from '../render';
 import type { Scene } from './scene';
@@ -94,6 +94,8 @@ export interface PlayCallbacks {
   updateFragments?: (fragments: FragmentTally) => void;
   /** Called once when the boss wave begins (wave index is 1-based). */
   onBossWaveStart?: (wave1: number) => void;
+  /** Called once when a synthetic StageBeat wave begins. */
+  onBeatStart?: (meta: WaveBeatMeta) => void;
   /** Play a sound effect by name. */
   playSfx: (name: SfxName) => void;
 }
@@ -311,6 +313,9 @@ export class PlayScene implements Scene {
     this.ended = false;
     this.bossApplied = false;
     this.updateHud();
+    if (this.wave.spec.beatMeta && this.cb.onBeatStart) {
+      this.cb.onBeatStart(this.wave.spec.beatMeta);
+    }
   }
 
   recordPick(card: Card): void {

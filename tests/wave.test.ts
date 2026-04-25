@@ -76,4 +76,22 @@ describe("updateWave", () => {
     updateWave(state, world, rng, 1 / 60);
     expect(state.cleared).toBe(true);
   });
+
+  it("an empty-group wave with minHoldSec stays open until the duration elapses", () => {
+    const world = new World();
+    const rng = createRng(5);
+    const spec: WaveSpec = {
+      index: 1,
+      durationHint: 4,
+      groups: [],
+      minHoldSec: 3,
+    };
+    const state = newWaveState(spec);
+    // 1.5 seconds in: still held open even though there are no enemies.
+    tick(state, world, rng, 90);
+    expect(state.cleared).toBe(false);
+    // Past the hold: clears on the next tick.
+    tick(state, world, rng, 120);
+    expect(state.cleared).toBe(true);
+  });
 });

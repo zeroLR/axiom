@@ -287,3 +287,138 @@ describe('buildStagePointMulArray', () => {
     expect(buildStagePointMulArray()).toEqual([1, 2, 3, 4, 5]);
   });
 });
+
+// ── StageBeats ────────────────────────────────────────────────────────────────
+
+describe('StageBeats', () => {
+  const makeConfig = (beats?: any[]) => ({
+    stageId: 'beat-test',
+    bossId: 'mirror' as const,
+    enemyStrengthMul: 1,
+    pointMul: 1,
+    waves: [
+      { index: 1, durationHint: 20, spawns: [{ t: 0.5, kind: 'circle' as const, count: 2 }] },
+      { index: 2, durationHint: 22, spawns: [{ t: 0.5, kind: 'square' as const, count: 2 }] },
+      { index: 3, durationHint: 0, isBossWave: true, spawns: [] },
+    ],
+    beats,
+  });
+
+  it('returns waves unchanged when no beats are configured', () => {
+    const out = compileStageWaves(makeConfig(), 0);
+    expect(out).toHaveLength(3);
+    expect(out.every(w => w.beatMeta === undefined)).toBe(true);
+    expect(out.map(w => w.index)).toEqual([1, 2, 3]);
+  });
+
+  it('splices a miniBoss beat after its parent wave and renumbers', () => {
+    const out = compileStageWaves(
+      makeConfig([{ kind: 'miniBoss', afterWave: 1, enemyKind: 'prism' }]),
+      3,
+    );
+    expect(out).toHaveLength(4);
+    expect(out.map(w => w.index)).toEqual([1, 2, 3, 4]);
+
+    // Wave 2 in the output is the spliced miniBoss beat.
+    const beatWave = out[1]!;
+    expect(beatWave.beatMeta).toEqual({ kind: 'miniBoss', afterWave: 1 });
+    expect(beatWave.groups).toEqual([{ t: 0.5, kind: 'prism', count: 1 }]);
+
+    // Original waves shifted by 1.
+    expect(out[2]!.beatMeta).toBeUndefined();
+    expect(out[3]!.groups[0]!.kind).toBe('boss');
+  });
+
+  it('preserves order of multiple beats sharing a parent wave', () => {
+    const out = compileStageWaves(
+      makeConfig([
+        { kind: 'miniBoss', afterWave: 1, enemyKind: 'prism' },
+        { kind: 'miniBoss', afterWave: 1, enemyKind: 'octo' },
+      ]),
+      4,
+    );
+    expect(out).toHaveLength(5);
+    expect(out[1]!.groups[0]!.kind).toBe('prism');
+    expect(out[2]!.groups[0]!.kind).toBe('octo');
+  });
+
+  it('throws when a miniBoss beat omits enemyKind', () => {
+    expect(() =>
+      compileStageWaves(makeConfig([{ kind: 'miniBoss', afterWave: 1 }]), 0),
+    ).toThrow(/enemyKind/);
+  });
+
+  it('throws when a beat references an unknown wave index', () => {
+    expect(() =>
+      compileStageWaves(
+        makeConfig([{ kind: 'miniBoss', afterWave: 99, enemyKind: 'prism' }]),
+        0,
+      ),
+    ).toThrow(/unknown wave index 99/);
+  });
+
+  it('eliteAmbush splices a multi-spawn synthetic wave with the given count', () => {
+    const out = compileStageWaves(
+      makeConfig([{ kind: 'eliteAmbush', afterWave: 1, enemyKind: 'octo', count: 4 }]),
+      4,
+    );
+    expect(out).toHaveLength(4);
+    const beat = out[1]!;
+    expect(beat.beatMeta).toEqual({ kind: 'eliteAmbush', afterWave: 1 });
+    expect(beat.groups).toHaveLength(4);
+    expect(beat.groups.every(g => g.kind === 'octo' && g.count === 1)).toBe(true);
+    expect(beat.groups.map(g => g.t)).toEqual([0.5, 1.0, 1.5, 2.0]);
+  });
+
+  it('eliteAmbush defaults count to 3 when unspecified', () => {
+    const out = compileStageWaves(
+      makeConfig([{ kind: 'eliteAmbush', afterWave: 2, enemyKind: 'prism' }]),
+      3,
+    );
+    expect(out[2]!.groups).toHaveLength(3);
+    expect(out[2]!.beatMeta).toEqual({ kind: 'eliteAmbush', afterWave: 2 });
+  });
+
+  it('eliteAmbush throws without enemyKind', () => {
+    expect(() =>
+      compileStageWaves(makeConfig([{ kind: 'eliteAmbush', afterWave: 1 }]), 0),
+    ).toThrow(/enemyKind/);
+  });
+
+  it('hazardWave compiles to an empty-group wave held open by minHoldSec', () => {
+    const out = compileStageWaves(
+      makeConfig([{ kind: 'hazardWave', afterWave: 1, duration: 8, hazardId: 'fog' }]),
+      0,
+    );
+    const beat = out[1]!;
+    expect(beat.groups).toEqual([]);
+    expect(beat.minHoldSec).toBe(8);
+    expect(beat.durationHint).toBe(8);
+    expect(beat.beatMeta).toEqual({
+      kind: 'hazardWave',
+      afterWave: 1,
+      hazardId: 'fog',
+      duration: 8,
+    });
+  });
+
+  it('hazardWave defaults duration to 6 when unspecified', () => {
+    const out = compileStageWaves(
+      makeConfig([{ kind: 'hazardWave', afterWave: 1, hazardId: 'axis-lock' }]),
+      0,
+    );
+    expect(out[1]!.minHoldSec).toBe(6);
+    expect(out[1]!.beatMeta?.duration).toBe(6);
+  });
+
+  it('puzzle compiles to an empty-group wave with minHoldSec = duration', () => {
+    const out = compileStageWaves(
+      makeConfig([{ kind: 'puzzle', afterWave: 2, duration: 5 }]),
+      0,
+    );
+    const beat = out[2]!;
+    expect(beat.groups).toEqual([]);
+    expect(beat.minHoldSec).toBe(5);
+    expect(beat.beatMeta).toEqual({ kind: 'puzzle', afterWave: 2, duration: 5 });
+  });
+});

@@ -9,7 +9,7 @@ import {
 // one import path and one schema version constant.
 
 /** Global schema version — bump when store shapes change. */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 // ── Player Profile ──────────────────────────────────────────────────────────
 
@@ -219,36 +219,36 @@ export function defaultTrophyState(): TrophyState {
 
 // Hex talent tree: 6 clusters × 8 nodes (1 connector + 6 vertices + 1 core) = 48.
 export type TalentId =
-  // survivalHp cluster
-  | "survivalHpConn"
-  | "survivalHpV0" | "survivalHpV1" | "survivalHpV2"
-  | "survivalHpV3" | "survivalHpV4" | "survivalHpV5"
-  | "survivalHpCore"
-  // survivalMobility cluster
-  | "survivalMobilityConn"
-  | "survivalMobilityV0" | "survivalMobilityV1" | "survivalMobilityV2"
-  | "survivalMobilityV3" | "survivalMobilityV4" | "survivalMobilityV5"
-  | "survivalMobilityCore"
-  // offenseDamage cluster
-  | "offenseDamageConn"
-  | "offenseDamageV0" | "offenseDamageV1" | "offenseDamageV2"
-  | "offenseDamageV3" | "offenseDamageV4" | "offenseDamageV5"
-  | "offenseDamageCore"
-  // offenseTempo cluster
-  | "offenseTempoConn"
-  | "offenseTempoV0" | "offenseTempoV1" | "offenseTempoV2"
-  | "offenseTempoV3" | "offenseTempoV4" | "offenseTempoV5"
-  | "offenseTempoCore"
-  // efficiencyPoints cluster
-  | "efficiencyPointsConn"
-  | "efficiencyPointsV0" | "efficiencyPointsV1" | "efficiencyPointsV2"
-  | "efficiencyPointsV3" | "efficiencyPointsV4" | "efficiencyPointsV5"
-  | "efficiencyPointsCore"
-  // efficiencyFragments cluster
-  | "efficiencyFragmentsConn"
-  | "efficiencyFragmentsV0" | "efficiencyFragmentsV1" | "efficiencyFragmentsV2"
-  | "efficiencyFragmentsV3" | "efficiencyFragmentsV4" | "efficiencyFragmentsV5"
-  | "efficiencyFragmentsCore";
+  // axisGuard cluster (orthogon-themed survival/HP)
+  | "axisGuardConn"
+  | "axisGuardV0" | "axisGuardV1" | "axisGuardV2"
+  | "axisGuardV3" | "axisGuardV4" | "axisGuardV5"
+  | "axisGuardCore"
+  // wingFlow cluster (jets-themed survival/mobility)
+  | "wingFlowConn"
+  | "wingFlowV0" | "wingFlowV1" | "wingFlowV2"
+  | "wingFlowV3" | "wingFlowV4" | "wingFlowV5"
+  | "wingFlowCore"
+  // mirrorPress cluster (mirror-themed offense/damage)
+  | "mirrorPressConn"
+  | "mirrorPressV0" | "mirrorPressV1" | "mirrorPressV2"
+  | "mirrorPressV3" | "mirrorPressV4" | "mirrorPressV5"
+  | "mirrorPressCore"
+  // gridPulse cluster (lattice-themed offense/tempo)
+  | "gridPulseConn"
+  | "gridPulseV0" | "gridPulseV1" | "gridPulseV2"
+  | "gridPulseV3" | "gridPulseV4" | "gridPulseV5"
+  | "gridPulseCore"
+  // voidYield cluster (rift-themed efficiency/points)
+  | "voidYieldConn"
+  | "voidYieldV0" | "voidYieldV1" | "voidYieldV2"
+  | "voidYieldV3" | "voidYieldV4" | "voidYieldV5"
+  | "voidYieldCore"
+  // coreSyntax cluster (meta efficiency/fragments)
+  | "coreSyntaxConn"
+  | "coreSyntaxV0" | "coreSyntaxV1" | "coreSyntaxV2"
+  | "coreSyntaxV3" | "coreSyntaxV4" | "coreSyntaxV5"
+  | "coreSyntaxCore";
 
 export interface TalentState {
   levels: Record<TalentId, number>;
@@ -257,30 +257,30 @@ export interface TalentState {
 export function defaultTalentState(): TalentState {
   return {
     levels: {
-      survivalHpConn: 0,
-      survivalHpV0: 0, survivalHpV1: 0, survivalHpV2: 0,
-      survivalHpV3: 0, survivalHpV4: 0, survivalHpV5: 0,
-      survivalHpCore: 0,
-      survivalMobilityConn: 0,
-      survivalMobilityV0: 0, survivalMobilityV1: 0, survivalMobilityV2: 0,
-      survivalMobilityV3: 0, survivalMobilityV4: 0, survivalMobilityV5: 0,
-      survivalMobilityCore: 0,
-      offenseDamageConn: 0,
-      offenseDamageV0: 0, offenseDamageV1: 0, offenseDamageV2: 0,
-      offenseDamageV3: 0, offenseDamageV4: 0, offenseDamageV5: 0,
-      offenseDamageCore: 0,
-      offenseTempoConn: 0,
-      offenseTempoV0: 0, offenseTempoV1: 0, offenseTempoV2: 0,
-      offenseTempoV3: 0, offenseTempoV4: 0, offenseTempoV5: 0,
-      offenseTempoCore: 0,
-      efficiencyPointsConn: 0,
-      efficiencyPointsV0: 0, efficiencyPointsV1: 0, efficiencyPointsV2: 0,
-      efficiencyPointsV3: 0, efficiencyPointsV4: 0, efficiencyPointsV5: 0,
-      efficiencyPointsCore: 0,
-      efficiencyFragmentsConn: 0,
-      efficiencyFragmentsV0: 0, efficiencyFragmentsV1: 0, efficiencyFragmentsV2: 0,
-      efficiencyFragmentsV3: 0, efficiencyFragmentsV4: 0, efficiencyFragmentsV5: 0,
-      efficiencyFragmentsCore: 0,
+      axisGuardConn: 0,
+      axisGuardV0: 0, axisGuardV1: 0, axisGuardV2: 0,
+      axisGuardV3: 0, axisGuardV4: 0, axisGuardV5: 0,
+      axisGuardCore: 0,
+      wingFlowConn: 0,
+      wingFlowV0: 0, wingFlowV1: 0, wingFlowV2: 0,
+      wingFlowV3: 0, wingFlowV4: 0, wingFlowV5: 0,
+      wingFlowCore: 0,
+      mirrorPressConn: 0,
+      mirrorPressV0: 0, mirrorPressV1: 0, mirrorPressV2: 0,
+      mirrorPressV3: 0, mirrorPressV4: 0, mirrorPressV5: 0,
+      mirrorPressCore: 0,
+      gridPulseConn: 0,
+      gridPulseV0: 0, gridPulseV1: 0, gridPulseV2: 0,
+      gridPulseV3: 0, gridPulseV4: 0, gridPulseV5: 0,
+      gridPulseCore: 0,
+      voidYieldConn: 0,
+      voidYieldV0: 0, voidYieldV1: 0, voidYieldV2: 0,
+      voidYieldV3: 0, voidYieldV4: 0, voidYieldV5: 0,
+      voidYieldCore: 0,
+      coreSyntaxConn: 0,
+      coreSyntaxV0: 0, coreSyntaxV1: 0, coreSyntaxV2: 0,
+      coreSyntaxV3: 0, coreSyntaxV4: 0, coreSyntaxV5: 0,
+      coreSyntaxCore: 0,
     },
   };
 }

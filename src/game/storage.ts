@@ -42,6 +42,28 @@ type StoreName = (typeof STORES)[number];
 
 const KEY = "v1"; // singleton key inside each store
 
+/**
+ * SCHEMA_VERSION 6 → 7: talent cluster IDs renamed to boss-domain themes.
+ * Maps legacy node IDs to current ones so existing investments survive load.
+ * Built once at module init; cluster-prefix substitution covers 48 ids.
+ */
+export const TALENT_ID_RENAME: Record<string, string> = (() => {
+  const prefixes: Array<[string, string]> = [
+    ["survivalHp",         "axisGuard"],
+    ["survivalMobility",   "wingFlow"],
+    ["offenseDamage",      "mirrorPress"],
+    ["offenseTempo",       "gridPulse"],
+    ["efficiencyPoints",   "voidYield"],
+    ["efficiencyFragments", "coreSyntax"],
+  ];
+  const suffixes = ["Conn", "V0", "V1", "V2", "V3", "V4", "V5", "Core"];
+  const out: Record<string, string> = {};
+  for (const [oldP, newP] of prefixes) {
+    for (const s of suffixes) out[oldP + s] = newP + s;
+  }
+  return out;
+})();
+
 // ── Open / create DB ────────────────────────────────────────────────────────
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -102,9 +124,12 @@ export async function loadProfile(): Promise<PlayerProfile> {
   const rawTalentLevels = raw.talents?.levels ?? {};
   // Hex talent migration: drop legacy IDs that no longer exist in the new schema.
   // Spent points on legacy talents are refunded as a flat sum so progress isn't fully lost.
+  // SCHEMA_VERSION 7 (boss-domain rename): translate legacy IDs to their new
+  // names so existing investments survive the rename without refund.
   let legacyRefund = 0;
   const cleanedTalentLevels: Record<string, number> = {};
-  for (const [k, v] of Object.entries(rawTalentLevels)) {
+  for (const [legacyKey, v] of Object.entries(rawTalentLevels)) {
+    const k = TALENT_ID_RENAME[legacyKey] ?? legacyKey;
     if (k in talentBase.levels) {
       cleanedTalentLevels[k] = Number(v) || 0;
     } else if (typeof v === "number" && v > 0) {

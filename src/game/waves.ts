@@ -5,10 +5,33 @@ import type { EnemyKind } from "./world";
 // enemies remain alive. Boss waves simply schedule one boss.
 
 export interface SpawnGroup { t: number; kind: EnemyKind; count: number }
+
+/**
+ * Origin metadata for a synthetic wave produced by `StageBeat` compilation.
+ * Engine treats beat waves as ordinary waves; this field exists so renderers
+ * and analytics can distinguish beats from authored content if needed.
+ */
+export interface WaveBeatMeta {
+  kind: "miniBoss" | "hazardWave" | "puzzle" | "eliteAmbush";
+  afterWave: number;
+  /** Hazard registry id (hazardWave only). */
+  hazardId?: string;
+  /** Authored beat duration in seconds (hazardWave / puzzle only). */
+  duration?: number;
+}
+
 export interface WaveSpec {
   index: number;       // 1-based, for display
   durationHint: number; // informational; real end is "all spawned + dead"
   groups: SpawnGroup[];
+  /**
+   * Minimum seconds the wave must remain active even if the spawn-and-dead
+   * exit condition fires earlier. Used by duration-only synthetic waves
+   * (puzzle / hazardWave beats) so an empty-group wave doesn't clear at t=0.
+   */
+  minHoldSec?: number;
+  /** Set when this WaveSpec was synthesised from a `StageBeat`. */
+  beatMeta?: WaveBeatMeta;
 }
 
 export const WAVES: readonly WaveSpec[] = [

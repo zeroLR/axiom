@@ -56,7 +56,7 @@ import {
   reflectDamageRatio,
 } from './game/skills';
 import { diffUnlocks } from './game/unlocks';
-import { trophyForBoss, getTrophyDef, trophyGrantedSkills } from './game/content/trophies';
+import { trophyForBoss, getTrophyDef, trophyEquippedSkill } from './game/content/trophies';
 import { MAX_SKILL_LEVEL } from './game/data/types';
 import { unlockAchievement } from './game/achievements';
 import type { RunResult } from './game/rewards';
@@ -2841,13 +2841,16 @@ async function boot(): Promise<void> {
     const activeChar = activeCharacterSlot(profile.characters);
 
     // In develop mode, start with no skills and default skin (bare avatar).
-    // Run-time skill loadout = class T0/T1 unlocks + every primal skill granted
-    // by unlocked trophies. Dedupe so a player who has both a class T1 unlock
-    // and a trophy granting the same skill doesn't end up with duplicate
-    // entries on the skill HUD.
-    const trophyUnlockedSkills = trophyGrantedSkills(profile.trophies.unlocked);
+    // Run-time skill loadout = class T0/T1 unlocks + the equipped trophy's
+    // active (if any). Trophy actives are equip-gated, so swapping trophies
+    // between runs swaps the available active. Dedupe with a Set so an
+    // overlap (e.g. wing class + axis-lock trophy both grant axisFreeze)
+    // doesn't show up twice on the skill HUD.
+    const equippedTrophySkill = trophyEquippedSkill(profile.trophies);
     const classSkills = activeChar ? getClassUnlockedSkills(activeChar) : [];
-    const mergedSkillIds = Array.from(new Set([...classSkills, ...trophyUnlockedSkills]));
+    const mergedSkillIds = Array.from(new Set(
+      equippedTrophySkill ? [...classSkills, equippedTrophySkill] : classSkills,
+    ));
     const activeSkills = developMode ? [] : createActiveSkillStates(
       mergedSkillIds,
       skillTree,
@@ -2999,6 +3002,21 @@ async function boot(): Promise<void> {
               ]);
             }
           }
+        },
+        onBeatStart: (meta) => {
+          // Surface the StageBeat as a title card so the player can read the
+          // beat's kind before its content arrives. hazardId / duration get
+          // promoted into the second line when present.
+          const headline = meta.kind === 'miniBoss' ? 'MINI-BOSS'
+            : meta.kind === 'eliteAmbush' ? 'ELITE AMBUSH'
+            : meta.kind === 'hazardWave' ? 'HAZARD'
+            : 'PUZZLE';
+          const detail = meta.hazardId
+            ? meta.hazardId.toUpperCase()
+            : meta.duration !== undefined
+              ? `${meta.duration}s`
+              : '';
+          showTitleCard(detail ? [headline, detail] : [headline]);
         },
       },
       mapper,
