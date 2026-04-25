@@ -31,7 +31,6 @@ import { CodexScene } from './scenes/codex';
 import { StageSelectScene } from './scenes/stageSelect';
 import { ShopScene } from './scenes/shop';
 import { ClassCreationScene } from './scenes/classCreation';
-import { SkillTreeScene } from './scenes/skillTree';
 import { TalentScene } from './scenes/talent';
 import { AchievementsScene } from './scenes/achievements';
 import { SettingsScene } from './scenes/settings';
@@ -3294,6 +3293,21 @@ async function boot(): Promise<void> {
             stack.push(
               new ClassCreationScene({
                 getProfile: () => profile,
+                getSkillState: () => skillTree,
+                onSkillStateChanged: async (state) => {
+                  skillTree = state;
+                  const slot = activeCharacterSlot(profile.characters);
+                  const unlockedIds = slot ? getClassUnlockedSkills(slot) : [];
+                  const anyMaxed = unlockedIds.some(
+                    (id) => (skillTree.skills[id]?.level ?? 0) >= MAX_SKILL_LEVEL,
+                  );
+                  if (anyMaxed) {
+                    if (unlockAchievement(achievements, 'maxSkillLevel')) {
+                      await saveAchievements(achievements);
+                    }
+                  }
+                  await saveSkillTree(skillTree);
+                },
                 onPromote: async (slotId, branch) => {
                   const result = promoteClass(profile, slotId, branch);
                   if (result.ok) {
@@ -3334,39 +3348,6 @@ async function boot(): Promise<void> {
                     }
                     void saveProfile(profile);
                   }
-                },
-                onBack: () => {
-                  stack.pop();
-                  showMainMenu();
-                },
-                notify: (msg, type) => showNotification(msg, type),
-              }),
-            );
-            break;
-
-          case 'skillTree':
-            stack.pop();
-            stack.push(
-              new SkillTreeScene({
-                getState: () => skillTree,
-                getUnlockedSkillIds: () => {
-                  const slot = activeCharacterSlot(profile.characters);
-                  return slot ? getClassUnlockedSkills(slot) : [];
-                },
-                onStateChanged: async (state) => {
-                  skillTree = state;
-                  // Check maxSkillLevel achievement for class-unlocked skills
-                  const slot = activeCharacterSlot(profile.characters);
-                  const unlockedIds = slot ? getClassUnlockedSkills(slot) : [];
-                  const anyMaxed = unlockedIds.some(
-                    (id) => (skillTree.skills[id]?.level ?? 0) >= MAX_SKILL_LEVEL,
-                  );
-                  if (anyMaxed) {
-                    if (unlockAchievement(achievements, 'maxSkillLevel')) {
-                      await saveAchievements(achievements);
-                    }
-                  }
-                  await saveSkillTree(skillTree);
                 },
                 onBack: () => {
                   stack.pop();

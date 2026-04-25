@@ -4,7 +4,9 @@ import type {
   CharacterSlot,
   ClassLineageId,
   PlayerProfile,
+  SkillTreeState,
 } from "../game/data/types";
+import { MAX_SKILL_LEVEL } from "../game/data/types";
 import {
   CLASS_LINEAGES,
   CLASS_NODES,
@@ -12,7 +14,13 @@ import {
   MAX_CHARACTER_SLOTS,
   MAX_CLASS_TIER,
 } from "../game/content/classes";
-import { PRIMAL_SKILLS } from "../game/skills";
+import {
+  PRIMAL_SKILLS,
+  upgradeCost,
+  skillDuration,
+  skillCooldown,
+  type PrimalSkillDef,
+} from "../game/skills";
 import {
   type ClassActionResult,
   activeCharacterSlot,
@@ -20,6 +28,7 @@ import {
   canPromoteClass,
   findCharacterSlot,
   getActiveNodeChain,
+  getClassUnlockedSkills,
   lineageToStartingShape,
 } from "../game/classes";
 import {
@@ -43,6 +52,8 @@ import {
   iconLineageMirror,
   iconLineageWing,
   iconSpan,
+  setIconHtml,
+  SKILL_GLYPHS,
 } from "../icons";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -51,10 +62,12 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 export interface ClassCreationCallbacks {
   getProfile: () => PlayerProfile;
+  getSkillState: () => SkillTreeState;
   onPromote: (slotId: string, branch: number) => Promise<ClassActionResult>;
   onReset: (slotId: string) => Promise<ClassActionResult>;
   onCreateSlot: (lineage: ClassLineageId) => Promise<ClassActionResult>;
   onSelectSlot: (slotId: string) => void;
+  onSkillStateChanged: (state: SkillTreeState) => Promise<void>;
   onBack: () => void;
   notify: (message: string, type: NotifyType) => void;
 }
@@ -187,6 +200,9 @@ export class ClassCreationScene implements Scene {
 
       // Bottom bar: passive summary + reset
       list.appendChild(this.createBottomBar(slot));
+
+      // Skills section for this character slot
+      list.appendChild(this.createSkillsSection(slot));
     } else {
       // No slots (shouldn't normally happen)
       const msg = createOverlaySub("No characters available. Create one to begin.");
@@ -216,9 +232,10 @@ export class ClassCreationScene implements Scene {
     const row = document.createElement("div");
     row.className = "talent-tag-row talent-resource-row";
     row.appendChild(this.createTag(`pts ${profile.points}`));
-    // Show boss fragment counts (relevant for promotion costs)
     const bossFrag = profile.fragments.boss;
     row.appendChild(this.createTag(`boss frags ${bossFrag}`));
+    const skillPts = this.cb.getSkillState().skillPoints;
+    row.appendChild(this.createTag(`skill pts ${skillPts}`));
     return row;
   }
 
@@ -1029,6 +1046,102 @@ export class ClassCreationScene implements Scene {
     modal.appendChild(actions);
 
     return modal;
+  }
+
+  // ── Skills section ──────────────────────────────────────────────────────────
+
+  private createSkillsSection(slot: CharacterSlot): HTMLElement {
+    const state = this.cb.getSkillState();
+    const unlockedIds = new Set(getClassUnlockedSkills(slot));
+
+    const section = document.createElement("div");
+    section.style.cssText = "margin-top:16px;";
+
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;";
+    const title = document.createElement("span");
+    title.className = "card-name";
+    title.textContent = "primal skills";
+    const ptsLabel = document.createElement("span");
+    ptsLabel.className = "talent-tag";
+    ptsLabel.textContent = `skill pts: ${state.skillPoints}`;
+    header.appendChild(title);
+    header.appendChild(ptsLabel);
+    section.appendChild(header);
+
+    if (unlockedIds.size === 0) {
+      const empty = document.createElement("div");
+      empty.className = "card-text";
+      empty.textContent = "Unlock skills by promoting this character's class.";
+      section.appendChild(empty);
+      return section;
+    }
+
+    const list = document.createElement("div");
+    list.style.cssText = "display:flex; flex-direction:column; gap:8px;";
+
+    for (const def of Object.values(PRIMAL_SKILLS) as PrimalSkillDef[]) {
+      if (!unlockedIds.has(def.id)) continue;
+      const entry = state.skills[def.id];
+      if (!entry) continue;
+
+      const card = document.createElement("div");
+      card.className = "card-btn";
+      card.style.flexDirection = "column";
+      card.style.alignItems = "flex-start";
+
+      const headerRow = document.createElement("div");
+      headerRow.style.cssText = "display:flex; align-items:center; gap:8px; width:100%;";
+
+      const glyph = document.createElement("span");
+      glyph.className = "card-glyph";
+      const skillSvg = SKILL_GLYPHS[def.id];
+      if (skillSvg) setIconHtml(glyph, skillSvg);
+      else glyph.textContent = def.glyph;
+      headerRow.appendChild(glyph);
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "card-name";
+      const isMaxed = entry.level >= MAX_SKILL_LEVEL;
+      nameEl.textContent = isMaxed ? `${def.name} (MAX)` : `${def.name} (Lv.${entry.level})`;
+      headerRow.appendChild(nameEl);
+      card.appendChild(headerRow);
+
+      const descEl = document.createElement("span");
+      descEl.className = "card-text";
+      descEl.style.marginTop = "4px";
+      descEl.style.whiteSpace = "pre-line";
+      const dur = skillDuration(def, entry.level).toFixed(1);
+      const cd = skillCooldown(def, entry.level).toFixed(1);
+      descEl.textContent = `${def.description}\nDuration: ${dur}s · Cooldown: ${cd}s`;
+      card.appendChild(descEl);
+
+      if (!isMaxed) {
+        const cost = upgradeCost(entry.level);
+        const canUpgrade = state.skillPoints >= cost;
+        const upBtn = document.createElement("button");
+        upBtn.type = "button";
+        upBtn.className = "menu-btn";
+        upBtn.style.marginTop = "6px";
+        upBtn.textContent = `Upgrade (${cost} pts)`;
+        upBtn.disabled = !canUpgrade;
+        if (!canUpgrade) upBtn.style.opacity = "0.5";
+        upBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          if (state.skillPoints < cost) return;
+          state.skillPoints -= cost;
+          entry.level += 1;
+          await this.cb.onSkillStateChanged(state);
+          this.enter();
+        });
+        card.appendChild(upBtn);
+      }
+
+      list.appendChild(card);
+    }
+
+    section.appendChild(list);
+    return section;
   }
 
   // ── Shared tag helper ────────────────────────────────────────────────────────
