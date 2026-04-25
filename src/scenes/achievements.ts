@@ -31,6 +31,7 @@ const CATEGORIES: readonly AchievementCategory[] = [
 
 export class AchievementsScene implements Scene {
   readonly root: Container;
+  readonly id = "achievements";
   private readonly getState: () => AchievementState;
   private readonly onBack: () => void;
 

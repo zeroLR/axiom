@@ -48,7 +48,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 12px calc(4px + env(safe-area-inset-top)) 12px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   background: var(--bg);
   border-bottom: 1px solid var(--chrome);
@@ -57,7 +57,7 @@ body {
 
 .hud-chip {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 5px 9px;
   background: var(--chrome);
   color: var(--fg);
   border-radius: 6px;
@@ -803,6 +803,32 @@ body {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  align-self: flex-start;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.card-rarity[data-rarity="common"] {
+  color: var(--muted);
+}
+
+.card-rarity[data-rarity="uncommon"] {
+  color: #1e9e5a;
+  background: rgba(30, 158, 90, 0.10);
+}
+
+.card-rarity[data-rarity="rare"] {
+  color: #2f56d9;
+  background: rgba(47, 86, 217, 0.10);
+}
+
+.card-btn[data-rarity="uncommon"] {
+  border-color: rgba(30, 158, 90, 0.45);
+}
+
+.card-btn[data-rarity="rare"] {
+  border-color: rgba(47, 86, 217, 0.45);
+  box-shadow: 0 0 0 1px rgba(47, 86, 217, 0.10);
 }
 
 .big-btn {
@@ -843,6 +869,44 @@ body {
 .draft-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.draft-hint {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.draft-reroll {
+  flex: 1 1 auto;
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.draft-skip {
+  flex: 0 0 auto;
+}
+
+.text-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  padding: 8px 10px;
+  min-height: 36px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  touch-action: manipulation;
+}
+
+.text-btn:active {
+  color: var(--fg);
 }
 
 .secondary-btn {
@@ -1679,12 +1743,12 @@ select.developer-form-input {
 /* ── Title-card overlay (stage entry / boss spawn) ─────────────────────── */
 .title-card {
   position: absolute;
-  top: 30%;
+  top: 14px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   text-align: center;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 400;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1693,7 +1757,15 @@ select.developer-form-input {
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 50;
-  line-height: 1.6;
+  line-height: 1.5;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--chrome);
+  border-radius: 10px;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
 }
 
 /* ── Synergy HUD chips ─────────────────────────────────────────────────────── */
@@ -2139,4 +2211,173 @@ select.developer-form-input {
 .cc-radar-polygon {
   fill-opacity: 0.3;
   stroke-width: 1.5;
+}
+
+/* ── Stage select cards ─────────────────────────────────────────────────── */
+
+.stage-card .stage-glyph {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.stage-card--current .stage-glyph {
+  color: var(--accent);
+}
+
+.stage-card--cleared .stage-glyph {
+  color: var(--fg);
+}
+
+.stage-card--locked {
+  opacity: 0.45;
+}
+
+.stage-name {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stage-boss {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+.stage-theorem {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.stage-wave-chip {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 7px;
+  background: var(--chrome);
+  color: var(--muted);
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+.stage-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  width: 22px;
+  color: var(--muted);
+}
+
+.stage-card--cleared .stage-status {
+  color: var(--accent);
+}
+
+.stage-card--current .stage-status {
+  color: var(--accent);
+}
+
+.stage-status .svg-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.stage-status-bar {
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+}
+
+/* ── Main menu sections ─────────────────────────────────────────────────── */
+
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.menu-section--mode {
+  margin-top: 0;
+}
+
+.menu-section-title {
+  margin: 0 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.menu-data-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Scene-aware chrome (topbar / footer / version) ─────────────────────── */
+
+body:not([data-scene="play"]) #hud-hp,
+body:not([data-scene="play"]) #hud-wave,
+body:not([data-scene="play"]) #hud-pts,
+body:not([data-scene="play"]) #hud-tokens,
+body:not([data-scene="play"]) #hud-seed,
+body:not([data-scene="play"]) #btn-pause,
+body:not([data-scene="play"]) #btn-restart {
+  display: none;
+}
+
+body[data-scene="menu"] #btn-menu {
+  display: none;
+}
+
+body[data-scene="menu"] #topbar {
+  border-bottom: none;
+  background: transparent;
+  justify-content: flex-end;
+}
+
+body:not([data-scene="play"]) #hud-skills,
+body[data-overlay="open"] #hud-skills {
+  display: none;
+}
+
+body[data-scene="play"] #topbar {
+  background:
+    linear-gradient(180deg, var(--domain-tint, transparent), var(--bg) 70%),
+    var(--bg);
+}
+
+body[data-scene="play"] #hud-skills {
+  background:
+    linear-gradient(0deg, var(--domain-tint, transparent), var(--bg) 70%),
+    var(--bg);
+}
+
+body[data-scene="play"] .title-card {
+  border-color: color-mix(in srgb, var(--domain-tint, var(--chrome)) 80%, var(--chrome));
+}
+
+body:not([data-scene="play"]) #footer-hint {
+  display: none;
+}
+
+body:not([data-scene="menu"]) #version-tag {
+  display: none;
+}
+
+body[data-scene="menu"] #version-tag {
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
 }

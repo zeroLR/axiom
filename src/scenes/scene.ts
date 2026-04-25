@@ -2,10 +2,19 @@ import type { Container } from "pixi.js";
 
 export interface Scene {
   readonly root: Container;
+  /** Stable scene identifier exposed on `body.dataset.scene` for chrome theming. */
+  readonly id?: string;
   enter?(): void;
   exit?(): void;
   update(dt: number): void;
   render(alpha: number): void;
+}
+
+function syncSceneAttr(scene: Scene | undefined): void {
+  if (typeof document === "undefined") return;
+  const id = scene?.id;
+  if (id) document.body.dataset.scene = id;
+  else delete document.body.dataset.scene;
 }
 
 export class SceneStack {
@@ -16,13 +25,16 @@ export class SceneStack {
     this.stack.push(s);
     s.root.visible = true;
     s.enter?.();
+    syncSceneAttr(s);
   }
 
   pop(): void {
     const s = this.stack.pop();
     s?.exit?.();
     if (s) s.root.visible = false;
-    this.stack[this.stack.length - 1]?.enter?.();
+    const next = this.stack[this.stack.length - 1];
+    next?.enter?.();
+    syncSceneAttr(next);
   }
 
   top(): Scene | undefined {

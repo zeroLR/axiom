@@ -173,6 +173,7 @@ interface FragmentPickup {
 
 export class PlayScene implements Scene {
   readonly root: Container;
+  readonly id = "play";
   readonly world: World;
   avatarId: EntityId;
   readonly picks: Card[] = [];

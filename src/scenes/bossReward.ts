@@ -15,6 +15,7 @@ const TIER_META: Record<BossChestReward['tier'], { name: string; cls: string }> 
 
 export class BossRewardScene implements Scene {
   readonly root: Container;
+  readonly id = "boss-reward";
   private readonly reward: BossChestReward;
   private readonly cb: BossRewardCallbacks;
 

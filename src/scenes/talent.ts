@@ -76,6 +76,7 @@ const CLUSTER_ANGLE_RAD: Record<TalentClusterId, number> = TALENT_CLUSTER_ORDER.
 
 export class TalentScene implements Scene {
   readonly root: Container;
+  readonly id = "talent";
   private readonly cb: TalentSceneCallbacks;
 
   private selectedId: TalentId | null = null;

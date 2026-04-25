@@ -27,6 +27,7 @@ export type MenuAction =
 
 export class MainMenuScene implements Scene {
   readonly root: Container;
+  readonly id = "menu";
   private readonly onAction: (action: MenuAction) => void;
   private readonly showDevelopMode: boolean;
   private readonly onDeveloperUnlock?: () => void;
@@ -59,45 +60,57 @@ export class MainMenuScene implements Scene {
 
     // Subtitle
     const sub = createOverlaySub("reverse bullet-hell deckbuilder");
-    sub.style.marginBottom = "16px";
+    sub.style.marginBottom = "12px";
     inner.appendChild(sub);
 
-    // Mode buttons
-    this.addBtn(inner, iconPlay, "Main Story", "normalMode", "big-btn");
-    this.addBtn(inner, iconInfinity, "Survival Mode", "survivalMode", "big-btn");
+    // ── MODE ────────────────────────────────────────────────────────────
+    const modeGroup = document.createElement("div");
+    modeGroup.className = "menu-section menu-section--mode";
+    this.addBtn(modeGroup, iconPlay, "Main Story", "normalMode", "big-btn");
+    this.addBtn(modeGroup, iconInfinity, "Survival Mode", "survivalMode", "big-btn");
+    inner.appendChild(modeGroup);
+
+    // ── BUILD ───────────────────────────────────────────────────────────
+    const buildSection = this.addSection(inner, "Build");
+    const buildGrid = document.createElement("div");
+    buildGrid.className = "menu-grid";
+    this.addBtn(buildGrid, iconEquipment, "Equipment", "equipment", "menu-btn");
+    this.addBtn(buildGrid, iconSkills, "Skills", "skillTree", "menu-btn");
+    this.addBtn(buildGrid, iconTalents, "Talents", "talentGrowth", "menu-btn");
+    this.addBtn(buildGrid, iconSkins, "Class Creation", "classCreation", "menu-btn");
+    buildSection.appendChild(buildGrid);
+
+    // ── LIBRARY ─────────────────────────────────────────────────────────
+    const libSection = this.addSection(inner, "Library");
+    const libGrid = document.createElement("div");
+    libGrid.className = "menu-grid";
+    this.addBtn(libGrid, iconCodex, "Codex", "codex", "menu-btn");
+    this.addBtn(libGrid, iconAchievements, "Achievements", "achievements", "menu-btn");
+    libSection.appendChild(libGrid);
+    this.addBtn(libSection, iconShop, "Shop", "shop", "menu-btn");
+
+    // ── SYSTEM ──────────────────────────────────────────────────────────
+    const sysSection = this.addSection(inner, "System");
+    this.addBtn(sysSection, iconSettings, "Settings", "settings", "menu-btn");
     if (this.showDevelopMode) {
-      this.addBtn(inner, iconInfinity, "Develop Mode", "developMode", "menu-btn");
+      this.addBtn(sysSection, iconInfinity, "Develop Mode", "developMode", "menu-btn");
     }
-
-    // Spacer
-    const spacer = document.createElement("div");
-    spacer.style.height = "12px";
-    inner.appendChild(spacer);
-
-    // Meta buttons row
-    const row = document.createElement("div");
-    row.style.display = "grid";
-    row.style.gridTemplateColumns = "1fr 1fr";
-    row.style.gap = "8px";
-    this.addBtn(row, iconShop, "Shop", "shop", "menu-btn");
-    this.addBtn(row, iconEquipment, "Equipment", "equipment", "menu-btn");
-    this.addBtn(row, iconSkills, "Skills", "skillTree", "menu-btn");
-    this.addBtn(row, iconTalents, "Talents", "talentGrowth", "menu-btn");
-    this.addBtn(row, iconCodex, "Codex", "codex", "menu-btn");
-    this.addBtn(row, iconAchievements, "Achievements", "achievements", "menu-btn");
-    inner.appendChild(row);
-
-    this.addBtn(inner, iconSkins, "Class Creation", "classCreation", "menu-btn");
-    this.addBtn(inner, iconSettings, "Settings", "settings", "menu-btn");
-
-    // Data row
     const dataRow = document.createElement("div");
-    dataRow.style.display = "flex";
-    dataRow.style.gap = "8px";
-    dataRow.style.marginTop = "8px";
+    dataRow.className = "menu-data-row";
     this.addBtn(dataRow, iconExport, "Export", "exportData", "menu-btn", "flex:1");
     this.addBtn(dataRow, iconImport, "Import", "importData", "menu-btn", "flex:1");
-    inner.appendChild(dataRow);
+    sysSection.appendChild(dataRow);
+  }
+
+  private addSection(parent: HTMLElement, title: string): HTMLElement {
+    const section = document.createElement("section");
+    section.className = "menu-section";
+    const heading = document.createElement("h3");
+    heading.className = "menu-section-title";
+    heading.textContent = title;
+    section.appendChild(heading);
+    parent.appendChild(section);
+    return section;
   }
 
   exit(): void {
