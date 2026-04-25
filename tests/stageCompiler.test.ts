@@ -84,9 +84,9 @@ describe('STAGE_CONFIGS', () => {
 // ── compileStageWaves ────────────────────────────────────────────────────────
 
 describe('compileStageWaves', () => {
-  it('compiles stage 1 to exactly 6 WaveSpecs', () => {
+  it('compiles stage 1 to 7 WaveSpecs (6 authored + 1 miniBoss beat)', () => {
     const waves = compileStageWaves(STAGE_CONFIGS[0]!, 0);
-    expect(waves).toHaveLength(6);
+    expect(waves).toHaveLength(7);
   });
 
   it('compiled wave specs have correct indices', () => {
@@ -104,11 +104,19 @@ describe('compileStageWaves', () => {
     }
   });
 
-  it('non-boss waves have at least one spawn group', () => {
+  it('non-boss waves spawn enemies unless they are duration-only beat waves', () => {
     for (let i = 0; i < STAGE_CONFIGS.length; i++) {
       const waves = compileStageWaves(STAGE_CONFIGS[i]!, i);
       waves.slice(0, -1).forEach(w => {
-        expect(w.groups.length).toBeGreaterThan(0);
+        // hazardWave / puzzle beats legitimately ship empty groups; their
+        // wave is held open by `minHoldSec` instead.
+        const isDurationOnly =
+          w.beatMeta?.kind === 'hazardWave' || w.beatMeta?.kind === 'puzzle';
+        if (isDurationOnly) {
+          expect(w.minHoldSec).toBeGreaterThan(0);
+        } else {
+          expect(w.groups.length).toBeGreaterThan(0);
+        }
       });
     }
   });

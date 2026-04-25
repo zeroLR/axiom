@@ -22,6 +22,7 @@ import { resetStatusPhase, updateStatusEffects } from '../game/systems/status';
 import { newWaveState, updateWave, type WaveState } from '../game/systems/wave';
 import { updateWeapon } from '../game/systems/weapon';
 import type { WaveBeatMeta, WaveSpec } from '../game/waves';
+import { getHazardDef, type HazardDef } from '../game/content/hazards';
 import { type EntityId, World } from '../game/world';
 import { drawGrid, drawWorld } from '../render';
 import type { Scene } from './scene';
@@ -231,6 +232,10 @@ export class PlayScene implements Scene {
   private overloadApplied = false;
   /** Saved weapon period before overload. */
   private savedWeaponPeriod = 0;
+  /** StageBeat metadata for the wave currently in flight, if any. */
+  private currentBeatMeta: WaveBeatMeta | null = null;
+  /** Hazard def resolved from the current wave's `beatMeta.hazardId`. */
+  private currentHazard: HazardDef | null = null;
 
   constructor(
     rng: Rng,
@@ -296,11 +301,16 @@ export class PlayScene implements Scene {
     t.removeEventListener('pointermove', this.boundOnMove);
     t.removeEventListener('pointerup', this.boundOnUp);
     t.removeEventListener('pointercancel', this.boundOnUp);
+    // Drop body[data-hazard]/data-beat so a beat that was active when the
+    // scene unmounted (e.g. via pause→menu) doesn't paint other scenes.
+    this.clearBeatState();
   }
 
   advanceToNextWave(): void {
     if (this.mode === 'normal' && this.waveIdx + 1 >= this.waves.length) return;
 
+    // Tear down anything the previous wave's beat installed before we move on.
+    this.clearBeatState();
     this.waveIdx += 1;
 
     if (this.mode === 'survival') {
@@ -313,8 +323,31 @@ export class PlayScene implements Scene {
     this.ended = false;
     this.bossApplied = false;
     this.updateHud();
-    if (this.wave.spec.beatMeta && this.cb.onBeatStart) {
-      this.cb.onBeatStart(this.wave.spec.beatMeta);
+    const meta = this.wave.spec.beatMeta;
+    if (meta) {
+      this.currentBeatMeta = meta;
+      this.currentHazard = meta.kind === 'hazardWave' ? getHazardDef(meta.hazardId) : null;
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.dataset.beat = meta.kind;
+        if (this.currentHazard) {
+          document.body.dataset.hazard = this.currentHazard.id;
+        }
+      }
+      if (this.cb.onBeatStart) this.cb.onBeatStart(meta);
+    }
+  }
+
+  /**
+   * Tear down DOM state set by a beat (CSS dataset hooks). Called on wave
+   * transition and on scene exit so a hazard/puzzle never leaks past its
+   * authored duration.
+   */
+  private clearBeatState(): void {
+    this.currentBeatMeta = null;
+    this.currentHazard = null;
+    if (typeof document !== 'undefined' && document.body) {
+      delete document.body.dataset.beat;
+      delete document.body.dataset.hazard;
     }
   }
 
@@ -548,10 +581,22 @@ export class PlayScene implements Scene {
       }
     }
 
+    // Apply hazard avatar tick BEFORE updateAvatarMotion so any target/speed
+    // override flows into the regular motion pipeline.
+    if (this.currentHazard?.applyAvatarTick) {
+      const a = this.world.get(this.avatarId);
+      if (a) this.currentHazard.applyAvatarTick(a, dt);
+    }
     updateAvatarMotion(this.world, dt);
     updateEnemyAi(this.world, this.avatarId, enemyDt, this.rng);
     updateProjectileMotion(this.world, dt);
-    updateWeapon(this.world, this.avatarId, this.rng, dt);
+    // Puzzle beats mute the avatar's weapons for the wave duration so the
+    // player has to navigate without firing. Boss / mirror-ability weapons
+    // are unaffected — only player-side fire is gated.
+    const weaponsMuted = this.currentBeatMeta?.kind === 'puzzle';
+    if (!weaponsMuted) {
+      updateWeapon(this.world, this.avatarId, this.rng, dt);
+    }
     updateBossWeapon(this.world, this.avatarId, this.rng, enemyDt);
     updateMirrorBossAbilities(this.world, this.avatarId, this.rng, enemyDt);
 
@@ -559,7 +604,7 @@ export class PlayScene implements Scene {
     if (this.cloneId !== null) {
       const clone = this.world.get(this.cloneId);
       if (clone) {
-        updateWeapon(this.world, this.cloneId, this.rng, dt);
+        if (!weaponsMuted) updateWeapon(this.world, this.cloneId, this.rng, dt);
         // Move clone to follow avatar
         const avatar = this.world.get(this.avatarId);
         if (avatar?.pos && clone.avatar) {

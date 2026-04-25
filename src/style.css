@@ -2381,3 +2381,44 @@ body[data-scene="menu"] #version-tag {
   padding: 2px 6px;
   border-radius: 4px;
 }
+
+/* ── StageBeat hazard / puzzle visual hooks ──────────────────────────────── */
+
+/* Fog: dim the play surface and pulse a soft inner shadow so the field
+   reads like a low-vis volume. */
+body[data-hazard="fog"] #app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    rgba(20, 20, 28, 0) 30%,
+    rgba(20, 20, 28, 0.55) 75%,
+    rgba(20, 20, 28, 0.85) 100%);
+  mix-blend-mode: multiply;
+  animation: hazard-fog-pulse 2.6s ease-in-out infinite alternate;
+  z-index: 5;
+}
+
+@keyframes hazard-fog-pulse {
+  from { opacity: 0.85; }
+  to { opacity: 1; }
+}
+
+/* Axis Lock: paint a faint cardinal grid on the play surface so the player
+   can read the constraint at a glance. */
+body[data-hazard="axis-lock"] #app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--accent) 24%, transparent) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--accent) 24%, transparent) 0 1px, transparent 1px 56px);
+  z-index: 5;
+}
+
+/* Puzzle: mute the weapon-HUD tint so the player reads the no-fire window. */
+body[data-beat="puzzle"] #hud-skills {
+  filter: grayscale(0.6) brightness(0.7);
+}
