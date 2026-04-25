@@ -1,8 +1,8 @@
 import { Container } from "pixi.js";
 import type { Scene } from "./scene";
 import {
-  iconPlay, iconInfinity, iconShop, iconEquipment,
-  iconSkills, iconTalents, iconAchievements, iconExport, iconImport, iconSkins, iconSettings, iconCodex,
+  iconPlay, iconInfinity, iconShop,
+  iconTalents, iconAchievements, iconExport, iconImport, iconSkins, iconSettings, iconCodex,
   iconSpan,
 } from "../icons";
 import { initOverlay, closeOverlay, createOverlayTitle, createOverlaySub } from "./ui";
@@ -15,9 +15,7 @@ export type MenuAction =
   | { kind: "survivalMode" }
   | { kind: "developMode" }
   | { kind: "shop" }
-  | { kind: "equipment" }
   | { kind: "classCreation" }
-  | { kind: "skillTree" }
   | { kind: "talentGrowth" }
   | { kind: "codex" }
   | { kind: "achievements" }
@@ -74,10 +72,8 @@ export class MainMenuScene implements Scene {
     const buildSection = this.addSection(inner, "Build");
     const buildGrid = document.createElement("div");
     buildGrid.className = "menu-grid";
-    this.addBtn(buildGrid, iconEquipment, "Equipment", "equipment", "menu-btn");
-    this.addBtn(buildGrid, iconSkills, "Skills", "skillTree", "menu-btn");
     this.addBtn(buildGrid, iconTalents, "Talents", "talentGrowth", "menu-btn");
-    this.addBtn(buildGrid, iconSkins, "Class Creation", "classCreation", "menu-btn");
+    this.addBtn(buildGrid, iconSkins, "Class & Skills", "classCreation", "menu-btn");
     buildSection.appendChild(buildGrid);
 
     // ── LIBRARY ─────────────────────────────────────────────────────────
