@@ -48,7 +48,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 12px calc(4px + env(safe-area-inset-top)) 12px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   background: var(--bg);
   border-bottom: 1px solid var(--chrome);
@@ -57,7 +57,7 @@ body {
 
 .hud-chip {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 5px 9px;
   background: var(--chrome);
   color: var(--fg);
   border-radius: 6px;
@@ -2211,6 +2211,85 @@ select.developer-form-input {
 .cc-radar-polygon {
   fill-opacity: 0.3;
   stroke-width: 1.5;
+}
+
+/* ── Stage select cards ─────────────────────────────────────────────────── */
+
+.stage-card .stage-glyph {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.stage-card--current .stage-glyph {
+  color: var(--accent);
+}
+
+.stage-card--cleared .stage-glyph {
+  color: var(--fg);
+}
+
+.stage-card--locked {
+  opacity: 0.45;
+}
+
+.stage-name {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stage-boss {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+}
+
+.stage-theorem {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.stage-wave-chip {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 7px;
+  background: var(--chrome);
+  color: var(--muted);
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+.stage-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  width: 22px;
+  color: var(--muted);
+}
+
+.stage-card--cleared .stage-status {
+  color: var(--accent);
+}
+
+.stage-card--current .stage-status {
+  color: var(--accent);
+}
+
+.stage-status .svg-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.stage-status-bar {
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
 }
 
 /* ── Main menu sections ─────────────────────────────────────────────────── */

@@ -152,6 +152,16 @@ export const iconLock = wrap(
   `<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>`,
 );
 
+/** Check mark: completion indicator. */
+export const iconCheck = wrap(
+  `<polyline points="4,12 10,18 20,6"/>`,
+);
+
+/** Chevron right: "next / current target" indicator. */
+export const iconChevronRight = wrap(
+  `<polyline points="9,6 15,12 9,18"/>`,
+);
+
 // ── Card / item glyph icons ──────────────────────────────────────────────────
 // These map to the `glyph` field in data structures. Rendered in `.card-glyph`.
 
