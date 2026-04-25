@@ -287,3 +287,85 @@ describe('buildStagePointMulArray', () => {
     expect(buildStagePointMulArray()).toEqual([1, 2, 3, 4, 5]);
   });
 });
+
+// ── StageBeats ────────────────────────────────────────────────────────────────
+
+describe('StageBeats', () => {
+  const makeConfig = (beats?: any[]) => ({
+    stageId: 'beat-test',
+    bossId: 'mirror' as const,
+    enemyStrengthMul: 1,
+    pointMul: 1,
+    waves: [
+      { index: 1, durationHint: 20, spawns: [{ t: 0.5, kind: 'circle' as const, count: 2 }] },
+      { index: 2, durationHint: 22, spawns: [{ t: 0.5, kind: 'square' as const, count: 2 }] },
+      { index: 3, durationHint: 0, isBossWave: true, spawns: [] },
+    ],
+    beats,
+  });
+
+  it('returns waves unchanged when no beats are configured', () => {
+    const out = compileStageWaves(makeConfig(), 0);
+    expect(out).toHaveLength(3);
+    expect(out.every(w => w.beatMeta === undefined)).toBe(true);
+    expect(out.map(w => w.index)).toEqual([1, 2, 3]);
+  });
+
+  it('splices a miniBoss beat after its parent wave and renumbers', () => {
+    const out = compileStageWaves(
+      makeConfig([{ kind: 'miniBoss', afterWave: 1, enemyKind: 'prism' }]),
+      3,
+    );
+    expect(out).toHaveLength(4);
+    expect(out.map(w => w.index)).toEqual([1, 2, 3, 4]);
+
+    // Wave 2 in the output is the spliced miniBoss beat.
+    const beatWave = out[1]!;
+    expect(beatWave.beatMeta).toEqual({ kind: 'miniBoss', afterWave: 1 });
+    expect(beatWave.groups).toEqual([{ t: 0.5, kind: 'prism', count: 1 }]);
+
+    // Original waves shifted by 1.
+    expect(out[2]!.beatMeta).toBeUndefined();
+    expect(out[3]!.groups[0]!.kind).toBe('boss');
+  });
+
+  it('preserves order of multiple beats sharing a parent wave', () => {
+    const out = compileStageWaves(
+      makeConfig([
+        { kind: 'miniBoss', afterWave: 1, enemyKind: 'prism' },
+        { kind: 'miniBoss', afterWave: 1, enemyKind: 'octo' },
+      ]),
+      4,
+    );
+    expect(out).toHaveLength(5);
+    expect(out[1]!.groups[0]!.kind).toBe('prism');
+    expect(out[2]!.groups[0]!.kind).toBe('octo');
+  });
+
+  it('throws when a miniBoss beat omits enemyKind', () => {
+    expect(() =>
+      compileStageWaves(makeConfig([{ kind: 'miniBoss', afterWave: 1 }]), 0),
+    ).toThrow(/enemyKind/);
+  });
+
+  it('throws when a beat references an unknown wave index', () => {
+    expect(() =>
+      compileStageWaves(
+        makeConfig([{ kind: 'miniBoss', afterWave: 99, enemyKind: 'prism' }]),
+        0,
+      ),
+    ).toThrow(/unknown wave index 99/);
+  });
+
+  it('throws for reserved beat kinds that lack a handler', () => {
+    expect(() =>
+      compileStageWaves(makeConfig([{ kind: 'puzzle', afterWave: 1 }]), 0),
+    ).toThrow(/reserved schema/);
+    expect(() =>
+      compileStageWaves(makeConfig([{ kind: 'hazardWave', afterWave: 1, hazardId: 'fog' }]), 0),
+    ).toThrow(/reserved schema/);
+    expect(() =>
+      compileStageWaves(makeConfig([{ kind: 'eliteAmbush', afterWave: 1 }]), 0),
+    ).toThrow(/reserved schema/);
+  });
+});

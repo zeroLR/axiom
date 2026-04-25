@@ -116,6 +116,32 @@ export interface StageConfig {
   enhancePool?: CardWeight[];
   /** Wave templates for this stage (last entry must have `isBossWave: true`). */
   waves: WaveTemplate[];
+  /**
+   * Optional mid-stage beats. Each beat plays after the wave whose `index`
+   * matches `afterWave` clears, before the next wave starts. Compiler splices
+   * beats into the WaveSpec array as synthetic waves so the engine sees them
+   * as ordinary content.
+   *
+   * v1 supports `miniBoss` — every other beat kind is reserved schema and
+   * throws at compile time until its handler ships.
+   */
+  beats?: readonly StageBeat[];
+}
+
+// ── Stage Beats ──────────────────────────────────────────────────────────────
+
+export type StageBeatKind = "miniBoss" | "hazardWave" | "puzzle" | "eliteAmbush";
+
+export interface StageBeat {
+  kind: StageBeatKind;
+  /** Wave index this beat hooks into (1-based). The beat plays AFTER this wave. */
+  afterWave: number;
+  /** Mini-boss enemy kind (required for `miniBoss`). */
+  enemyKind?: EnemyKind;
+  /** Beat duration in seconds (used by `puzzle` / `hazardWave`). */
+  duration?: number;
+  /** Hazard registry id (used by `hazardWave`). */
+  hazardId?: string;
 }
 
 // ── Stage data ───────────────────────────────────────────────────────────────

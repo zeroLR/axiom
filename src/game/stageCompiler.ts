@@ -7,7 +7,13 @@
 
 import type { Rng } from './rng';
 import type { EnemyKind } from './world';
-import { STAGE_CONFIGS, type StageConfig, type SpawnTemplate, type WaveTemplate } from './content/stages';
+import {
+  STAGE_CONFIGS,
+  type StageBeat,
+  type StageConfig,
+  type SpawnTemplate,
+  type WaveTemplate,
+} from './content/stages';
 import { enemiesForArchetype } from './content/enemies';
 import type { WaveSpec, SpawnGroup } from './waves';
 import { weightedPick } from './weightedSampler';
@@ -77,6 +83,35 @@ function compileWave(wave: WaveTemplate, stageIndex: number, rng?: Rng): WaveSpe
   return { index: wave.index, durationHint: wave.durationHint, groups };
 }
 
+/**
+ * Compile a `StageBeat` into a synthetic WaveSpec. The `index` field is set
+ * to a placeholder by the caller (`compileStageWaves`) since beat order is
+ * resolved relative to the parent wave.
+ *
+ * v1 supports `miniBoss` only. Other kinds (`hazardWave`, `puzzle`,
+ * `eliteAmbush`) are reserved schema and throw with a clear message until
+ * their handlers ship — this catches typos in stage authoring early rather
+ * than producing silently empty waves.
+ */
+function compileBeat(beat: StageBeat, indexHint: number): WaveSpec {
+  if (beat.kind === 'miniBoss') {
+    if (!beat.enemyKind) {
+      throw new Error(
+        `stageCompiler: miniBoss beat after wave ${beat.afterWave} requires \`enemyKind\``,
+      );
+    }
+    return {
+      index: indexHint,
+      durationHint: 18,
+      groups: [{ t: 0.5, kind: beat.enemyKind, count: 1 }],
+      beatMeta: { kind: 'miniBoss', afterWave: beat.afterWave },
+    };
+  }
+  throw new Error(
+    `stageCompiler: StageBeat kind "${beat.kind}" is reserved schema; handler not implemented yet`,
+  );
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -96,7 +131,36 @@ export function compileStageWaves(
   stageIndex: number,
   rng?: Rng,
 ): readonly WaveSpec[] {
-  return config.waves.map(wave => compileWave(wave, stageIndex, rng));
+  // Bucket beats by their parent wave for O(1) lookup. `afterWave` is 1-based
+  // to match `WaveTemplate.index`. Validate that every beat references an
+  // existing wave so authoring typos surface here rather than at runtime.
+  const beatsByParent = new Map<number, StageBeat[]>();
+  if (config.beats && config.beats.length > 0) {
+    const validIndices = new Set(config.waves.map(w => w.index));
+    for (const beat of config.beats) {
+      if (!validIndices.has(beat.afterWave)) {
+        throw new Error(
+          `stageCompiler: StageBeat references unknown wave index ${beat.afterWave}`,
+        );
+      }
+      const list = beatsByParent.get(beat.afterWave) ?? [];
+      list.push(beat);
+      beatsByParent.set(beat.afterWave, list);
+    }
+  }
+
+  const out: WaveSpec[] = [];
+  let nextIndex = 1;
+  for (const wave of config.waves) {
+    const compiled = compileWave(wave, stageIndex, rng);
+    out.push({ ...compiled, index: nextIndex++ });
+    const beats = beatsByParent.get(wave.index);
+    if (!beats) continue;
+    for (const beat of beats) {
+      out.push(compileBeat(beat, nextIndex++));
+    }
+  }
+  return out;
 }
 
 /**
