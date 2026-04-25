@@ -45,6 +45,7 @@ function enemyBaseColor(kind: string): string {
 
 export class CodexScene implements Scene {
   readonly root: Container;
+  readonly id = "codex";
   private readonly getStats: () => PlayerStats;
   private readonly onBack: () => void;
   private activeTab: CodexTab = "enemies";

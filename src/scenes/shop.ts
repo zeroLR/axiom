@@ -32,6 +32,7 @@ type ShopTab = "skin" | "enhance" | "fragments";
 
 export class ShopScene implements Scene {
   readonly root: Container;
+  readonly id = "shop";
   private readonly cb: ShopCallbacks;
   private activeTab: ShopTab = "skin";
 

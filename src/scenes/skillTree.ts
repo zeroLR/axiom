@@ -26,6 +26,7 @@ export interface SkillTreeCallbacks {
 
 export class SkillTreeScene implements Scene {
   readonly root: Container;
+  readonly id = "skill-tree";
   private readonly cb: SkillTreeCallbacks;
 
   constructor(cb: SkillTreeCallbacks) {

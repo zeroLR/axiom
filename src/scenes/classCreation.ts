@@ -112,6 +112,7 @@ function singlePassiveLine(kind: string, value: number): string {
 
 export class ClassCreationScene implements Scene {
   readonly root: Container;
+  readonly id = "class-creation";
   private readonly cb: ClassCreationCallbacks;
 
   /** ID of the character slot currently being viewed. Defaults to the active slot. */

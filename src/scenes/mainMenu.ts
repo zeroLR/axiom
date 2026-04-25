@@ -27,6 +27,7 @@ export type MenuAction =
 
 export class MainMenuScene implements Scene {
   readonly root: Container;
+  readonly id = "menu";
   private readonly onAction: (action: MenuAction) => void;
   private readonly showDevelopMode: boolean;
   private readonly onDeveloperUnlock?: () => void;

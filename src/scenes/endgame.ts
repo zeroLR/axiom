@@ -34,6 +34,7 @@ interface EndgameSummary {
 
 export class EndgameScene implements Scene {
   readonly root: Container;
+  readonly id = "endgame";
   private readonly kind: EndgameKind;
   private readonly wavesCleared: number;
   private readonly totalWaves: number;

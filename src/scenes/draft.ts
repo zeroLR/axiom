@@ -24,6 +24,7 @@ export interface DraftHandlers {
 
 export class DraftScene implements Scene {
   readonly root: Container;
+  readonly id = "draft";
   private offer: readonly Card[];
   private readonly handlers: DraftHandlers;
   private readonly clearedWaveLabel: string;

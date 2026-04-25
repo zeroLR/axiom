@@ -2140,3 +2140,43 @@ select.developer-form-input {
   fill-opacity: 0.3;
   stroke-width: 1.5;
 }
+
+/* ── Scene-aware chrome (topbar / footer / version) ─────────────────────── */
+
+body:not([data-scene="play"]) #hud-hp,
+body:not([data-scene="play"]) #hud-wave,
+body:not([data-scene="play"]) #hud-pts,
+body:not([data-scene="play"]) #hud-tokens,
+body:not([data-scene="play"]) #hud-seed,
+body:not([data-scene="play"]) #btn-pause,
+body:not([data-scene="play"]) #btn-restart {
+  display: none;
+}
+
+body[data-scene="menu"] #btn-menu {
+  display: none;
+}
+
+body[data-scene="menu"] #topbar {
+  border-bottom: none;
+  background: transparent;
+  justify-content: flex-end;
+}
+
+body:not([data-scene="play"]) #hud-skills {
+  display: none;
+}
+
+body:not([data-scene="play"]) #footer-hint {
+  display: none;
+}
+
+body:not([data-scene="menu"]) #version-tag {
+  display: none;
+}
+
+body[data-scene="menu"] #version-tag {
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}

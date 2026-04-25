@@ -10,6 +10,7 @@ import { openOverlay, closeOverlay, createOverlayTitle, createOverlaySub, create
 
 export class StageSelectScene implements Scene {
   readonly root: Container;
+  readonly id = "stage-select";
   private readonly onSelect: (stageIndex: number) => void;
   private readonly onBack: () => void;
   private readonly getStats: () => PlayerStats;

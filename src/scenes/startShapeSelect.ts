@@ -13,6 +13,7 @@ export interface StartShapeCallbacks {
 
 export class StartShapeSelectScene implements Scene {
   readonly root: Container;
+  readonly id = "start-shape-select";
   private readonly cb: StartShapeCallbacks;
 
   constructor(cb: StartShapeCallbacks) {

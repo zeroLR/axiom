@@ -21,6 +21,7 @@ export interface SettingsCallbacks {
 
 export class SettingsScene implements Scene {
   readonly root: Container;
+  readonly id = "settings";
   private readonly cb: SettingsCallbacks;
 
   constructor(cb: SettingsCallbacks) {
