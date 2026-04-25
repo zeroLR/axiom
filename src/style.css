@@ -803,6 +803,32 @@ body {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  align-self: flex-start;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.card-rarity[data-rarity="common"] {
+  color: var(--muted);
+}
+
+.card-rarity[data-rarity="uncommon"] {
+  color: #1e9e5a;
+  background: rgba(30, 158, 90, 0.10);
+}
+
+.card-rarity[data-rarity="rare"] {
+  color: #2f56d9;
+  background: rgba(47, 86, 217, 0.10);
+}
+
+.card-btn[data-rarity="uncommon"] {
+  border-color: rgba(30, 158, 90, 0.45);
+}
+
+.card-btn[data-rarity="rare"] {
+  border-color: rgba(47, 86, 217, 0.45);
+  box-shadow: 0 0 0 1px rgba(47, 86, 217, 0.10);
 }
 
 .big-btn {
@@ -843,6 +869,44 @@ body {
 .draft-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.draft-hint {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.draft-reroll {
+  flex: 1 1 auto;
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.draft-skip {
+  flex: 0 0 auto;
+}
+
+.text-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  padding: 8px 10px;
+  min-height: 36px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  touch-action: manipulation;
+}
+
+.text-btn:active {
+  color: var(--fg);
 }
 
 .secondary-btn {

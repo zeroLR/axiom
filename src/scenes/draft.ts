@@ -113,6 +113,8 @@ export class DraftScene implements Scene {
       const rarity = document.createElement("span");
       rarity.className = "card-rarity";
       const mergedRarity = isUpgrade ? lowerRarity(entry!.rarity, card.rarity) : card.rarity;
+      rarity.dataset.rarity = mergedRarity;
+      btn.dataset.rarity = mergedRarity;
       if (isUpgrade && !atMaxLevel) {
         rarity.textContent = `${mergedRarity} · level up`;
       } else if (atMaxLevel) {
@@ -129,6 +131,8 @@ export class DraftScene implements Scene {
         this.selected = card;
         for (const [id, b] of btnByCard) b.classList.toggle("selected", id === card.id);
         confirmBtn.disabled = false;
+        confirmBtn.style.display = "";
+        draftHint.style.display = "none";
         if (isUpgrade && !atMaxLevel) {
           confirmBtn.textContent = `level up: ${card.name}`;
         } else {
@@ -140,14 +144,18 @@ export class DraftScene implements Scene {
     }
     content.appendChild(list);
 
-    // Two-step commit: user selects a card, then confirms. Prevents an
-    // accidental tap (carried over from gameplay drag) from locking in a pick
-    // before the user has read the options.
+    // Two-step commit: user selects a card, then confirms. The confirm button
+    // is hidden until a card is picked; a quiet hint occupies the space until
+    // then to avoid a loud disabled CTA dominating the layout.
+    const draftHint = document.createElement("p");
+    draftHint.className = "draft-hint";
+    draftHint.textContent = "tap a card to choose";
+    content.appendChild(draftHint);
+
     const confirmBtn = document.createElement("button");
     confirmBtn.type = "button";
     confirmBtn.className = "big-btn";
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = "pick a card first";
+    confirmBtn.style.display = "none";
     confirmBtn.addEventListener("click", () => {
       if (this.selected) this.handlers.onPick(this.selected);
     });
@@ -159,7 +167,7 @@ export class DraftScene implements Scene {
     const rerollCost = this.handlers.getRerollCost();
     const rerollBtn = document.createElement("button");
     rerollBtn.type = "button";
-    rerollBtn.className = "secondary-btn";
+    rerollBtn.className = "secondary-btn draft-reroll";
     rerollBtn.textContent = `reroll (${rerollCost})`;
     rerollBtn.disabled = tokens < rerollCost;
     rerollBtn.addEventListener("click", () => {
@@ -170,7 +178,7 @@ export class DraftScene implements Scene {
 
     const skipBtn = document.createElement("button");
     skipBtn.type = "button";
-    skipBtn.className = "secondary-btn";
+    skipBtn.className = "text-btn draft-skip";
     skipBtn.textContent = "skip";
     skipBtn.addEventListener("click", () => this.handlers.onSkip());
 
