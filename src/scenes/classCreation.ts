@@ -8,7 +8,7 @@ import type {
 } from "../game/data/types";
 import { MAX_SKILL_LEVEL } from "../game/data/types";
 import type { TrophyId } from "../game/data/types";
-import { TROPHIES, trophyGrantedSkills, type TrophyDef } from "../game/content/trophies";
+import { TROPHIES, trophyEquippedSkill, type TrophyDef } from "../game/content/trophies";
 import { isBossDefeated } from "../game/unlocks";
 import {
   CLASS_LINEAGES,
@@ -1061,8 +1061,9 @@ export class ClassCreationScene implements Scene {
   private createSkillsSection(slot: CharacterSlot): HTMLElement {
     const state = this.cb.getSkillState();
     const profile = this.cb.getProfile();
-    const trophySkillSet = new Set(trophyGrantedSkills(profile.trophies.unlocked));
-    const unlockedIds = new Set([
+    const equippedTrophySkill = trophyEquippedSkill(profile.trophies);
+    const trophySkillSet = new Set<string>(equippedTrophySkill ? [equippedTrophySkill] : []);
+    const unlockedIds = new Set<string>([
       ...getClassUnlockedSkills(slot),
       ...trophySkillSet,
     ]);

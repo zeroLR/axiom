@@ -43,14 +43,15 @@ export const TROPHIES: readonly TrophyDef[] = [
     id: "axis-lock",
     fromBoss: "orthogon",
     name: "Axis Lock",
-    description: "+1 projectile per shot.",
+    description: "+1 projectile per shot. Equip for Axis Freeze skill.",
     passive: { projectilesAdd: 1 },
+    grantsSkill: "axisFreeze",
   },
   {
     id: "wing-dash",
     fromBoss: "jets",
     name: "Wing Dash",
-    description: "+8% movement speed. Unlocks Overload skill.",
+    description: "+8% movement speed. Equip for Overload skill.",
     passive: { speedMul: 0.08 },
     grantsSkill: "overload",
   },
@@ -58,7 +59,7 @@ export const TROPHIES: readonly TrophyDef[] = [
     id: "mirror-echo",
     fromBoss: "mirror",
     name: "Mirror Echo",
-    description: "+1 weapon damage. Unlocks Shadow Clone skill.",
+    description: "+1 weapon damage. Equip for Shadow Clone skill.",
     passive: { damageAdd: 1 },
     grantsSkill: "shadowClone",
   },
@@ -66,7 +67,7 @@ export const TROPHIES: readonly TrophyDef[] = [
     id: "grid-overlay",
     fromBoss: "lattice",
     name: "Grid Overlay",
-    description: "+5% crit chance. Unlocks Time Stop skill.",
+    description: "+5% crit chance. Equip for Time Stop skill.",
     passive: { critAdd: 0.05 },
     grantsSkill: "timeStop",
   },
@@ -74,7 +75,7 @@ export const TROPHIES: readonly TrophyDef[] = [
     id: "void-blink",
     fromBoss: "rift",
     name: "Void Blink",
-    description: "+0.04s hit-invulnerability. Unlocks Lifesteal Pulse skill.",
+    description: "+0.04s hit-invulnerability. Equip for Lifesteal Pulse skill.",
     passive: { iframeAdd: 0.04 },
     grantsSkill: "lifestealPulse",
   },
@@ -99,17 +100,18 @@ export function trophyForBoss(bossId: BossId): TrophyDef | null {
 }
 
 /**
- * Collect every primal skill currently granted by unlocked trophies.
- * Order matches `TROPHIES` declaration so the resulting list is stable.
- * Returns an empty array if no trophy with `grantsSkill` is unlocked.
+ * Skill granted by the *equipped* trophy (or null when nothing equipped, the
+ * equipped trophy is locked, or it has no `grantsSkill`). Trophy actives are
+ * equip-gated (matches the §5 plan: one passive + one active per equip slot)
+ * so swapping trophies is a meaningful loadout choice rather than a strict
+ * collection mechanic.
  */
-export function trophyGrantedSkills(
-  unlocked: Record<TrophyId, boolean>,
-): PrimalSkillId[] {
-  const out: PrimalSkillId[] = [];
-  for (const def of TROPHIES) {
-    if (!def.grantsSkill) continue;
-    if (unlocked[def.id]) out.push(def.grantsSkill);
-  }
-  return out;
+export function trophyEquippedSkill(state: {
+  unlocked: Record<TrophyId, boolean>;
+  equipped: TrophyId | null;
+}): PrimalSkillId | null {
+  if (!state.equipped) return null;
+  if (!state.unlocked[state.equipped]) return null;
+  const def = TROPHY_BY_ID[state.equipped];
+  return def?.grantsSkill ?? null;
 }

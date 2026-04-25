@@ -3,7 +3,7 @@ import {
   TROPHIES,
   trophyForBoss,
   getTrophyDef,
-  trophyGrantedSkills,
+  trophyEquippedSkill,
 } from "../src/game/content/trophies";
 import {
   defaultPlayerProfile,
@@ -75,10 +75,10 @@ describe("trophy state defaults", () => {
   });
 });
 
-describe("trophy-granted skills (§6.3)", () => {
-  it("4 of 5 trophies grant a primal skill; orthogon stays passive-only", () => {
-    const map: Record<TrophyId, string | undefined> = {
-      "axis-lock": undefined,
+describe("trophy-granted skills (§6.3 + active component)", () => {
+  it("every trophy maps to its boss-themed primal skill", () => {
+    const map: Record<TrophyId, string> = {
+      "axis-lock": "axisFreeze",
       "wing-dash": "overload",
       "mirror-echo": "shadowClone",
       "grid-overlay": "timeStop",
@@ -89,23 +89,35 @@ describe("trophy-granted skills (§6.3)", () => {
     }
   });
 
-  it("trophyGrantedSkills returns only skills from currently unlocked trophies", () => {
+  it("trophyEquippedSkill returns null when nothing is equipped", () => {
     const empty = defaultTrophyState();
-    expect(trophyGrantedSkills(empty.unlocked)).toEqual([]);
+    expect(trophyEquippedSkill(empty)).toBeNull();
+  });
 
-    const partial = defaultTrophyState();
-    partial.unlocked["wing-dash"] = true;
-    partial.unlocked["void-blink"] = true;
-    expect(trophyGrantedSkills(partial.unlocked).sort()).toEqual(
-      ["lifestealPulse", "overload"],
-    );
+  it("trophyEquippedSkill returns null when the equipped trophy is locked", () => {
+    const state = defaultTrophyState();
+    state.equipped = "wing-dash"; // locked by default
+    expect(trophyEquippedSkill(state)).toBeNull();
+  });
 
-    const allUnlocked = defaultTrophyState();
-    for (const id of Object.keys(allUnlocked.unlocked) as TrophyId[]) {
-      allUnlocked.unlocked[id] = true;
-    }
-    // axis-lock has no grantsSkill, so 4 entries.
-    expect(trophyGrantedSkills(allUnlocked.unlocked)).toHaveLength(4);
+  it("trophyEquippedSkill returns the equipped trophy's skill when unlocked", () => {
+    const state = defaultTrophyState();
+    state.unlocked["wing-dash"] = true;
+    state.equipped = "wing-dash";
+    expect(trophyEquippedSkill(state)).toBe("overload");
+  });
+
+  it("trophyEquippedSkill ignores other unlocked trophies (one-active-at-a-time)", () => {
+    const state = defaultTrophyState();
+    state.unlocked["wing-dash"] = true;
+    state.unlocked["void-blink"] = true;
+    state.equipped = "void-blink";
+    expect(trophyEquippedSkill(state)).toBe("lifestealPulse");
+  });
+
+  it("orthogon's axis-lock now grants axisFreeze (5/5 mapping)", () => {
+    const orthogon = TROPHIES.find((t) => t.id === "axis-lock");
+    expect(orthogon?.grantsSkill).toBe("axisFreeze");
   });
 
   it("class T2 nodes no longer carry unlocksSkill (skills moved to trophies)", () => {
