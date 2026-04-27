@@ -272,6 +272,20 @@ function enemyColor(kind: EnemyKind, dark: boolean): number {
         return 0xce93d8;
       case 'nexus':
         return 0xffd740;
+      case 'ring':
+        return 0x80deea;
+      case 'node':
+        return 0xff8a65;
+      case 'thorn':
+        return 0xf48fb1;
+      case 'weave':
+        return 0xa5d6a7;
+      case 'echo':
+        return 0xff80ab;
+      case 'shard':
+        return 0xff80ab;
+      case 'null':
+        return 0xff80ab;
     }
   }
   switch (kind) {
@@ -315,6 +329,20 @@ function enemyColor(kind: EnemyKind, dark: boolean): number {
       return 0xede7f6;
     case 'nexus':
       return 0xfff8e1;
+    case 'ring':
+      return 0xe0f7fa;
+    case 'node':
+      return 0xfbe9e7;
+    case 'thorn':
+      return 0xfce4ec;
+    case 'weave':
+      return 0xf1f8e9;
+    case 'echo':
+      return 0xffd1e1;
+    case 'shard':
+      return 0xffd1e1;
+    case 'null':
+      return 0xffd1e1;
   }
 }
 
@@ -383,6 +411,27 @@ function drawEnemyShape(
     case 'rift':
       drawPolygon(g, x, y, r, 6);
       break;
+    case 'ring':
+      drawRing(g, x, y, r);
+      break;
+    case 'node':
+      drawNode(g, x, y, r);
+      break;
+    case 'thorn':
+      drawStar(g, x, y, r, 8);
+      break;
+    case 'weave':
+      drawWeave(g, x, y, r);
+      break;
+    case 'echo':
+      drawPolygon(g, x, y, r, 6);
+      break;
+    case 'shard':
+      drawPolygon(g, x, y, r, 6);
+      break;
+    case 'null':
+      drawPolygon(g, x, y, r, 6);
+      break;
   }
 }
 
@@ -397,8 +446,14 @@ function bossColor(pattern: string | undefined, dark: boolean): number {
       return dark ? 0x80cbc4 : 0xe0f2f1; // teal
     case 'rift':
       return dark ? 0xce93d8 : 0xf3e5f5; // deep purple
+    case 'echo':
+      return dark ? 0xb39ddb : 0xe8eaf6; // purple-teal
+    case 'shard':
+      return dark ? 0xef9a9a : 0xffebee; // crimson-rose
+    case 'null':
+      return dark ? 0xe0e0e0 : 0xfafafa; // near-white void
     default:
-      return dark ? 0xff80ab : 0xffd1e1; // pink (mirror)
+      return dark ? 0xff80ab : 0xffd1e1; // pink (mirror/nexus)
   }
 }
 
@@ -423,9 +478,18 @@ function drawBossShape(
     case 'rift':
       drawPolygon(g, x, y, r, 8);
       break;
+    case 'echo':
+      drawBossEcho(g, x, y, r);
+      break;
+    case 'shard':
+      drawBossShard(g, x, y, r);
+      break;
+    case 'null':
+      drawBossNull(g, x, y, r);
+      break;
     default:
       drawPolygon(g, x, y, r, 6);
-      break; // mirror → hexagon
+      break; // mirror/nexus → hexagon
   }
 }
 
@@ -582,5 +646,109 @@ function drawCrescent(g: Graphics, cx: number, cy: number, r: number): void {
     const y = cy + Math.sin(a) * innerR;
     g.lineTo(x, y);
   }
+  g.closePath();
+}
+
+/** Ring: hollow donut — outer circle + inner circle outlines the ring shape. */
+function drawRing(g: Graphics, cx: number, cy: number, r: number): void {
+  const steps = 24;
+  const outerR = r;
+  const innerR = r * 0.52;
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * Math.PI * 2;
+    const x = cx + Math.cos(a) * outerR;
+    const y = cy + Math.sin(a) * outerR;
+    if (i === 0) g.moveTo(x, y);
+    else g.lineTo(x, y);
+  }
+  g.closePath();
+  for (let i = steps; i >= 0; i--) {
+    const a = (i / steps) * Math.PI * 2;
+    const x = cx + Math.cos(a) * innerR;
+    const y = cy + Math.sin(a) * innerR;
+    if (i === steps) g.moveTo(x, y);
+    else g.lineTo(x, y);
+  }
+  g.closePath();
+}
+
+/** Node: small circle with 4 cardinal tick marks (crosshair). */
+function drawNode(g: Graphics, cx: number, cy: number, r: number): void {
+  const cr = r * 0.45;
+  const tickLen = r * 0.55;
+  const tickW = r * 0.18;
+  g.circle(cx, cy, cr);
+  g.rect(cx - tickW / 2, cy - r, tickW, tickLen);
+  g.rect(cx - tickW / 2, cy + cr, tickW, tickLen);
+  g.rect(cx - r, cy - tickW / 2, tickLen, tickW);
+  g.rect(cx + cr, cy - tickW / 2, tickLen, tickW);
+}
+
+/** Weave: tilted parallelogram (forward-leaning rect). */
+function drawWeave(g: Graphics, cx: number, cy: number, r: number): void {
+  const hw = r * 0.55;
+  const hh = r * 0.32;
+  const shear = r * 0.38;
+  g.moveTo(cx - hw + shear, cy - hh);
+  g.lineTo(cx + hw + shear, cy - hh);
+  g.lineTo(cx + hw - shear, cy + hh);
+  g.lineTo(cx - hw - shear, cy + hh);
+  g.closePath();
+}
+
+/** Echo boss: concentric double-ring (outer + inner circles). */
+function drawBossEcho(g: Graphics, cx: number, cy: number, r: number): void {
+  const steps = 32;
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * Math.PI * 2;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    if (i === 0) g.moveTo(x, y);
+    else g.lineTo(x, y);
+  }
+  g.closePath();
+  const innerR = r * 0.55;
+  for (let i = steps; i >= 0; i--) {
+    const a = (i / steps) * Math.PI * 2;
+    const x = cx + Math.cos(a) * innerR;
+    const y = cy + Math.sin(a) * innerR;
+    if (i === steps) g.moveTo(x, y);
+    else g.lineTo(x, y);
+  }
+  g.closePath();
+}
+
+/** Shard boss: outer diamond + inner cross (◈ shape). */
+function drawBossShard(g: Graphics, cx: number, cy: number, r: number): void {
+  g.moveTo(cx, cy - r);
+  g.lineTo(cx + r, cy);
+  g.lineTo(cx, cy + r);
+  g.lineTo(cx - r, cy);
+  g.closePath();
+  const w = r * 0.22;
+  const inner = r * 0.65;
+  g.moveTo(cx - w, cy - inner);
+  g.lineTo(cx + w, cy - inner);
+  g.lineTo(cx + w, cy - w);
+  g.lineTo(cx + inner, cy - w);
+  g.lineTo(cx + inner, cy + w);
+  g.lineTo(cx + w, cy + w);
+  g.lineTo(cx + w, cy + inner);
+  g.lineTo(cx - w, cy + inner);
+  g.lineTo(cx - w, cy + w);
+  g.lineTo(cx - inner, cy + w);
+  g.lineTo(cx - inner, cy - w);
+  g.lineTo(cx - w, cy - w);
+  g.closePath();
+}
+
+/** Null boss: large circle with horizontal stroke (∅ symbol). */
+function drawBossNull(g: Graphics, cx: number, cy: number, r: number): void {
+  g.circle(cx, cy, r);
+  const barH = r * 0.22;
+  g.moveTo(cx - r * 0.82, cy - barH / 2);
+  g.lineTo(cx + r * 0.82, cy - barH / 2);
+  g.lineTo(cx + r * 0.82, cy + barH / 2);
+  g.lineTo(cx - r * 0.82, cy + barH / 2);
   g.closePath();
 }

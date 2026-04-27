@@ -22,7 +22,14 @@ export type EnemyKind =
   | 'mirror'
   | 'lattice'
   | 'rift'
-  | 'nexus';
+  | 'nexus'
+  | 'ring'
+  | 'node'
+  | 'thorn'
+  | 'weave'
+  | 'echo'
+  | 'shard'
+  | 'null';
 
 export interface Pos {
   x: number;
@@ -121,7 +128,9 @@ export interface Enemy {
 
   // ── Boss AI state (set by BossDef.install) ──────────────────────────────
   /** Weapon pattern kind for dispatch in `bossWeapon.ts`. */
-  bossPattern?: 'standard' | 'orthogon' | 'jets' | 'lattice' | 'rift' | 'nexus';
+  bossPattern?: 'standard' | 'orthogon' | 'jets' | 'lattice' | 'rift' | 'nexus' | 'echo' | 'shard' | 'null';
+  /** Seconds remaining for the pull-avatar gravity effect (set by pullAvatar phaseDsl verb). */
+  pullAvatarTimer?: number;
   /** Current boss AI phase/move index, cycling through the pattern sequence. */
   bossPhase?: number;
   /** General-purpose boss AI timer (seconds remaining for current action). */
@@ -198,6 +207,8 @@ export interface Avatar {
   // --- Weapon-class cards: secondary weapons that fire alongside the primary. ---
   /** Extra weapons added by Weapon-class draft picks. Each ticks its own cooldown. */
   extraWeapons?: WeaponState[];
+  /** Seconds of weapon silence remaining (set by silenceAvatar phaseDsl verb). */
+  silencedTimer?: number;
 }
 
 export interface Components {

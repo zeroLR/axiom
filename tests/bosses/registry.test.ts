@@ -53,7 +53,7 @@ describe("Boss registry", () => {
       expect(spec.maxSpeed).toBeGreaterThan(0);
       expect(spec.weapon).toBeDefined();
       expect(spec.weapon.period).toBeGreaterThan(0);
-      expect(["standard", "orthogon", "jets", "lattice", "rift", "nexus"]).toContain(spec.patternKind);
+      expect(["standard", "orthogon", "jets", "lattice", "rift", "nexus", "echo", "shard", "null"]).toContain(spec.patternKind);
     }
   });
 

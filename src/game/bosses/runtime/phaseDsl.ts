@@ -14,7 +14,8 @@
 //
 // `enrageBelowHpFrac` defaults to 0.5 to match every existing boss.
 
-import { spawnEnemyShot } from "../../entities";
+import { spawnEnemy, spawnEnemyShot } from "../../entities";
+import type { EnemyKind } from "../../world";
 import type { Rng } from "../../rng";
 import type { Components, World } from "../../world";
 
@@ -86,6 +87,24 @@ export type BossVerb =
       kind: "forceDash";
       playW: number;
       playH: number;
+    }
+  | {
+      /** Apply gravity pull force on avatar toward boss for `duration` seconds. */
+      kind: "pullAvatar";
+      duration: number;
+    }
+  | {
+      /** Spawn N enemies of given kind at random edge positions. */
+      kind: "spawnMinions";
+      enemyKind: EnemyKind;
+      count: number;
+      enragedCount?: number;
+    }
+  | {
+      /** Mute the avatar's weapon for `duration` seconds. */
+      kind: "silenceAvatar";
+      duration: number;
+      enragedDuration?: number;
     };
 
 export interface BossPhase {
@@ -237,6 +256,24 @@ function runVerb(verb: BossVerb, ctx: BossScriptCtx): void {
         const ny = cy + (cy - by);
         ac.pos!.x = Math.max(verb.playW * margin, Math.min(verb.playW * (1 - margin), nx));
         ac.pos!.y = Math.max(verb.playH * margin, Math.min(verb.playH * (1 - margin), ny));
+      }
+      return;
+    }
+    case "pullAvatar": {
+      e.pullAvatarTimer = verb.duration;
+      return;
+    }
+    case "spawnMinions": {
+      const count = enraged && verb.enragedCount !== undefined ? verb.enragedCount : verb.count;
+      for (let i = 0; i < count; i++) {
+        spawnEnemy(world, verb.enemyKind, rng);
+      }
+      return;
+    }
+    case "silenceAvatar": {
+      const duration = enraged && verb.enragedDuration !== undefined ? verb.enragedDuration : verb.duration;
+      for (const [, ac] of world.with("avatar")) {
+        if (ac.avatar) ac.avatar.silencedTimer = duration;
       }
       return;
     }

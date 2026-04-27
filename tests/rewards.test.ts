@@ -40,14 +40,17 @@ describe("rewards", () => {
     expect(BASE_KILL_POINTS.boss).toBe(max);
   });
 
-  it("normal stage point multipliers are 1x through 7x", () => {
-    expect(NORMAL_STAGE_POINT_MUL).toEqual([1, 2, 3, 4, 5, 7]);
+  it("normal stage point multipliers cover all 9 stages", () => {
+    expect(NORMAL_STAGE_POINT_MUL).toEqual([1, 2, 3, 4, 5, 7, 9, 11, 14]);
     expect(normalStagePointMultiplier(0)).toBe(1);
     expect(normalStagePointMultiplier(1)).toBe(2);
     expect(normalStagePointMultiplier(2)).toBe(3);
     expect(normalStagePointMultiplier(3)).toBe(4);
     expect(normalStagePointMultiplier(4)).toBe(5);
     expect(normalStagePointMultiplier(5)).toBe(7);
+    expect(normalStagePointMultiplier(6)).toBe(9);
+    expect(normalStagePointMultiplier(7)).toBe(11);
+    expect(normalStagePointMultiplier(8)).toBe(14);
   });
 
   it("kill points scale by stage in normal mode", () => {
