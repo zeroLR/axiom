@@ -12,6 +12,9 @@ import { mirrorBossDef } from "./mirror";
 import { latticeBossDef } from "./lattice";
 import { riftBossDef } from "./rift";
 import { nexusBossDef } from "./nexus";
+import { echoBossDef } from "./echo";
+import { shardBossDef } from "./shard";
+import { nullBossDef } from "./null";
 import { STAGE_CONFIGS } from "../content/stages";
 
 export const BOSS_REGISTRY: Record<BossId, BossDef> = {
@@ -21,6 +24,9 @@ export const BOSS_REGISTRY: Record<BossId, BossDef> = {
   lattice: latticeBossDef,
   rift: riftBossDef,
   nexus: nexusBossDef,
+  echo: echoBossDef,
+  shard: shardBossDef,
+  null: nullBossDef,
 };
 
 /** Stage-index (0-based) → boss definition for that stage's final wave. */

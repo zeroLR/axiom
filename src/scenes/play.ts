@@ -148,6 +148,13 @@ function defaultEnemySpawnConfig(): Record<EnemyKind, DeveloperEnemySpawn> {
     lattice: { enabled: false, count: 1 },
     rift: { enabled: false, count: 1 },
     nexus: { enabled: false, count: 1 },
+    ring: { enabled: false, count: 1 },
+    node: { enabled: false, count: 1 },
+    thorn: { enabled: false, count: 1 },
+    weave: { enabled: false, count: 1 },
+    echo: { enabled: false, count: 1 },
+    shard: { enabled: false, count: 1 },
+    null: { enabled: false, count: 1 },
   };
 }
 
@@ -604,9 +611,15 @@ export class PlayScene implements Scene {
     updateEnemyAi(this.world, this.avatarId, enemyDt, this.rng);
     updateProjectileMotion(this.world, dt);
     // Puzzle beats mute the avatar's weapons for the wave duration so the
-    // player has to navigate without firing. Boss / mirror-ability weapons
-    // are unaffected — only player-side fire is gated.
-    const weaponsMuted = this.currentBeatMeta?.kind === 'puzzle';
+    // player has to navigate without firing. silenceAvatar boss verb also
+    // mutes weapons for its duration. Boss / mirror-ability weapons are
+    // unaffected — only player-side fire is gated.
+    const avatarC = this.world.get(this.avatarId);
+    if (avatarC?.avatar?.silencedTimer !== undefined && avatarC.avatar.silencedTimer > 0) {
+      avatarC.avatar.silencedTimer = Math.max(0, avatarC.avatar.silencedTimer - dt);
+    }
+    const weaponsMuted = this.currentBeatMeta?.kind === 'puzzle'
+      || (avatarC?.avatar?.silencedTimer ?? 0) > 0;
     if (!weaponsMuted) {
       updateWeapon(this.world, this.avatarId, this.rng, dt);
     }

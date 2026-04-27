@@ -12,6 +12,10 @@ const LEVEL_TRACKS: Record<number, string> = {
   0: `${import.meta.env.BASE_URL}music/level/level-axis-VGMA-Challenge-21.ogg`,
   1: `${import.meta.env.BASE_URL}music/level/level-wing-VGMA-Challenge-24.ogg`,
   2: `${import.meta.env.BASE_URL}music/level/leve-mirror-VGMA-Challenge-08.ogg`,
+  // Act III stages fall back to existing tracks (new audio files pending)
+  6: `${import.meta.env.BASE_URL}music/level/leve-mirror-VGMA-Challenge-08.ogg`,
+  7: `${import.meta.env.BASE_URL}music/level/level-wing-VGMA-Challenge-24.ogg`,
+  8: `${import.meta.env.BASE_URL}music/level/level-axis-VGMA-Challenge-21.ogg`,
 };
 
 const BOSS_TRACKS: Record<number, string> = {

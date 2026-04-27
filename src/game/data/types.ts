@@ -92,6 +92,13 @@ export function defaultEnemyKills(): Record<EnemyKind, number> {
     lattice: 0,
     rift: 0,
     nexus: 0,
+    ring: 0,
+    node: 0,
+    thorn: 0,
+    weave: 0,
+    echo: 0,
+    shard: 0,
+    null: 0,
   };
 }
 

@@ -8,7 +8,7 @@
 // Adding a 6th stage = drop its stageId into an Act's trialStageIds (or set
 // it as a new Act's gate). No positional arrays to keep in sync.
 
-export type ActId = "form" | "decay";
+export type ActId = "form" | "decay" | "collapse";
 
 export interface ActDef {
   id: ActId;
@@ -53,6 +53,14 @@ export const ACTS: readonly ActDef[] = [
     trialStageIds: ["stage4", "stage5"],
     gateStageId: "stage6",
     unlockAfterAct: "form",
+  },
+  {
+    id: "collapse",
+    name: "COLLAPSE",
+    motto: "before axioms existed",
+    trialStageIds: ["stage7", "stage8"],
+    gateStageId: "stage9",
+    unlockAfterAct: "decay",
   },
 ];
 

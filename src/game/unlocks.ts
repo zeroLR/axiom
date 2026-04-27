@@ -21,6 +21,9 @@ const BOSS_STAGE_INDEX: Record<BossId, number> = {
   lattice: 3,
   rift: 4,
   nexus: 5,
+  echo: 6,
+  shard: 7,
+  null: 8,
 };
 
 /** Return the 0-based stage index associated with a boss. */

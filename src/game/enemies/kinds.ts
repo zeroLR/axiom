@@ -29,4 +29,11 @@ export const ALL_ENEMY_KINDS = [
   'lattice',
   'rift',
   'nexus',
+  'ring',
+  'node',
+  'thorn',
+  'weave',
+  'echo',
+  'shard',
+  'null',
 ] as const satisfies readonly EnemyKind[];

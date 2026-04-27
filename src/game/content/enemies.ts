@@ -7,7 +7,7 @@ export interface EnemyStats {
   radius: number;
 }
 
-export type EnemySpawnBehavior = "shielded" | "dash" | "shoot" | "orbit" | "spiral" | "lance" | "tri-shoot" | "burst8" | "homing-orbit";
+export type EnemySpawnBehavior = "shielded" | "dash" | "shoot" | "orbit" | "spiral" | "lance" | "tri-shoot" | "burst8" | "homing-orbit" | "blink" | "weave";
 
 /**
  * Archetype tags for declarative wave authoring.
@@ -145,6 +145,37 @@ export const ENEMY_REGISTRY: Record<EnemyKind, EnemyDef> = {
     archetypes: ["orbital"],
     minStageIndex: 4,
   },
+  // ── Act III enemies ───────────────────────────────────────────────────────
+  ring: {
+    kind: "ring",
+    stats: { hp: 12, maxSpeed: 48, contactDamage: 1, radius: 11 },
+    spawnBehavior: "homing-orbit",
+    archetypes: ["orbital"],
+    minStageIndex: 5,
+  },
+  node: {
+    kind: "node",
+    stats: { hp: 20, maxSpeed: 25, contactDamage: 1, radius: 12 },
+    isElite: true,
+    spawnBehavior: "blink",
+    archetypes: ["heavy"],
+    minStageIndex: 6,
+  },
+  thorn: {
+    kind: "thorn",
+    stats: { hp: 30, maxSpeed: 12, contactDamage: 2, radius: 14 },
+    isElite: true,
+    spawnBehavior: "burst8",
+    archetypes: ["heavy", "volley"],
+    minStageIndex: 6,
+  },
+  weave: {
+    kind: "weave",
+    stats: { hp: 6, maxSpeed: 138, contactDamage: 1, radius: 8 },
+    spawnBehavior: "weave",
+    archetypes: ["rusher"],
+    minStageIndex: 5,
+  },
   // ── Named bosses ──────────────────────────────────────────────────────────
   orthogon: {
     kind: "orthogon",
@@ -169,6 +200,18 @@ export const ENEMY_REGISTRY: Record<EnemyKind, EnemyDef> = {
   nexus: {
     kind: "nexus",
     stats: { hp: 620, maxSpeed: 36, contactDamage: 1, radius: 26 },
+  },
+  echo: {
+    kind: "echo",
+    stats: { hp: 520, maxSpeed: 44, contactDamage: 1, radius: 24 },
+  },
+  shard: {
+    kind: "shard",
+    stats: { hp: 680, maxSpeed: 48, contactDamage: 1, radius: 22 },
+  },
+  null: {
+    kind: "null",
+    stats: { hp: 820, maxSpeed: 38, contactDamage: 1, radius: 28 },
   },
 };
 

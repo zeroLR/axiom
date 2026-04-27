@@ -64,6 +64,13 @@ const BASE_STRENGTH: Record<EnemyKind, number> = {
   lattice: 50,
   rift: 50,
   nexus: 50,
+  ring: 4,
+  node: 8,
+  thorn: 10,
+  weave: 3,
+  echo: 50,
+  shard: 50,
+  null: 50,
 };
 
 export const FRAGMENT_META: readonly FragmentMeta[] = [
