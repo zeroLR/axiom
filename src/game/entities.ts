@@ -87,6 +87,10 @@ export function spawnEnemy(
     mirror: 'mirror',
     lattice: 'lattice',
     rift: 'rift',
+    nexus: 'nexus',
+    echo: 'echo',
+    shard: 'shard',
+    null: 'null',
   };
   const namedBossKey = namedBossId[kind];
   if (namedBossKey) {
