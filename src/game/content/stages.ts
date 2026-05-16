@@ -101,10 +101,29 @@ export interface StageConfig {
    */
   actId?: ActId;
   /**
-   * Multiplier applied to enemy HP, speed, and contact/weapon damage for
-   * all regular enemies in this stage (bosses are scaled by `BossDef`).
+   * Legacy single multiplier preserved for backward compatibility with
+   * reward/fragment scaling (`rewards.ts: basicFragmentsForEnemy`). For the
+   * runtime enemy-stat scaling pipeline, prefer the per-axis fields below —
+   * they're read by `applyNormalStageScaling` in `scenes/play.ts`.
    */
   enemyStrengthMul: number;
+  /**
+   * Multiplier applied to enemy HP at stage scaling time. When unset the
+   * legacy `enemyStrengthMul` is used as fallback so untouched stages keep
+   * their original behavior.
+   */
+  enemyHpMul?: number;
+  /**
+   * Multiplier applied to enemy maxSpeed at stage scaling time. The curve is
+   * deliberately gentler than HP so late stages remain visually readable on
+   * mobile portrait — variety comes from affixes, not raw speed.
+   */
+  enemySpeedMul?: number;
+  /**
+   * Multiplier applied to enemy contactDamage and weapon damage at stage
+   * scaling time. Falls back to `enemyStrengthMul` when unset.
+   */
+  enemyDamageMul?: number;
   /** Multiplier applied to kill-point awards in normal mode. */
   pointMul: number;
   /**
@@ -160,6 +179,9 @@ const STAGE_1: StageConfig = {
   bossId: 'orthogon',
   actId: 'form',
   enemyStrengthMul: 1,
+  enemyHpMul: 1.0,
+  enemySpeedMul: 1.0,
+  enemyDamageMul: 1.0,
   pointMul: 1,
   waves: [
     { index: 1, durationHint: 20, spawns: [
@@ -209,6 +231,9 @@ const STAGE_2: StageConfig = {
   bossId: 'jets',
   actId: 'form',
   enemyStrengthMul: 1.5,
+  enemyHpMul: 1.3,
+  enemySpeedMul: 1.0,
+  enemyDamageMul: 1.0,
   pointMul: 2,
   waves: [
     { index: 1, durationHint: 20, spawns: [
@@ -268,6 +293,9 @@ const STAGE_3: StageConfig = {
   bossId: 'mirror',
   actId: 'form',
   enemyStrengthMul: 2.0,
+  enemyHpMul: 1.6,
+  enemySpeedMul: 1.05,
+  enemyDamageMul: 1.1,
   pointMul: 3,
   waves: [
     { index: 1, durationHint: 20, spawns: [
@@ -344,6 +372,9 @@ const STAGE_4: StageConfig = {
   bossId: 'lattice',
   actId: 'decay',
   enemyStrengthMul: 3.0,
+  enemyHpMul: 2.0,
+  enemySpeedMul: 1.1,
+  enemyDamageMul: 1.2,
   pointMul: 4,
   waves: [
     { index: 1, durationHint: 20, spawns: [
@@ -437,6 +468,9 @@ const STAGE_5: StageConfig = {
   bossId: 'rift',
   actId: 'decay',
   enemyStrengthMul: 4.0,
+  enemyHpMul: 2.4,
+  enemySpeedMul: 1.15,
+  enemyDamageMul: 1.3,
   pointMul: 5,
   waves: [
     { index: 1, durationHint: 20, spawns: [
@@ -554,6 +588,9 @@ const STAGE_6: StageConfig = {
   bossId: 'nexus',
   actId: 'decay',
   enemyStrengthMul: 5.0,
+  enemyHpMul: 2.8,
+  enemySpeedMul: 1.2,
+  enemyDamageMul: 1.4,
   pointMul: 7,
   waves: [
     { index: 1,  durationHint: 22, spawns: [
@@ -678,6 +715,9 @@ const STAGE_7: StageConfig = {
   bossId: 'echo',
   actId: 'collapse',
   enemyStrengthMul: 6.5,
+  enemyHpMul: 3.3,
+  enemySpeedMul: 1.25,
+  enemyDamageMul: 1.5,
   pointMul: 9,
   waves: [
     { index: 1,  durationHint: 22, spawns: [
@@ -787,6 +827,9 @@ const STAGE_8: StageConfig = {
   bossId: 'shard',
   actId: 'collapse',
   enemyStrengthMul: 8.0,
+  enemyHpMul: 3.8,
+  enemySpeedMul: 1.3,
+  enemyDamageMul: 1.6,
   pointMul: 11,
   waves: [
     { index: 1,  durationHint: 22, spawns: [
@@ -903,6 +946,9 @@ const STAGE_9: StageConfig = {
   bossId: 'null',
   actId: 'collapse',
   enemyStrengthMul: 10.0,
+  enemyHpMul: 4.5,
+  enemySpeedMul: 1.35,
+  enemyDamageMul: 1.8,
   pointMul: 14,
   waves: [
     { index: 1,  durationHint: 22, spawns: [

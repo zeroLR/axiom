@@ -71,7 +71,20 @@ import { SYNERGY_CONFIG, explodeAt } from '../game/synergies';
 import { triggerShake, tickShake, getShakeOffset } from '../game/screenShake';
 import type { EnemyKind } from '../game/world';
 import { ALL_ENEMY_KINDS } from '../game/enemies/kinds';
-import { stageStrengthMul } from '../game/stageCompiler';
+import {
+  stageDamageMul,
+  stageHpMul,
+  stageSpeedMul,
+} from '../game/stageCompiler';
+import { defaultAffixPolicy } from '../game/content/affixes';
+import {
+  applyAffixSpawnEffects,
+  onVampiricKill,
+  pairLinkedAffixEnemies,
+  rollAffixes,
+  tickAffixes,
+} from '../game/affixes';
+import { spawnEnemyShot } from '../game/entities';
 
 export type GameMode = 'normal' | 'survival';
 
@@ -609,6 +622,15 @@ export class PlayScene implements Scene {
     }
     updateAvatarMotion(this.world, dt);
     updateEnemyAi(this.world, this.avatarId, enemyDt, this.rng);
+    tickAffixes(
+      this.world,
+      this.avatarId,
+      enemyDt,
+      this.rng,
+      (x, y, vx, vy, dmg) => {
+        spawnEnemyShot(this.world, x, y, vx, vy, dmg, false);
+      },
+    );
     updateProjectileMotion(this.world, dt);
     // Puzzle beats mute the avatar's weapons for the wave duration so the
     // player has to navigate without firing. silenceAvatar boss verb also
@@ -807,6 +829,10 @@ export class PlayScene implements Scene {
   private onEnemyKilled(eid: EntityId): void {
     const ec = this.world.get(eid);
     if (!ec?.enemy || !ec.pos) return;
+    // Vampiric affix: heal nearby vampiric peers before any other death-side
+    // effects run, so the heal lands even if the kill chains through a
+    // splitting trigger that spawns new entities.
+    onVampiricKill(this.world, eid);
     const kind = ec.enemy.kind;
     this.runKillsByKind[kind] = (this.runKillsByKind[kind] ?? 0) + 1;
     if (kind === 'boss') {
@@ -913,8 +939,13 @@ export class PlayScene implements Scene {
 
   private applyNormalStageScaling(): void {
     // `stageIndex` is 0-based (0=stage 1, 1=stage 2, 2=stage 3…).
-    // Strength multiplier is derived from STAGE_CONFIGS (content/stages.ts).
-    const stageMul = stageStrengthMul(this.stageIndex);
+    // Three independent axes so we can keep HP scaling meaningful without
+    // making late-stage enemies visually unreadable from speed bloat.
+    const hpMul = stageHpMul(this.stageIndex);
+    const spdMul = stageSpeedMul(this.stageIndex);
+    const dmgMul = stageDamageMul(this.stageIndex);
+    const policy = defaultAffixPolicy(this.stageIndex);
+    let rolledAny = false;
     for (const [, c] of this.world.with('enemy', 'hp')) {
       if (c.enemy!.scaled) continue;
       // Boss stats are set by BossDef.install — skip stage scaling for bosses.
@@ -922,17 +953,25 @@ export class PlayScene implements Scene {
         c.enemy!.scaled = true;
         continue;
       }
-      c.hp!.value = Math.max(1, Math.ceil(c.hp!.value * stageMul));
+      c.hp!.value = Math.max(1, Math.ceil(c.hp!.value * hpMul));
       c.enemy!.maxHp = c.hp!.value;
-      c.enemy!.maxSpeed *= stageMul;
+      c.enemy!.maxSpeed *= spdMul;
       c.enemy!.contactDamage = Math.max(
         1,
-        Math.ceil(c.enemy!.contactDamage * stageMul),
+        Math.ceil(c.enemy!.contactDamage * dmgMul),
       );
       if (c.weapon)
-        c.weapon.damage = Math.max(1, Math.ceil(c.weapon.damage * stageMul));
+        c.weapon.damage = Math.max(1, Math.ceil(c.weapon.damage * dmgMul));
+      // Roll + apply affixes after base scaling so dense's HP×1.8 stacks on
+      // top of the stage HP multiplier rather than being overwritten by it.
+      const affixes = rollAffixes(c, policy, this.stageIndex, this.rng);
+      if (affixes.length > 0) {
+        applyAffixSpawnEffects(c, affixes);
+        rolledAny = true;
+      }
       c.enemy!.scaled = true;
     }
+    if (rolledAny) pairLinkedAffixEnemies(this.world);
   }
 
   private spawnClone(sk: ActiveSkillState): void {

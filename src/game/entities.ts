@@ -67,8 +67,12 @@ export function spawnAvatar(
   });
 }
 
-/** Per-kill HP multiplier applied to elite-marked spawns. */
-const ELITE_HP_MUL = 1.5;
+/**
+ * Per-spawn HP multiplier applied to elite-marked enemies. The bump is
+ * intentionally modest — elites now derive most of their threat from rolled
+ * affixes (see `src/game/affixes.ts`) rather than raw HP.
+ */
+const ELITE_HP_MUL = 1.2;
 
 export function isEliteKind(kind: EnemyKind): boolean {
   return isEliteKindFromRegistry(kind);

@@ -70,7 +70,21 @@ export function updateCollisions(
         break;
       }
 
-      ec.hp!.value -= proj.damage;
+      // Linked affix: while the partner is alive, the bond absorbs half the
+      // incoming damage. Once the partner dies the bond breaks for good.
+      let effectiveDmg = proj.damage;
+      if (
+        ec.enemy!.affixes?.includes('linked') &&
+        ec.enemy!.linkedPartnerId !== undefined
+      ) {
+        const partner = world.get(ec.enemy!.linkedPartnerId);
+        if (partner?.hp && partner.hp.value > 0) {
+          effectiveDmg = Math.max(1, Math.ceil(effectiveDmg * 0.5));
+        } else {
+          ec.enemy!.linkedPartnerId = undefined;
+        }
+      }
+      ec.hp!.value -= effectiveDmg;
       ec.flash = HIT_FLASH_TIME;
       proj.hitIds.add(eid);
 
@@ -106,7 +120,10 @@ export function updateCollisions(
           ec.flash = HIT_FLASH_TIME;
         } else {
           // Pentagon splits into small circles on death near its position.
-          if (ec.enemy!.kind === 'pentagon' && rng) {
+          // The `splitting` affix layers the same behavior onto any other
+          // enemy kind (rolled at stage scaling time).
+          const hasSplittingAffix = ec.enemy!.affixes?.includes('splitting');
+          if ((ec.enemy!.kind === 'pentagon' || hasSplittingAffix) && rng) {
             const count = 2 + Math.floor(rng() * 2); // 2-3
             for (let i = 0; i < count; i++) {
               spawnEnemyAt(world, 'circle', rng, ec.pos!.x, ec.pos!.y);

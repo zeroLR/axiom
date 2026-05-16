@@ -31,14 +31,15 @@ describe("elite kind classification", () => {
 });
 
 describe("spawnEnemy elite HP multiplier", () => {
-  it("applies 1.5× HP (ceiled) to elite-marked kinds", () => {
+  it("applies 1.2× HP (ceiled) to elite-marked kinds", () => {
     const world = new World();
     const rng = createRng(1);
     const id = spawnEnemy(world, "star", rng);
     const e = world.get(id)!;
     expect(e.enemy!.isElite).toBe(true);
-    // star base hp = 8 → ceil(8 * 1.5) = 12
-    expect(e.hp!.value).toBe(12);
+    // star base hp = 8 → ceil(8 * 1.2) = 10. Elites now derive most of their
+    // threat from rolled affixes rather than raw HP — see src/game/affixes.ts.
+    expect(e.hp!.value).toBe(10);
   });
 
   it("leaves non-elite kinds untouched", () => {
