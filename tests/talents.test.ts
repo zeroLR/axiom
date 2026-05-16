@@ -79,9 +79,9 @@ describe("talent growth", () => {
     expect(profile.talents.levels.mirrorPressConn).toBe(0);
   });
 
-  it("hex talent tree has exactly 48 nodes (6 clusters × 8)", () => {
+  it("hex talent tree has exactly 56 nodes (7 clusters × 8) — Act IV adds inductLoop", () => {
     const ids = Object.keys(TALENT_NODES);
-    expect(ids).toHaveLength(48);
+    expect(ids).toHaveLength(56);
     for (const cluster of TALENT_CLUSTER_ORDER) {
       const inCluster = ids.filter(
         (id) => TALENT_NODES[id as keyof typeof TALENT_NODES].cluster === cluster.id,
@@ -99,15 +99,18 @@ describe("talent growth", () => {
     }
   });
 
-  it("each branch has exactly 2 clusters", () => {
+  it("each branch has at least 2 clusters; offense gains inductLoop in Act IV", () => {
+    const counts: Record<string, number> = {};
     for (const branch of ["survival", "offense", "efficiency"] as const) {
       const clusters = new Set(
         Object.values(TALENT_NODES)
           .filter((n) => n.branch === branch)
           .map((n) => n.cluster),
       );
-      expect(clusters.size).toBe(2);
+      counts[branch] = clusters.size;
+      expect(clusters.size).toBeGreaterThanOrEqual(2);
     }
+    expect(counts.offense).toBe(3); // mirrorPress + gridPulse + inductLoop
   });
 
   it("vertex slots 0..5 are all present in each cluster", () => {

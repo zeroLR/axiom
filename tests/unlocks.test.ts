@@ -21,9 +21,14 @@ function makeStats(normalCleared: boolean[]): PlayerStats {
   // Mirror the legacy positional flags into the stageId-keyed map so
   // current-API helpers (isStageCleared / isActUnlocked / etc.) see the same
   // truth as `isBossDefeated` did historically. Test fixtures may pass arrays
-  // of any length; map only the indices that exist in STAGE_CONFIGS.
+  // of any length; map only the indices that exist in STAGE_CONFIGS. The
+  // longer arrays cover Acts III/IV stage clears for tests that need them.
   const clearedStages: Record<string, boolean> = {};
-  const STAGE_IDS = ["stage1", "stage2", "stage3", "stage4", "stage5"];
+  const STAGE_IDS = [
+    "stage1", "stage2", "stage3", "stage4", "stage5",
+    "stage6", "stage7", "stage8", "stage9",
+    "stage10", "stage11", "stage12",
+  ];
   STAGE_IDS.forEach((id, i) => {
     if (normalCleared[i] === true) clearedStages[id] = true;
   });
@@ -96,7 +101,10 @@ describe("unlock system", () => {
       expect(fresh.find((c) => c.id === id)).toBeUndefined();
     }
 
-    const all = filterUnlockedCards(POOL, makeStats([true, true, true]));
+    const all = filterUnlockedCards(
+      POOL,
+      makeStats([true, true, true, true, true, true, true, true, true, true, true, true]),
+    );
     expect(all.length).toBe(POOL.length);
   });
 
@@ -248,16 +256,22 @@ describe("unlock system", () => {
 
   // ── POOL integrity ────────────────────────────────────────────────────
 
-  it("pool has exactly 5 boss-gated cards", () => {
+  it("pool has 10 boss-gated cards (Act I-IV)", () => {
     const gated = POOL.filter((c) => c.unlockAfterBoss);
-    expect(gated).toHaveLength(5);
+    expect(gated).toHaveLength(10);
     expect(gated.map((c) => c.id).sort()).toEqual(
-      ["axisLock", "contrail", "gridSnap", "reboundPlus", "recursion"],
+      [
+        "axiomShard", "axisLock", "contrail", "fixpointSeal", "gridSnap",
+        "inductionMark", "qed", "reboundPlus", "recurrence", "recursion",
+      ],
     );
   });
 
   it("all gated cards have valid boss IDs", () => {
-    const validBosses = new Set(["orthogon", "jets", "mirror"]);
+    const validBosses = new Set([
+      "orthogon", "jets", "mirror",
+      "iterate", "limit", "theorem",
+    ]);
     for (const card of POOL.filter((c) => c.unlockAfterBoss)) {
       expect(validBosses.has(card.unlockAfterBoss!)).toBe(true);
     }

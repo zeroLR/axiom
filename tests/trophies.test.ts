@@ -13,7 +13,11 @@ import {
 import type { BossId } from "../src/game/bosses/types";
 import { CLASS_NODES } from "../src/game/content/classes";
 
-const ALL_BOSSES: BossId[] = ["orthogon", "jets", "mirror", "lattice", "rift", "nexus"];
+const ALL_BOSSES: BossId[] = [
+  "orthogon", "jets", "mirror", "lattice", "rift", "nexus",
+  "echo", "shard", "null",
+  "iterate", "limit", "theorem",
+];
 const ALL_TROPHY_IDS: TrophyId[] = [
   "axis-lock",
   "wing-dash",
@@ -21,6 +25,12 @@ const ALL_TROPHY_IDS: TrophyId[] = [
   "grid-overlay",
   "void-blink",
   "nexus-core",
+  "echo-pulse",
+  "shard-edge",
+  "null-veil",
+  "recursion-seed",
+  "fixpoint-ring",
+  "theorem-mark",
 ];
 
 describe("trophy registry", () => {
@@ -77,14 +87,20 @@ describe("trophy state defaults", () => {
 });
 
 describe("trophy-granted skills (§6.3 + active component)", () => {
-  it("every trophy maps to its boss-themed primal skill", () => {
-    const map: Record<TrophyId, string> = {
+  it("every skill-granting trophy maps to its themed primal skill; Act III backfills are passive-only", () => {
+    const map: Record<TrophyId, string | undefined> = {
       "axis-lock": "axisFreeze",
       "wing-dash": "overload",
       "mirror-echo": "shadowClone",
       "grid-overlay": "timeStop",
       "void-blink": "lifestealPulse",
       "nexus-core": "barrage",
+      "echo-pulse": undefined,
+      "shard-edge": undefined,
+      "null-veil": undefined,
+      "recursion-seed": "inductionPulse",
+      "fixpoint-ring": "fixpointHalt",
+      "theorem-mark": "recursionEcho",
     };
     for (const def of TROPHIES) {
       expect(def.grantsSkill).toBe(map[def.id]);

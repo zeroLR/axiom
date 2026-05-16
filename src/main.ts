@@ -646,6 +646,12 @@ async function boot(): Promise<void> {
         return 'Snap to axis and stun enemies';
       case 'overload':
         return 'Triple fire-rate burst and self-damage 1';
+      case 'recursionEcho':
+        return 'Each kill: chance to repeat the last shot';
+      case 'fixpointHalt':
+        return 'Freeze enemies and bullets in a 160px radius';
+      case 'inductionPulse':
+        return 'Chain pulse: damage + 50% slow on nearby enemies';
     }
   }
 

@@ -24,6 +24,11 @@ const SKILL_ICONS: Record<PrimalSkillId, string> = {
   lifestealPulse: iconLifesteal,
   axisFreeze: iconAxisFreeze,
   overload: iconOverload,
+  // Act IV skills temporarily reuse the closest-feeling existing icons until
+  // dedicated SVGs ship.
+  recursionEcho: iconBarrage,
+  fixpointHalt: iconTimeStop,
+  inductionPulse: iconLifesteal,
 };
 
 const SKILL_LABELS: Record<PrimalSkillId, string> = {
@@ -34,6 +39,9 @@ const SKILL_LABELS: Record<PrimalSkillId, string> = {
   lifestealPulse: 'Lifesteal',
   axisFreeze: 'Freeze',
   overload: 'Overload',
+  recursionEcho: 'Echo',
+  fixpointHalt: 'Halt',
+  inductionPulse: 'Induct',
 };
 
 export function createSkillButton(

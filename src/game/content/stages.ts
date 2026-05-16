@@ -1089,11 +1089,311 @@ const STAGE_9: StageConfig = {
   ],
 };
 
+/** Stage 10 — "Recursion Field" · RECURSION · Boss: Iterate — Act IV trial */
+const STAGE_10: StageConfig = {
+  stageId: 'stage10',
+  bossId: 'iterate',
+  actId: 'induction',
+  enemyStrengthMul: 12.0,
+  enemyHpMul: 5.0,
+  enemySpeedMul: 1.40,
+  enemyDamageMul: 2.0,
+  pointMul: 17,
+  waves: [
+    { index: 1, durationHint: 22, spawns: [
+      { t: 0.5, kind: 'octo',   count: 2 },
+      { t: 6,   kind: 'ring',   count: 2 },
+      { t: 14,  kind: 'mote',   count: 4 },
+    ] },
+    { index: 2, durationHint: 24, spawns: [
+      { t: 0.5, kind: 'ring',  count: 2 },
+      { t: 7,   kind: 'mote',  count: 5 },
+      { t: 14,  kind: 'octo',  count: 2 },
+    ] },
+    { index: 3, durationHint: 26, spawns: [
+      { t: 0.5, kind: 'spiral', count: 3 },
+      { t: 5,   kind: 'mote',   count: 5 },
+      { t: 12,  kind: 'thorn',  count: 1 },
+      { t: 18,  kind: 'octo',   count: 2 },
+    ] },
+    { index: 4, durationHint: 28, spawns: [
+      { t: 0.5, kind: 'mote',   count: 6 },
+      { t: 0.5, kind: 'ring',   count: 2 },
+      { t: 7,   kind: 'thorn',  count: 1 },
+      { t: 14,  kind: 'spiral', count: 3 },
+      { t: 20,  kind: 'mote',   count: 5 },
+    ] },
+    { index: 5, durationHint: 30, spawns: [
+      { t: 0.5, kind: 'node',   count: 2 },
+      { t: 6,   kind: 'mote',   count: 6 },
+      { t: 14,  kind: 'octo',   count: 2 },
+      { t: 22,  kind: 'thorn',  count: 2 },
+    ] },
+    { index: 6, durationHint: 32, spawns: [
+      { t: 0.5, kind: 'mote',   count: 8 },
+      { t: 6,   kind: 'spiral', count: 3 },
+      { t: 14,  kind: 'thorn',  count: 2 },
+      { t: 14,  kind: 'ring',   count: 2 },
+      { t: 22,  kind: 'mote',   count: 6 },
+    ] },
+    { index: 7, durationHint: 34, spawns: [
+      { t: 0.5, kind: 'node',   count: 3 },
+      { t: 6,   kind: 'mote',   count: 7 },
+      { t: 14,  kind: 'octo',   count: 3 },
+      { t: 22,  kind: 'thorn',  count: 2 },
+    ] },
+    { index: 8, durationHint: 36, spawns: [
+      { t: 0.5, kind: 'mote',   count: 8 },
+      { t: 6,   kind: 'thorn',  count: 3 },
+      { t: 14,  kind: 'ring',   count: 3 },
+      { t: 22,  kind: 'octo',   count: 3 },
+    ] },
+    { index: 9, durationHint: 38, spawns: [
+      { t: 0.5, kind: 'node',   count: 3 },
+      { t: 6,   kind: 'mote',   count: 8 },
+      { t: 14,  kind: 'thorn',  count: 3 },
+      { t: 22,  kind: 'spiral', count: 4 },
+    ] },
+    { index: 10, durationHint: 40, spawns: [
+      { t: 0.5, kind: 'mote',   count: 10 },
+      { t: 6,   kind: 'weave',  count: 4 },
+      { t: 14,  kind: 'node',   count: 3 },
+      { t: 22,  kind: 'thorn',  count: 3 },
+    ] },
+    { index: 11, durationHint: 42, spawns: [
+      { t: 0.5, kind: 'mote',   count: 12 },
+      { t: 6,   kind: 'weave',  count: 5 },
+      { t: 14,  kind: 'thorn',  count: 4 },
+      { t: 22,  kind: 'octo',   count: 4 },
+      { t: 30,  kind: 'mote',   count: 6 },
+    ] },
+    { index: 12, durationHint: 60, isBossWave: true, spawns: [] },
+  ],
+  beats: [
+    // Elite ambush after wave 5: 3 lemma intro the new heavy variant.
+    { kind: 'eliteAmbush', afterWave: 5, enemyKind: 'lemma', count: 3 },
+    // Axis-lock hazard wave after wave 8 with mote pressure.
+    { kind: 'hazardWave', afterWave: 8, hazardId: 'axis-lock', duration: 6,
+      spawns: [
+        { t: 0.5, kind: 'mote', count: 4 },
+        { t: 3.0, kind: 'mote', count: 4 },
+      ] },
+  ],
+};
+
+/** Stage 11 — "Fixpoint Attractor" · FIXPOINT · Boss: Limit — Act IV trial */
+const STAGE_11: StageConfig = {
+  stageId: 'stage11',
+  bossId: 'limit',
+  actId: 'induction',
+  enemyStrengthMul: 14.0,
+  enemyHpMul: 5.6,
+  enemySpeedMul: 1.45,
+  enemyDamageMul: 2.2,
+  pointMul: 21,
+  waves: [
+    { index: 1, durationHint: 22, spawns: [
+      { t: 0.5, kind: 'prism',  count: 2 },
+      { t: 6,   kind: 'octo',   count: 2 },
+      { t: 14,  kind: 'lemma',  count: 1 },
+    ] },
+    { index: 2, durationHint: 24, spawns: [
+      { t: 0.5, kind: 'ring',     count: 3 },
+      { t: 7,   kind: 'crescent', count: 3 },
+      { t: 14,  kind: 'shade',    count: 2 },
+    ] },
+    { index: 3, durationHint: 26, spawns: [
+      { t: 0.5, kind: 'lemma',  count: 1 },
+      { t: 5,   kind: 'mote',   count: 5 },
+      { t: 12,  kind: 'prism',  count: 3 },
+      { t: 18,  kind: 'shade',  count: 2 },
+    ] },
+    { index: 4, durationHint: 28, spawns: [
+      { t: 0.5, kind: 'crescent', count: 3 },
+      { t: 6,   kind: 'ring',     count: 3 },
+      { t: 14,  kind: 'lemma',    count: 2 },
+      { t: 22,  kind: 'mote',     count: 5 },
+    ] },
+    { index: 5, durationHint: 30, spawns: [
+      { t: 0.5, kind: 'mote',  count: 6 },
+      { t: 6,   kind: 'lemma', count: 2 },
+      { t: 14,  kind: 'shade', count: 3 },
+      { t: 22,  kind: 'prism', count: 3 },
+    ] },
+    { index: 6, durationHint: 32, spawns: [
+      { t: 0.5, kind: 'lemma',    count: 2 },
+      { t: 6,   kind: 'mote',     count: 7 },
+      { t: 14,  kind: 'crescent', count: 3 },
+      { t: 22,  kind: 'ring',     count: 3 },
+    ] },
+    { index: 7, durationHint: 34, spawns: [
+      { t: 0.5, kind: 'shade', count: 4 },
+      { t: 6,   kind: 'lemma', count: 2 },
+      { t: 14,  kind: 'mote',  count: 6 },
+      { t: 22,  kind: 'prism', count: 4 },
+    ] },
+    { index: 8, durationHint: 36, spawns: [
+      { t: 0.5, kind: 'prism', count: 4 },
+      { t: 6,   kind: 'thorn', count: 2 },
+      { t: 14,  kind: 'lemma', count: 3 },
+      { t: 22,  kind: 'mote',  count: 8 },
+    ] },
+    { index: 9, durationHint: 38, spawns: [
+      { t: 0.5, kind: 'lemma', count: 3 },
+      { t: 6,   kind: 'shade', count: 4 },
+      { t: 14,  kind: 'prism', count: 4 },
+      { t: 22,  kind: 'octo',  count: 3 },
+    ] },
+    { index: 10, durationHint: 40, spawns: [
+      { t: 0.5, kind: 'mote',     count: 8 },
+      { t: 6,   kind: 'lemma',    count: 3 },
+      { t: 14,  kind: 'crescent', count: 4 },
+      { t: 22,  kind: 'shade',    count: 4 },
+    ] },
+    { index: 11, durationHint: 42, spawns: [
+      { t: 0.5, kind: 'lemma', count: 4 },
+      { t: 6,   kind: 'prism', count: 4 },
+      { t: 14,  kind: 'mote',  count: 8 },
+      { t: 22,  kind: 'thorn', count: 3 },
+      { t: 30,  kind: 'shade', count: 4 },
+    ] },
+    { index: 12, durationHint: 60, isBossWave: true, spawns: [] },
+  ],
+  beats: [
+    // Mini-boss after wave 4: solo lemma showcases the volley pattern.
+    { kind: 'miniBoss', afterWave: 4, enemyKind: 'lemma' },
+    // Pre-boss puzzle: weapon-mute 4s with shade pressure.
+    { kind: 'puzzle', afterWave: 9, duration: 4,
+      spawns: [
+        { t: 0.5, kind: 'shade', count: 2 },
+        { t: 2.5, kind: 'shade', count: 2 },
+      ] },
+  ],
+};
+
+/** Stage 12 — "Hypergrid" · HYPERGRID · Boss: Theorem — Act IV gate */
+const STAGE_12: StageConfig = {
+  stageId: 'stage12',
+  bossId: 'theorem',
+  actId: 'induction',
+  enemyStrengthMul: 18.0,
+  enemyHpMul: 6.4,
+  enemySpeedMul: 1.50,
+  enemyDamageMul: 2.5,
+  pointMul: 28,
+  waves: [
+    { index: 1, durationHint: 22, spawns: [
+      { t: 0.5, kind: 'mote',   count: 6 },
+      { t: 6,   kind: 'circle', count: 4 },
+      { t: 14,  kind: 'square', count: 3 },
+    ] },
+    { index: 2, durationHint: 24, spawns: [
+      { t: 0.5, kind: 'mote',  count: 8 },
+      { t: 7,   kind: 'ring',  count: 3 },
+      { t: 14,  kind: 'spiral', count: 3 },
+    ] },
+    { index: 3, durationHint: 26, spawns: [
+      { t: 0.5, kind: 'octo',  count: 3 },
+      { t: 6,   kind: 'mote',  count: 7 },
+      { t: 14,  kind: 'thorn', count: 2 },
+      { t: 22,  kind: 'weave', count: 3 },
+    ] },
+    { index: 4, durationHint: 28, spawns: [
+      { t: 0.5, kind: 'lemma', count: 2 },
+      { t: 6,   kind: 'mote',  count: 8 },
+      { t: 14,  kind: 'shade', count: 3 },
+      { t: 22,  kind: 'node',  count: 2 },
+    ] },
+    { index: 5, durationHint: 30, spawns: [
+      { t: 0.5, kind: 'mote',  count: 10 },
+      { t: 6,   kind: 'prism', count: 4 },
+      { t: 14,  kind: 'lemma', count: 3 },
+      { t: 22,  kind: 'ring',  count: 4 },
+    ] },
+    { index: 6, durationHint: 32, spawns: [
+      { t: 0.5, kind: 'thorn', count: 3 },
+      { t: 6,   kind: 'mote',  count: 8 },
+      { t: 14,  kind: 'shade', count: 4 },
+      { t: 22,  kind: 'octo',  count: 3 },
+    ] },
+    { index: 7, durationHint: 34, spawns: [
+      { t: 0.5, kind: 'lemma', count: 3 },
+      { t: 6,   kind: 'thorn', count: 3 },
+      { t: 14,  kind: 'node',  count: 3 },
+      { t: 22,  kind: 'mote',  count: 9 },
+    ] },
+    { index: 8, durationHint: 36, spawns: [
+      { t: 0.5, kind: 'mote',  count: 10 },
+      { t: 6,   kind: 'lemma', count: 3 },
+      { t: 14,  kind: 'ring',  count: 4 },
+      { t: 22,  kind: 'shade', count: 4 },
+    ] },
+    { index: 9, durationHint: 38, spawns: [
+      { t: 0.5, kind: 'thorn', count: 4 },
+      { t: 6,   kind: 'mote',  count: 9 },
+      { t: 14,  kind: 'octo',  count: 4 },
+      { t: 22,  kind: 'lemma', count: 3 },
+    ] },
+    { index: 10, durationHint: 40, spawns: [
+      { t: 0.5, kind: 'node',  count: 3 },
+      { t: 6,   kind: 'thorn', count: 4 },
+      { t: 14,  kind: 'lemma', count: 4 },
+      { t: 22,  kind: 'ring',  count: 4 },
+      { t: 30,  kind: 'mote',  count: 8 },
+    ] },
+    { index: 11, durationHint: 42, spawns: [
+      { t: 0.5, kind: 'mote',  count: 12 },
+      { t: 6,   kind: 'lemma', count: 4 },
+      { t: 14,  kind: 'thorn', count: 4 },
+      { t: 22,  kind: 'shade', count: 5 },
+      { t: 30,  kind: 'octo',  count: 4 },
+    ] },
+    { index: 12, durationHint: 44, spawns: [
+      { t: 0.5, kind: 'lemma', count: 4 },
+      { t: 6,   kind: 'mote',  count: 12 },
+      { t: 14,  kind: 'thorn', count: 5 },
+      { t: 22,  kind: 'ring',  count: 5 },
+      { t: 30,  kind: 'octo',  count: 5 },
+    ] },
+    { index: 13, durationHint: 46, spawns: [
+      { t: 0.5, kind: 'thorn', count: 5 },
+      { t: 6,   kind: 'lemma', count: 4 },
+      { t: 14,  kind: 'node',  count: 4 },
+      { t: 22,  kind: 'mote',  count: 12 },
+      { t: 30,  kind: 'weave', count: 5 },
+    ] },
+    { index: 14, durationHint: 48, spawns: [
+      { t: 0.5, kind: 'lemma', count: 5 },
+      { t: 6,   kind: 'mote',  count: 14 },
+      { t: 14,  kind: 'thorn', count: 5 },
+      { t: 22,  kind: 'octo',  count: 5 },
+      { t: 30,  kind: 'ring',  count: 6 },
+    ] },
+    { index: 15, durationHint: 60, isBossWave: true, spawns: [] },
+  ],
+  beats: [
+    // Elite ambush after wave 7: 3× lemma stacks pre-boss heavy pressure.
+    { kind: 'eliteAmbush', afterWave: 7, enemyKind: 'lemma', count: 3 },
+    // Void-field hazard wave after wave 10 with thorn / node spawns.
+    { kind: 'hazardWave', afterWave: 10, hazardId: 'void-field', duration: 7,
+      spawns: [
+        { t: 0.5, kind: 'thorn', count: 2 },
+        { t: 3.0, kind: 'node',  count: 2 },
+      ] },
+    // Pre-boss puzzle: 5s weapon-mute endurance before Theorem.
+    { kind: 'puzzle', afterWave: 14, duration: 5,
+      spawns: [
+        { t: 0.5, kind: 'mote', count: 6 },
+        { t: 2.5, kind: 'shade', count: 2 },
+      ] },
+  ],
+};
+
 // ── Registry ─────────────────────────────────────────────────────────────────
 
 /**
  * All normal-mode stage configurations in play order.
- * Index 0 = Stage 1, index 8 = Stage 9.
+ * Index 0 = Stage 1, index 11 = Stage 12.
  *
  * Invariant: `STAGE_CONFIGS.length === STAGE_THEMES.length` (content/stageThemes.ts).
  */
@@ -1107,4 +1407,7 @@ export const STAGE_CONFIGS: readonly StageConfig[] = [
   STAGE_7,
   STAGE_8,
   STAGE_9,
+  STAGE_10,
+  STAGE_11,
+  STAGE_12,
 ];

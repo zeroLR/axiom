@@ -340,6 +340,16 @@ function enemyColor(kind: EnemyKind, dark: boolean): number {
         return 0xff80ab;
       case 'null':
         return 0xff80ab;
+      case 'mote':
+        return 0xb39ddb;
+      case 'lemma':
+        return 0x80deea;
+      case 'iterate':
+        return 0xff80ab;
+      case 'limit':
+        return 0xff80ab;
+      case 'theorem':
+        return 0xff80ab;
     }
   }
   switch (kind) {
@@ -396,6 +406,16 @@ function enemyColor(kind: EnemyKind, dark: boolean): number {
     case 'shard':
       return 0xffd1e1;
     case 'null':
+      return 0xffd1e1;
+    case 'mote':
+      return 0xede7f6;
+    case 'lemma':
+      return 0xe0f7fa;
+    case 'iterate':
+      return 0xffd1e1;
+    case 'limit':
+      return 0xffd1e1;
+    case 'theorem':
       return 0xffd1e1;
   }
 }
@@ -486,6 +506,23 @@ function drawEnemyShape(
     case 'null':
       drawPolygon(g, x, y, r, 6);
       break;
+    case 'mote':
+      // Tiny triangle — fast self-replicating fragment.
+      drawPolygon(g, x, y, r, 3);
+      break;
+    case 'lemma':
+      // Hexagram (overlapping triangles) — convergent proof statement.
+      drawStar(g, x, y, r, 6);
+      break;
+    case 'iterate':
+      drawPolygon(g, x, y, r, 6);
+      break;
+    case 'limit':
+      drawPolygon(g, x, y, r, 6);
+      break;
+    case 'theorem':
+      drawPolygon(g, x, y, r, 12);
+      break;
   }
 }
 
@@ -506,6 +543,12 @@ function bossColor(pattern: string | undefined, dark: boolean): number {
       return dark ? 0xef9a9a : 0xffebee; // crimson-rose
     case 'null':
       return dark ? 0xe0e0e0 : 0xfafafa; // near-white void
+    case 'iterate':
+      return dark ? 0xa5d6a7 : 0xe8f5e9; // sage — recursive seed
+    case 'limit':
+      return dark ? 0xffcc80 : 0xfff3e0; // amber — fixpoint glow
+    case 'theorem':
+      return dark ? 0xfff59d : 0xfffde7; // pale gold — terminal proof
     default:
       return dark ? 0xff80ab : 0xffd1e1; // pink (mirror/nexus)
   }
@@ -540,6 +583,24 @@ function drawBossShape(
       break;
     case 'null':
       drawBossNull(g, x, y, r);
+      break;
+    case 'iterate':
+      // Fractal: triangle with three orbiting sub-triangles (recursive).
+      drawPolygon(g, x, y, r, 3);
+      drawPolygon(g, x + r * 0.6, y - r * 0.3, r * 0.35, 3);
+      drawPolygon(g, x - r * 0.6, y - r * 0.3, r * 0.35, 3);
+      drawPolygon(g, x, y + r * 0.65, r * 0.35, 3);
+      break;
+    case 'limit':
+      // Concentric ring + inner dot (fixpoint attractor).
+      g.circle(x, y, r);
+      g.circle(x, y, r * 0.6);
+      g.circle(x, y, r * 0.2);
+      break;
+    case 'theorem':
+      // 12-vertex mandala (terminal proof — every prior shape combined).
+      drawPolygon(g, x, y, r, 12);
+      drawPolygon(g, x, y, r * 0.55, 6);
       break;
     default:
       drawPolygon(g, x, y, r, 6);

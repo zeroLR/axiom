@@ -94,7 +94,9 @@ export const AFFIX_REGISTRY: Record<AffixId, AffixDef> = {
  * Stages 0-1 stay clean (no affixes) so onboarding teaches base shapes first.
  */
 export function defaultAffixPolicy(stageIndex: number): StageAffixPolicy {
-  // Table indices: 0..8 ⇒ stage 1..9.
+  // Table indices: 0..11 ⇒ stage 1..12. Act IV (rows 9-11) ramps to 3-affix
+  // elites at the terminal gate; the cap remains 3 so `excludes` constraints
+  // in `rollAffixes` still produce coherent combinations.
   const table: readonly [number, number][] = [
     [0.00, 0], // stage 1 — vanilla
     [0.00, 1], // stage 2 — elites get a single affix
@@ -105,6 +107,9 @@ export function defaultAffixPolicy(stageIndex: number): StageAffixPolicy {
     [0.25, 2], // stage 7
     [0.30, 2], // stage 8
     [0.35, 2], // stage 9
+    [0.38, 2], // stage 10 — Act IV (RECURSION)
+    [0.42, 2], // stage 11 — Act IV (FIXPOINT)
+    [0.45, 3], // stage 12 — Act IV gate (HYPERGRID); 3-affix elites
   ];
   const idx = Math.max(0, Math.min(table.length - 1, stageIndex));
   const [normalRollChance, eliteAffixCount] = table[idx]!;

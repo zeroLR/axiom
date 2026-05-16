@@ -58,7 +58,7 @@ describe('defaultAffixPolicy', () => {
 
   it('clamps out-of-range stageIndex to nearest table entry', () => {
     const high = defaultAffixPolicy(99);
-    expect(high.normalRollChance).toBe(defaultAffixPolicy(8).normalRollChance);
+    expect(high.normalRollChance).toBe(defaultAffixPolicy(11).normalRollChance);
     const low = defaultAffixPolicy(-1);
     expect(low.normalRollChance).toBe(defaultAffixPolicy(0).normalRollChance);
   });

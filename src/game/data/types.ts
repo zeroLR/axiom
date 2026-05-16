@@ -9,7 +9,7 @@ import {
 // one import path and one schema version constant.
 
 /** Global schema version — bump when store shapes change. */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 // ── Player Profile ──────────────────────────────────────────────────────────
 
@@ -99,6 +99,11 @@ export function defaultEnemyKills(): Record<EnemyKind, number> {
     echo: 0,
     shard: 0,
     null: 0,
+    mote: 0,
+    lemma: 0,
+    iterate: 0,
+    limit: 0,
+    theorem: 0,
   };
 }
 
@@ -128,8 +133,8 @@ export function defaultPlayerProfile(): PlayerProfile {
 
 // ── Class Creation ────────────────────────────────────────────────────────────
 
-/** Identifies one of the three playable class lineages. */
-export type ClassLineageId = "axis" | "wing" | "mirror";
+/** Identifies one of the playable class lineages. */
+export type ClassLineageId = "axis" | "wing" | "mirror" | "hypergrid";
 
 /**
  * A single character slot. The character's class progress is stored here.
@@ -202,7 +207,13 @@ export type TrophyId =
   | "mirror-echo"
   | "grid-overlay"
   | "void-blink"
-  | "nexus-core";
+  | "nexus-core"
+  | "echo-pulse"
+  | "shard-edge"
+  | "null-veil"
+  | "recursion-seed"
+  | "fixpoint-ring"
+  | "theorem-mark";
 
 /** Persistent trophy progression: which trophies are unlocked and which one is equipped. */
 export interface TrophyState {
@@ -220,6 +231,12 @@ export function defaultTrophyState(): TrophyState {
       "grid-overlay": false,
       "void-blink": false,
       "nexus-core": false,
+      "echo-pulse": false,
+      "shard-edge": false,
+      "null-veil": false,
+      "recursion-seed": false,
+      "fixpoint-ring": false,
+      "theorem-mark": false,
     },
     equipped: null,
   };
@@ -258,7 +275,12 @@ export type TalentId =
   | "coreSyntaxConn"
   | "coreSyntaxV0" | "coreSyntaxV1" | "coreSyntaxV2"
   | "coreSyntaxV3" | "coreSyntaxV4" | "coreSyntaxV5"
-  | "coreSyntaxCore";
+  | "coreSyntaxCore"
+  // inductLoop cluster (theorem-gated Act IV recursion theme)
+  | "inductLoopConn"
+  | "inductLoopV0" | "inductLoopV1" | "inductLoopV2"
+  | "inductLoopV3" | "inductLoopV4" | "inductLoopV5"
+  | "inductLoopCore";
 
 export interface TalentState {
   levels: Record<TalentId, number>;
@@ -291,13 +313,27 @@ export function defaultTalentState(): TalentState {
       coreSyntaxV0: 0, coreSyntaxV1: 0, coreSyntaxV2: 0,
       coreSyntaxV3: 0, coreSyntaxV4: 0, coreSyntaxV5: 0,
       coreSyntaxCore: 0,
+      inductLoopConn: 0,
+      inductLoopV0: 0, inductLoopV1: 0, inductLoopV2: 0,
+      inductLoopV3: 0, inductLoopV4: 0, inductLoopV5: 0,
+      inductLoopCore: 0,
     },
   };
 }
 
 // ── Skill Tree ──────────────────────────────────────────────────────────────
 
-export type PrimalSkillId = "timeStop" | "shadowClone" | "reflectShield" | "barrage" | "lifestealPulse" | "axisFreeze" | "overload";
+export type PrimalSkillId =
+  | "timeStop"
+  | "shadowClone"
+  | "reflectShield"
+  | "barrage"
+  | "lifestealPulse"
+  | "axisFreeze"
+  | "overload"
+  | "recursionEcho"
+  | "fixpointHalt"
+  | "inductionPulse";
 
 export interface SkillLevel {
   unlocked: boolean;
@@ -328,6 +364,9 @@ export function defaultSkillTreeState(): SkillTreeState {
       lifestealPulse: { unlocked: false, level: 0 },
       axisFreeze: { unlocked: false, level: 0 },
       overload: { unlocked: false, level: 0 },
+      recursionEcho: { unlocked: false, level: 0 },
+      fixpointHalt: { unlocked: false, level: 0 },
+      inductionPulse: { unlocked: false, level: 0 },
     },
   };
 }

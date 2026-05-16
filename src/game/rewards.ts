@@ -45,6 +45,11 @@ export const BASE_KILL_POINTS: Record<EnemyKind, number> = {
   echo: 50,
   shard: 50,
   null: 50,
+  mote: 1,
+  lemma: 6,
+  iterate: 60,
+  limit: 65,
+  theorem: 75,
 };
 
 /**
@@ -161,6 +166,8 @@ export function emptyFragmentTally(): FragmentTally {
  */
 const BASE_FRAGMENT_DROP: Partial<Record<EnemyKind, number>> = {
   boss: 0, orthogon: 0, jets: 0, mirror: 0, lattice: 0, rift: 0, nexus: 0,
+  echo: 0, shard: 0, null: 0,
+  iterate: 0, limit: 0, theorem: 0,
 };
 
 /**

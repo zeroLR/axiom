@@ -87,6 +87,54 @@ export const TROPHIES: readonly TrophyDef[] = [
     passive: { damageAdd: 2 },
     grantsSkill: "barrage",
   },
+  // ── Act III backfill (passive-only — keeps skill grant count manageable) ──
+  {
+    id: "echo-pulse",
+    fromBoss: "echo",
+    name: "Echo Pulse",
+    description: "+4% crit chance — the resonance pattern lingers in every shot.",
+    passive: { critAdd: 0.04 },
+    // Skill is intentionally omitted; passive carries the value.
+  },
+  {
+    id: "shard-edge",
+    fromBoss: "shard",
+    name: "Shard Edge",
+    description: "+1 weapon damage from collapsed crystal fragments.",
+    passive: { damageAdd: 1 },
+  },
+  {
+    id: "null-veil",
+    fromBoss: "null",
+    name: "Null Veil",
+    description: "+0.03s hit-invulnerability — the void delays inference.",
+    passive: { iframeAdd: 0.03 },
+  },
+  // ── Act IV trophies (skill-granting) ──────────────────────────────────────
+  {
+    id: "recursion-seed",
+    fromBoss: "iterate",
+    name: "Recursion Seed",
+    description: "+2 weapon damage. Equip for Induction Pulse skill.",
+    passive: { damageAdd: 2 },
+    grantsSkill: "inductionPulse",
+  },
+  {
+    id: "fixpoint-ring",
+    fromBoss: "limit",
+    name: "Fixpoint Ring",
+    description: "+0.05s hit-invulnerability. Equip for Fixpoint Halt skill.",
+    passive: { iframeAdd: 0.05 },
+    grantsSkill: "fixpointHalt",
+  },
+  {
+    id: "theorem-mark",
+    fromBoss: "theorem",
+    name: "Theorem Mark",
+    description: "+5% crit chance, +1 damage. Equip for Recursion Echo skill.",
+    passive: { critAdd: 0.05, damageAdd: 1 },
+    grantsSkill: "recursionEcho",
+  },
 ];
 
 const TROPHY_BY_ID: Record<TrophyId, TrophyDef> = Object.fromEntries(

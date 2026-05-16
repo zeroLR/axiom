@@ -20,6 +20,12 @@ export const BOSS_FRAGMENT_KINDS = [
   "lattice",
   "rift",
   "nexus",
+  "echo",
+  "shard",
+  "null",
+  "iterate",
+  "limit",
+  "theorem",
 ] as const;
 
 export type EliteFragmentKind = (typeof ELITE_FRAGMENT_KINDS)[number];
@@ -71,6 +77,11 @@ const BASE_STRENGTH: Record<EnemyKind, number> = {
   echo: 50,
   shard: 50,
   null: 50,
+  mote: 1,
+  lemma: 5,
+  iterate: 60,
+  limit: 65,
+  theorem: 75,
 };
 
 export const FRAGMENT_META: readonly FragmentMeta[] = [
@@ -136,6 +147,18 @@ export function bossKindForStage(stageIndex: number): BossFragmentKind {
       return "rift";
     case 5:
       return "nexus";
+    case 6:
+      return "echo";
+    case 7:
+      return "shard";
+    case 8:
+      return "null";
+    case 9:
+      return "iterate";
+    case 10:
+      return "limit";
+    case 11:
+      return "theorem";
     default:
       return "boss";
   }

@@ -72,4 +72,10 @@ export const CARD_POOL: readonly Card[] = [
   { id: "contrail",      name: "Contrail",     glyph: "⁓", rarity: "uncommon", text: "Burn 1.5 dps for 2.5s",           effect: { kind: "burnAdd", dps: 1.5, duration: 2.5 }, unlockAfterBoss: "jets" },
   { id: "reboundPlus",   name: "Rebound+",     glyph: "⤨", rarity: "uncommon", text: "+2 ricochet",                     effect: { kind: "ricochetAdd", value: 2 },     unlockAfterBoss: "jets" },
   { id: "recursion",     name: "Recursion",    glyph: "∞", rarity: "rare",     text: "+3 damage, -30% fire interval",   effect: { kind: "damageAdd", value: 3 },       unlockAfterBoss: "mirror" },
+  // ── Act IV boss-gated cards ────────────────────────────────────────────────
+  { id: "axiomShard",    name: "Axiom Shard",  glyph: "⟁", rarity: "uncommon", text: "+2 pierce",                       effect: { kind: "pierceAdd", value: 2 },       unlockAfterBoss: "iterate" },
+  { id: "recurrence",    name: "Recurrence",   glyph: "⟲", rarity: "rare",     text: "+2 chain",                        effect: { kind: "chainAdd", value: 2 },        unlockAfterBoss: "iterate" },
+  { id: "fixpointSeal",  name: "Fixpoint Seal", glyph: "⊙", rarity: "rare",    text: "Slow 50% for 3s on hit",          effect: { kind: "slowAdd", pct: 0.5, duration: 3 }, unlockAfterBoss: "limit" },
+  { id: "inductionMark", name: "Induction Mark", glyph: "✶", rarity: "rare",   text: "Burn 3 dps for 4s",               effect: { kind: "burnAdd", dps: 3, duration: 4 },  unlockAfterBoss: "limit" },
+  { id: "qed",           name: "Q.E.D.",       glyph: "∎", rarity: "rare",     text: "+4 damage. Terminal proof.",      effect: { kind: "damageAdd", value: 4 },       unlockAfterBoss: "theorem" },
 ];
