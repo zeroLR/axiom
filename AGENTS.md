@@ -123,7 +123,7 @@ Version SHA (v0.0.1-beta-): <short-sha>
 ```
 
 **目前版本**
-Version SHA (v0.0.1-beta-): 73fab26
+Version SHA (v0.0.1-beta-): 85615e8
 
 ---
 

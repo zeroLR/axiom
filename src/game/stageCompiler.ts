@@ -229,9 +229,36 @@ export function compileStageWaves(
  * Enemy strength multiplier for the given 0-based stage index.
  * Reads from `STAGE_CONFIGS` — single source of truth.
  * Returns 1 for out-of-range (negative or beyond last stage) indices.
+ *
+ * Note: this is the legacy single multiplier used by `rewards.ts` for fragment
+ * drop scaling. For the runtime enemy-stat scaling pipeline, prefer the
+ * per-axis `stageHpMul` / `stageSpeedMul` / `stageDamageMul` helpers below —
+ * they give designers separate control over HP, speed, and damage curves so
+ * late-stage difficulty doesn't degenerate into "everything is just faster."
  */
 export function stageStrengthMul(stageIndex: number): number {
   return STAGE_CONFIGS[stageIndex]?.enemyStrengthMul ?? 1;
+}
+
+/** HP-axis multiplier; falls back to `enemyStrengthMul` when unset. */
+export function stageHpMul(stageIndex: number): number {
+  const cfg = STAGE_CONFIGS[stageIndex];
+  if (!cfg) return 1;
+  return cfg.enemyHpMul ?? cfg.enemyStrengthMul;
+}
+
+/** Speed-axis multiplier; falls back to `enemyStrengthMul` when unset. */
+export function stageSpeedMul(stageIndex: number): number {
+  const cfg = STAGE_CONFIGS[stageIndex];
+  if (!cfg) return 1;
+  return cfg.enemySpeedMul ?? cfg.enemyStrengthMul;
+}
+
+/** Damage-axis multiplier; falls back to `enemyStrengthMul` when unset. */
+export function stageDamageMul(stageIndex: number): number {
+  const cfg = STAGE_CONFIGS[stageIndex];
+  if (!cfg) return 1;
+  return cfg.enemyDamageMul ?? cfg.enemyStrengthMul;
 }
 
 /**

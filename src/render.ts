@@ -4,8 +4,9 @@ import {
   BOSS_FAN_SPREAD,
   BOSS_TELEGRAPH_LEAD,
 } from './game/systems/bossWeapon';
-import type { EnemyKind, World } from './game/world';
+import type { AffixId, EnemyKind, World } from './game/world';
 import type { StageTheme } from './game/stageThemes';
+import { AFFIX_REGISTRY } from './game/content/affixes';
 
 // Cap for the fullscreen matte layer so enemies remain readable.
 const MAX_BASE_FOG_ALPHA = 0.18;
@@ -98,6 +99,23 @@ export function drawWorld(
     }
   }
 
+  // Linked affix: draw the binding line between partner pairs once each. Skip
+  // duplicates by only drawing from the lower id; this also avoids a dangling
+  // line when a partner despawns mid-frame (the lookup just yields null).
+  let hasLinkedLines = false;
+  for (const [id, c] of world.with('enemy', 'pos')) {
+    const partnerId = c.enemy!.linkedPartnerId;
+    if (partnerId === undefined || partnerId <= id) continue;
+    const partner = world.get(partnerId);
+    if (!partner?.pos) continue;
+    g.moveTo(c.pos!.x, c.pos!.y);
+    g.lineTo(partner.pos.x, partner.pos.y);
+    hasLinkedLines = true;
+  }
+  if (hasLinkedLines) {
+    g.stroke({ color: 0xff9100, alpha: 0.45, width: 1 });
+  }
+
   for (const [, c] of world.with('enemy', 'pos', 'radius')) {
     const { x, y } = c.pos!;
     const r = c.radius!;
@@ -124,6 +142,42 @@ export function drawWorld(
     if (c.enemy!.shield && c.enemy!.shield > 0) {
       g.circle(x, y, r + 3);
       g.stroke({ color: 0x00e5ff, width: 1.5 });
+    }
+
+    // Affix outline — colored ring whose hue identifies the rolled rule.
+    // Drawn at r+4 so it sits between the optional shield ring (r+3) and the
+    // elite ring (r+5) without overlap. Shielded is already shown by the
+    // shield indicator above, so we skip it here when present.
+    const affixIds = c.enemy!.affixes;
+    if (affixIds && affixIds.length > 0) {
+      const primary = pickPrimaryAffix(affixIds);
+      if (primary !== null) {
+        const def = AFFIX_REGISTRY[primary];
+        const isRegen = primary === 'regen';
+        const alpha = isRegen
+          ? 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(performance.now() / 220))
+          : 0.85;
+        const width = primary === 'dense' ? 2.5 : 1.5;
+        g.circle(x, y, r + 4);
+        g.stroke({ color: def.outlineColor, alpha, width });
+      }
+    }
+
+    // Charged affix telegraph — fan rays while winding up, ramping alpha as
+    // the shot nears so the player can read the angle and dodge before it
+    // fires. Reuses the boss-telegraph visual vocabulary at smaller scale.
+    const chargedWindup = c.enemy!.chargedWindup;
+    if (chargedWindup !== undefined && chargedWindup > 0) {
+      const t = 1 - Math.max(0, Math.min(1, chargedWindup / 1.5));
+      const alpha = 0.12 + 0.28 * t;
+      const angle = c.enemy!.chargedAngle ?? 0;
+      const len = 90;
+      for (let i = 0; i < 4; i++) {
+        const a = angle + (i - 1.5) * (Math.PI / 6);
+        g.moveTo(x, y);
+        g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+      }
+      g.stroke({ color: 0xffeb3b, alpha, width: 1.5 });
     }
 
     // Elite ring — visual tell that this kill yields a draft token.
@@ -751,4 +805,27 @@ function drawBossNull(g: Graphics, cx: number, cy: number, r: number): void {
   g.lineTo(cx + r * 0.82, cy + barH / 2);
   g.lineTo(cx - r * 0.82, cy + barH / 2);
   g.closePath();
+}
+
+/**
+ * Choose which rolled affix drives the enemy's outline color. Prefer affixes
+ * with no other visual cue — shielded already shows its own ring and charged
+ * draws a fan telegraph, so they cede the outline slot to flat-stat affixes
+ * (dense, swift, vampiric, splitting, regen, linked).
+ */
+function pickPrimaryAffix(affixes: readonly AffixId[]): AffixId | null {
+  const priority: readonly AffixId[] = [
+    'dense',
+    'vampiric',
+    'splitting',
+    'regen',
+    'swift',
+    'linked',
+    'charged',
+    'shielded',
+  ];
+  for (const id of priority) {
+    if (affixes.includes(id)) return id;
+  }
+  return null;
 }

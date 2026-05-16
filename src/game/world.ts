@@ -2,6 +2,22 @@ export type EntityId = number;
 
 export type Team = 'player' | 'enemy' | 'projectile' | 'enemy-shot';
 
+/**
+ * Affix mutations rolled per-enemy at stage scaling time. Each id is a single
+ * rule that layers on top of the enemy's base behavior. Defined here (rather
+ * than in `content/affixes.ts`) so the `Enemy` component can reference it
+ * without creating a circular import.
+ */
+export type AffixId =
+  | 'shielded'
+  | 'swift'
+  | 'dense'
+  | 'vampiric'
+  | 'splitting'
+  | 'regen'
+  | 'charged'
+  | 'linked';
+
 export type EnemyKind =
   | 'circle'
   | 'square'
@@ -125,6 +141,20 @@ export interface Enemy {
    * where the boss is currently tracking. Cleared when the shot fires.
    */
   telegraphAngle?: number;
+
+  // ── Affix state (rolled by `rollAffixes` at stage scaling time) ───────────
+  /** Affix mutations applied to this enemy. Empty/undef = vanilla. */
+  affixes?: readonly AffixId[];
+  /** Linked affix: partner entity id; while alive both take 50% contact dmg. */
+  linkedPartnerId?: EntityId;
+  /** Regen affix: accumulator (seconds) toward the next +1 HP tick. */
+  regenAccumulator?: number;
+  /** Charged affix: seconds remaining until the next telegraph cycle starts. */
+  chargedCooldown?: number;
+  /** Charged affix: seconds remaining in the windup telegraph (>0 = locked). */
+  chargedWindup?: number;
+  /** Charged affix: aim angle snapshotted at telegraph start. */
+  chargedAngle?: number;
 
   // ── Boss AI state (set by BossDef.install) ──────────────────────────────
   /** Weapon pattern kind for dispatch in `bossWeapon.ts`. */
