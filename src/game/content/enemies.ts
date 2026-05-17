@@ -176,6 +176,24 @@ export const ENEMY_REGISTRY: Record<EnemyKind, EnemyDef> = {
     archetypes: ["rusher"],
     minStageIndex: 5,
   },
+  // ── Act IV enemies ─────────────────────────────────────────────────────────
+  mote: {
+    kind: "mote",
+    // Fast self-replicating fragment; weave AI branch yields a Z-dash swarmer.
+    stats: { hp: 4, maxSpeed: 145, contactDamage: 1, radius: 7 },
+    spawnBehavior: "weave",
+    archetypes: ["swarmer", "rusher"],
+    minStageIndex: 9,
+  },
+  lemma: {
+    kind: "lemma",
+    // Heavy proof-statement; reuses prism's tri-shoot AI for slow triangle volleys.
+    stats: { hp: 36, maxSpeed: 18, contactDamage: 2, radius: 14 },
+    isElite: true,
+    spawnBehavior: "tri-shoot",
+    archetypes: ["heavy", "volley"],
+    minStageIndex: 9,
+  },
   // ── Named bosses ──────────────────────────────────────────────────────────
   orthogon: {
     kind: "orthogon",
@@ -212,6 +230,18 @@ export const ENEMY_REGISTRY: Record<EnemyKind, EnemyDef> = {
   null: {
     kind: "null",
     stats: { hp: 820, maxSpeed: 38, contactDamage: 1, radius: 28 },
+  },
+  iterate: {
+    kind: "iterate",
+    stats: { hp: 720, maxSpeed: 42, contactDamage: 1, radius: 22 },
+  },
+  limit: {
+    kind: "limit",
+    stats: { hp: 880, maxSpeed: 36, contactDamage: 1, radius: 24 },
+  },
+  theorem: {
+    kind: "theorem",
+    stats: { hp: 1080, maxSpeed: 38, contactDamage: 1, radius: 26 },
   },
 };
 

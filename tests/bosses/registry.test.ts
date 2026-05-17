@@ -3,8 +3,12 @@ import { BOSS_REGISTRY, bossForStage } from "../../src/game/bosses/registry";
 import type { BossId, BossSpec } from "../../src/game/bosses/types";
 
 describe("Boss registry", () => {
-  it("contains all six boss ids", () => {
-    const ids: BossId[] = ["orthogon", "jets", "mirror", "lattice", "rift", "nexus"];
+  it("contains all twelve boss ids (Acts I-IV)", () => {
+    const ids: BossId[] = [
+      "orthogon", "jets", "mirror", "lattice", "rift", "nexus",
+      "echo", "shard", "null",
+      "iterate", "limit", "theorem",
+    ];
     for (const id of ids) {
       expect(BOSS_REGISTRY[id]).toBeDefined();
       expect(BOSS_REGISTRY[id].id).toBe(id);
@@ -53,7 +57,11 @@ describe("Boss registry", () => {
       expect(spec.maxSpeed).toBeGreaterThan(0);
       expect(spec.weapon).toBeDefined();
       expect(spec.weapon.period).toBeGreaterThan(0);
-      expect(["standard", "orthogon", "jets", "lattice", "rift", "nexus", "echo", "shard", "null"]).toContain(spec.patternKind);
+      expect([
+        "standard", "orthogon", "jets", "lattice", "rift", "nexus",
+        "echo", "shard", "null",
+        "iterate", "limit", "theorem",
+      ]).toContain(spec.patternKind);
     }
   });
 

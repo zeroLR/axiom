@@ -168,6 +168,11 @@ function defaultEnemySpawnConfig(): Record<EnemyKind, DeveloperEnemySpawn> {
     echo: { enabled: false, count: 1 },
     shard: { enabled: false, count: 1 },
     null: { enabled: false, count: 1 },
+    mote: { enabled: false, count: 4 },
+    lemma: { enabled: false, count: 1 },
+    iterate: { enabled: false, count: 1 },
+    limit: { enabled: false, count: 1 },
+    theorem: { enabled: false, count: 1 },
   };
 }
 

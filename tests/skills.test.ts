@@ -36,9 +36,9 @@ describe("primal skills", () => {
     expect(upgradeCost(MAX_SKILL_LEVEL + 1)).toBe(Infinity);
   });
 
-  it("has 7 skill definitions", () => {
+  it("has 10 skill definitions (Acts I-III base + Act IV three additions)", () => {
     const ids = Object.keys(PRIMAL_SKILLS);
-    expect(ids).toHaveLength(7);
+    expect(ids).toHaveLength(10);
     expect(ids).toContain("timeStop");
     expect(ids).toContain("shadowClone");
     expect(ids).toContain("reflectShield");
@@ -46,6 +46,9 @@ describe("primal skills", () => {
     expect(ids).toContain("lifestealPulse");
     expect(ids).toContain("axisFreeze");
     expect(ids).toContain("overload");
+    expect(ids).toContain("recursionEcho");
+    expect(ids).toContain("fixpointHalt");
+    expect(ids).toContain("inductionPulse");
   });
 
   it("new skills have valid balance parameters", () => {

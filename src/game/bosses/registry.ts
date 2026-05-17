@@ -15,6 +15,9 @@ import { nexusBossDef } from "./nexus";
 import { echoBossDef } from "./echo";
 import { shardBossDef } from "./shard";
 import { nullBossDef } from "./null";
+import { iterateBossDef } from "./iterate";
+import { limitBossDef } from "./limit";
+import { theoremBossDef } from "./theorem";
 import { STAGE_CONFIGS } from "../content/stages";
 
 export const BOSS_REGISTRY: Record<BossId, BossDef> = {
@@ -27,6 +30,9 @@ export const BOSS_REGISTRY: Record<BossId, BossDef> = {
   echo: echoBossDef,
   shard: shardBossDef,
   null: nullBossDef,
+  iterate: iterateBossDef,
+  limit: limitBossDef,
+  theorem: theoremBossDef,
 };
 
 /** Stage-index (0-based) → boss definition for that stage's final wave. */

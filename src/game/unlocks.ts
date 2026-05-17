@@ -24,6 +24,9 @@ const BOSS_STAGE_INDEX: Record<BossId, number> = {
   echo: 6,
   shard: 7,
   null: 8,
+  iterate: 9,
+  limit: 10,
+  theorem: 11,
 };
 
 /** Return the 0-based stage index associated with a boss. */

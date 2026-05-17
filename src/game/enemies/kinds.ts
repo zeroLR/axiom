@@ -36,4 +36,9 @@ export const ALL_ENEMY_KINDS = [
   'echo',
   'shard',
   'null',
+  'mote',
+  'lemma',
+  'iterate',
+  'limit',
+  'theorem',
 ] as const satisfies readonly EnemyKind[];

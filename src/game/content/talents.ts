@@ -34,7 +34,8 @@ export type TalentClusterId =
   | "mirrorPress"
   | "gridPulse"
   | "voidYield"
-  | "coreSyntax";
+  | "coreSyntax"
+  | "inductLoop";
 
 export interface TalentNodeDef {
   id: TalentId;
@@ -602,6 +603,93 @@ export const TALENT_NODES: Record<TalentId, TalentNodeDef> = {
       { pointCost: 1500, fragmentCost: 10, bonus: 30 },
     ],
   },
+
+  // ── CLUSTER: INDUCT · LOOP (Act IV — theorem-gated) ──────────────────────
+  // Recurrence-themed cluster: fire rate, projectile count, crit, and reward
+  // bias. Core is gated behind the `theorem` boss clear — the only Act IV
+  // talent slot reachable after sealing INDUCTION.
+  inductLoopConn: {
+    id: "inductLoopConn", branch: "offense", cluster: "inductLoop", role: "connector",
+    name: "Recurrence Link", description: "Slightly faster fire interval.",
+    fragmentKind: "basic", effectKind: "periodMul",
+    levels: [
+      { pointCost: 120, fragmentCost: 9, bonus: 0.01 },
+      { pointCost: 180, fragmentCost: 15, bonus: 0.01 },
+      { pointCost: 250, fragmentCost: 22, bonus: 0.01 },
+    ],
+  },
+  inductLoopV0: {
+    id: "inductLoopV0", branch: "offense", cluster: "inductLoop", role: "vertex", vertexSlot: 0,
+    name: "Iteration Cadence I", description: "Faster fire interval (each rank stacks).",
+    fragmentKind: "basic", effectKind: "periodMul",
+    requires: { id: "inductLoopConn", level: 1 },
+    levels: [
+      { pointCost: 150, fragmentCost: 12, bonus: 0.01 },
+      { pointCost: 220, fragmentCost: 18, bonus: 0.01 },
+      { pointCost: 300, fragmentCost: 26, bonus: 0.01 },
+    ],
+  },
+  inductLoopV1: {
+    id: "inductLoopV1", branch: "offense", cluster: "inductLoop", role: "vertex", vertexSlot: 1,
+    name: "Parallel Proof", description: "Adds one projectile per shot.",
+    fragmentKind: "elite", effectKind: "projectilesAdd",
+    requires: { id: "inductLoopV0", level: 2 },
+    levels: [
+      { pointCost: 400, fragmentCost: 4, bonus: 1 },
+    ],
+  },
+  inductLoopV2: {
+    id: "inductLoopV2", branch: "offense", cluster: "inductLoop", role: "vertex", vertexSlot: 2,
+    name: "Convergent Edge", description: "Boost critical chance.",
+    fragmentKind: "elite", effectKind: "critAdd",
+    requires: { id: "inductLoopV1", level: 1 },
+    levels: [
+      { pointCost: 220, fragmentCost: 4, bonus: 0.02 },
+      { pointCost: 300, fragmentCost: 5, bonus: 0.02 },
+      { pointCost: 420, fragmentCost: 6, bonus: 0.02 },
+    ],
+  },
+  inductLoopV3: {
+    id: "inductLoopV3", branch: "offense", cluster: "inductLoop", role: "vertex", vertexSlot: 3,
+    name: "Inductive Strike", description: "Add raw weapon damage.",
+    fragmentKind: "elite", effectKind: "damageAdd",
+    requires: { id: "inductLoopV2", level: 2 },
+    levels: [
+      { pointCost: 380, fragmentCost: 5, bonus: 1 },
+    ],
+  },
+  inductLoopV4: {
+    id: "inductLoopV4", branch: "offense", cluster: "inductLoop", role: "vertex", vertexSlot: 4,
+    name: "Fragment Recursion", description: "Increase fragment gain.",
+    fragmentKind: "elite", effectKind: "fragmentRewardMul",
+    requires: { id: "inductLoopV3", level: 1 },
+    levels: [
+      { pointCost: 320, fragmentCost: 5, bonus: 0.03 },
+      { pointCost: 420, fragmentCost: 6, bonus: 0.03 },
+    ],
+  },
+  inductLoopV5: {
+    id: "inductLoopV5", branch: "offense", cluster: "inductLoop", role: "vertex", vertexSlot: 5,
+    name: "Point Recurrence", description: "Increase point gain.",
+    fragmentKind: "elite", effectKind: "pointRewardMul",
+    requires: { id: "inductLoopV4", level: 1 },
+    levels: [
+      { pointCost: 360, fragmentCost: 5, bonus: 0.03 },
+      { pointCost: 480, fragmentCost: 6, bonus: 0.03 },
+    ],
+  },
+  inductLoopCore: {
+    id: "inductLoopCore", branch: "offense", cluster: "inductLoop", role: "core",
+    name: "Theorem Core", description: "+2 damage and -6% fire interval. Sealed by the terminal proof.",
+    fragmentKind: "elite", effectKind: "damageAdd",
+    requires: { id: "inductLoopV5", level: 1 },
+    isCore: true,
+    unlockAfterBoss: "theorem",
+    levels: [
+      { pointCost: 1200, fragmentCost: 8, bonus: 2 },
+      { pointCost: 1700, fragmentCost: 11, bonus: 2 },
+    ],
+  },
 };
 
 export const TALENT_BRANCH_ORDER: TalentBranch[] = [
@@ -618,4 +706,8 @@ export const TALENT_CLUSTER_ORDER: { id: TalentClusterId; angleDeg: number }[] =
   { id: "coreSyntax", angleDeg: 90 },
   { id: "voidYield",    angleDeg: 150 },
   { id: "gridPulse",        angleDeg: 210 },
+  // Act IV inductLoop cluster sits outside the original hex; placed at 0° so
+  // the wheel renderer falls through without crashing while the layout is
+  // followed up in a UI pass.
+  { id: "inductLoop", angleDeg: 0 },
 ];

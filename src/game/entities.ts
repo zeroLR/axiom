@@ -95,6 +95,9 @@ export function spawnEnemy(
     echo: 'echo',
     shard: 'shard',
     null: 'null',
+    iterate: 'iterate',
+    limit: 'limit',
+    theorem: 'theorem',
   };
   const namedBossKey = namedBossId[kind];
   if (namedBossKey) {

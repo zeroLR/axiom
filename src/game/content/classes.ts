@@ -12,7 +12,10 @@ export type ClassNodeId =
   | "wing-t3aa" | "wing-t3ab" | "wing-t3ba" | "wing-t3bb"
   // MIRROR
   | "mirror-t0" | "mirror-t1" | "mirror-t2a" | "mirror-t2b"
-  | "mirror-t3aa" | "mirror-t3ab" | "mirror-t3ba" | "mirror-t3bb";
+  | "mirror-t3aa" | "mirror-t3ab" | "mirror-t3ba" | "mirror-t3bb"
+  // HYPERGRID (Act IV)
+  | "hypergrid-t0" | "hypergrid-t1" | "hypergrid-t2a" | "hypergrid-t2b"
+  | "hypergrid-t3aa" | "hypergrid-t3ab" | "hypergrid-t3ba" | "hypergrid-t3bb";
 
 /** Highest implemented tier (T4 is reserved for future content). */
 export const MAX_CLASS_TIER = 3;
@@ -94,12 +97,19 @@ export const CLASS_LINEAGES: readonly ClassLineageDef[] = [
     startingShape: "diamond",
     flavorLine: "Every inference reflects. Endurance prevails.",
   },
+  {
+    id: "hypergrid",
+    name: "HYPERGRID",
+    startingShape: "triangle",
+    flavorLine: "Every result reapplies itself. The proof concludes.",
+  },
 ] as const;
 
 export const CLASS_LINEAGE_BY_ID: Record<ClassLineageId, ClassLineageDef> = {
-  axis:   CLASS_LINEAGES[0]!,
-  wing:   CLASS_LINEAGES[1]!,
-  mirror: CLASS_LINEAGES[2]!,
+  axis:      CLASS_LINEAGES[0]!,
+  wing:      CLASS_LINEAGES[1]!,
+  mirror:    CLASS_LINEAGES[2]!,
+  hypergrid: CLASS_LINEAGES[3]!,
 };
 
 // ── Character slot creation costs ─────────────────────────────────────────────
@@ -296,6 +306,66 @@ export const CLASS_NODES: Record<ClassNodeId, ClassNodeDef> = {
     name: "Recursion Loop",
     description: "Fragment gain and weapon damage.",
     passives: [{ kind: "fragmentRewardMul", value: 0.10 }, { kind: "damageAdd", value: 2 }],
+    promotionReq: { pointCost: 1000, fragmentId: "boss-mirror", fragmentCost: 8, stageClear: 2 },
+  },
+
+  // ── HYPERGRID lineage — Act IV recurrence (fire-rate + reward bias) ───────
+
+  "hypergrid-t0": {
+    id: "hypergrid-t0", lineage: "hypergrid", tier: 0, branch: 0,
+    name: "Lattice Seed",
+    description: "Faster baseline cadence with a damage edge.",
+    passives: [{ kind: "periodMul", value: 0.97 }, { kind: "damageAdd", value: 1 }],
+    promotionReq: null,
+  },
+  "hypergrid-t1": {
+    id: "hypergrid-t1", lineage: "hypergrid", tier: 1, branch: 0,
+    name: "Self-Reference",
+    description: "Run rewards compound on each kill.",
+    passives: [{ kind: "pointRewardMul", value: 0.05 }, { kind: "fragmentRewardMul", value: 0.04 }],
+    unlocksSkill: "recursionEcho",
+    promotionReq: { pointCost: 200, fragmentId: "boss-orthogon", fragmentCost: 3, stageClear: 0 },
+  },
+  "hypergrid-t2a": {
+    id: "hypergrid-t2a", lineage: "hypergrid", tier: 2, branch: 0,
+    name: "Inductive Cadence",
+    description: "Tighter fire interval and an extra projectile.",
+    passives: [{ kind: "periodMul", value: 0.93 }, { kind: "projectilesAdd", value: 1 }],
+    promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
+  },
+  "hypergrid-t2b": {
+    id: "hypergrid-t2b", lineage: "hypergrid", tier: 2, branch: 1,
+    name: "Inductive Ward",
+    description: "Additional HP and iframe buffer.",
+    passives: [{ kind: "maxHpAdd", value: 3 }, { kind: "iframeAdd", value: 0.04 }],
+    promotionReq: { pointCost: 500, fragmentId: "boss-jets", fragmentCost: 5, stageClear: 1 },
+  },
+  "hypergrid-t3aa": {
+    id: "hypergrid-t3aa", lineage: "hypergrid", tier: 3, branch: 0, parentBranch: 0,
+    name: "Fixpoint Lance",
+    description: "Damage and projectile combo for the deep proof.",
+    passives: [{ kind: "damageAdd", value: 2 }, { kind: "projectilesAdd", value: 1 }],
+    promotionReq: { pointCost: 1000, fragmentId: "boss-mirror", fragmentCost: 8, stageClear: 2 },
+  },
+  "hypergrid-t3ab": {
+    id: "hypergrid-t3ab", lineage: "hypergrid", tier: 3, branch: 1, parentBranch: 0,
+    name: "Recurrent Edge",
+    description: "Peak cadence with critical pressure.",
+    passives: [{ kind: "periodMul", value: 0.90 }, { kind: "critAdd", value: 0.05 }],
+    promotionReq: { pointCost: 1000, fragmentId: "boss-mirror", fragmentCost: 8, stageClear: 2 },
+  },
+  "hypergrid-t3ba": {
+    id: "hypergrid-t3ba", lineage: "hypergrid", tier: 3, branch: 0, parentBranch: 1,
+    name: "Phase Mandala",
+    description: "Maximum HP and iframe with calm resilience.",
+    passives: [{ kind: "maxHpAdd", value: 4 }, { kind: "iframeAdd", value: 0.04 }],
+    promotionReq: { pointCost: 1000, fragmentId: "boss-mirror", fragmentCost: 8, stageClear: 2 },
+  },
+  "hypergrid-t3bb": {
+    id: "hypergrid-t3bb", lineage: "hypergrid", tier: 3, branch: 1, parentBranch: 1,
+    name: "Convergent Yield",
+    description: "Run rewards converge to the recurrence limit.",
+    passives: [{ kind: "pointRewardMul", value: 0.10 }, { kind: "fragmentRewardMul", value: 0.10 }],
     promotionReq: { pointCost: 1000, fragmentId: "boss-mirror", fragmentCost: 8, stageClear: 2 },
   },
 };

@@ -2,14 +2,17 @@ import { spawnEnemyShot } from "../../entities";
 import type { Rng } from "../../rng";
 import type { Components, EntityId, World } from "../../world";
 import { updateEchoPattern } from "./echo";
+import { updateIteratePattern } from "./iterate";
 import { updateJetsPattern } from "./jets";
 import { updateLatticePattern } from "./lattice";
+import { updateLimitPattern } from "./limit";
 import { updateMirrorBossAbilities } from "./mirror";
 import { updateNexusPattern } from "./nexus";
 import { updateNullPattern } from "./null";
 import { updateOrthogonPattern } from "./orthogon";
 import { updateRiftPattern } from "./rift";
 import { updateShardPattern } from "./shard";
+import { updateTheoremPattern } from "./theorem";
 
 /** Fan half-spread (radians) between adjacent projectiles. */
 export const BOSS_FAN_SPREAD = 0.22;
@@ -104,6 +107,15 @@ export function updateBossWeapon(
         break;
       case "null":
         updateNullPattern(world, c, ax, ay, rng, dt, fireAimedFan);
+        break;
+      case "iterate":
+        updateIteratePattern(world, c, ax, ay, rng, dt, fireAimedFan);
+        break;
+      case "limit":
+        updateLimitPattern(world, c, ax, ay, rng, dt, fireAimedFan);
+        break;
+      case "theorem":
+        updateTheoremPattern(world, c, ax, ay, rng, dt, fireAimedFan);
         break;
       default:
         updateStandardPattern(world, c, ax, ay, rng, dt);

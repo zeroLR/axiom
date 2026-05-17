@@ -45,7 +45,12 @@ export type EnemyKind =
   | 'weave'
   | 'echo'
   | 'shard'
-  | 'null';
+  | 'null'
+  | 'mote'
+  | 'lemma'
+  | 'iterate'
+  | 'limit'
+  | 'theorem';
 
 export interface Pos {
   x: number;
@@ -158,7 +163,19 @@ export interface Enemy {
 
   // ── Boss AI state (set by BossDef.install) ──────────────────────────────
   /** Weapon pattern kind for dispatch in `bossWeapon.ts`. */
-  bossPattern?: 'standard' | 'orthogon' | 'jets' | 'lattice' | 'rift' | 'nexus' | 'echo' | 'shard' | 'null';
+  bossPattern?:
+    | 'standard'
+    | 'orthogon'
+    | 'jets'
+    | 'lattice'
+    | 'rift'
+    | 'nexus'
+    | 'echo'
+    | 'shard'
+    | 'null'
+    | 'iterate'
+    | 'limit'
+    | 'theorem';
   /** Seconds remaining for the pull-avatar gravity effect (set by pullAvatar phaseDsl verb). */
   pullAvatarTimer?: number;
   /** Current boss AI phase/move index, cycling through the pattern sequence. */

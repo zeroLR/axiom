@@ -9,8 +9,8 @@ import { STAGE_CONFIGS } from "../src/game/content/stages";
 import { migrateClearedStages } from "../src/game/storage";
 
 describe("ACTS registry", () => {
-  it("registers three acts: form, decay, collapse", () => {
-    expect(ACTS.map((a) => a.id)).toEqual(["form", "decay", "collapse"]);
+  it("registers four acts: form, decay, collapse, induction", () => {
+    expect(ACTS.map((a) => a.id)).toEqual(["form", "decay", "collapse", "induction"]);
   });
 
   it("FORM groups stages 1–3 with stage3 as the gate", () => {

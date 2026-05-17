@@ -84,6 +84,47 @@ export const PRIMAL_SKILLS: Record<PrimalSkillId, PrimalSkillDef> = {
     durationPerLevel: 0.4,
     cooldownPerLevel: 2,
   },
+  recursionEcho: {
+    id: "recursionEcho",
+    name: "Recursion Echo",
+    glyph: "⟲",
+    description: "Each kill within the window has a chance to repeat the last shot.",
+    baseDuration: 4,
+    baseCooldown: 32,
+    durationPerLevel: 0.5,
+    cooldownPerLevel: 2,
+  },
+  fixpointHalt: {
+    id: "fixpointHalt",
+    name: "Fixpoint Halt",
+    glyph: "⊙",
+    description: "Freezes nearby enemies and incoming bullets in a small radius.",
+    baseDuration: 3,
+    baseCooldown: 35,
+    durationPerLevel: 0.4,
+    cooldownPerLevel: 2,
+  },
+  inductionPulse: {
+    id: "inductionPulse",
+    name: "Induction Pulse",
+    glyph: "✶",
+    description: "Chain pulse: damages and slows enemies near the avatar.",
+    baseDuration: 3,
+    baseCooldown: 30,
+    durationPerLevel: 0.4,
+    cooldownPerLevel: 2,
+  },
 };
 
-export const SKILL_IDS: readonly PrimalSkillId[] = ["timeStop", "shadowClone", "reflectShield", "barrage", "lifestealPulse", "axisFreeze", "overload"];
+export const SKILL_IDS: readonly PrimalSkillId[] = [
+  "timeStop",
+  "shadowClone",
+  "reflectShield",
+  "barrage",
+  "lifestealPulse",
+  "axisFreeze",
+  "overload",
+  "recursionEcho",
+  "fixpointHalt",
+  "inductionPulse",
+];
